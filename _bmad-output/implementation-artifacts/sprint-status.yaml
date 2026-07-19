@@ -65,7 +65,7 @@ development_status:
   0-3-local-docker-compose-for-postgres-and-minio: done
   0-4-github-actions-ci-workflow: done
   0-5-ghcr-docker-build-and-push-workflow-skeleton: done
-  0-6-doppler-project-mapping-and-env-validation-scaffold: backlog
+  0-6-doppler-project-mapping-and-env-validation-scaffold: ready-for-dev
   epic-0-retrospective: optional
 
   # Epic 1: PDF Pipeline Spike (BLOCKING GATE)
