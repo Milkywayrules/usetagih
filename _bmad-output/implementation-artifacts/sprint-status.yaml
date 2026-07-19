@@ -1,5 +1,5 @@
 # generated: 2026-07-20
-# last_updated: 2026-07-20T05:15:00+07:00
+# last_updated: 2026-07-20T06:00:00+07:00
 # project: usetagih
 # project_key: NOKEY
 # tracking_system: file-system
@@ -45,7 +45,7 @@
 # Epic 5 after Epic 1+3 (Story 5.0 first) | Epic 6 after Epic 3+5 | Epic 7 after Epic 3 | Epic 8 last
 
 generated: 2026-07-20
-last_updated: 2026-07-20T05:15:00+07:00
+last_updated: 2026-07-20T06:00:00+07:00
 project: usetagih
 project_key: NOKEY
 tracking_system: file-system
@@ -86,7 +86,7 @@ development_status:
   # Gated by Epic 1 (spike PASS). Gates Epic 3.
   epic-2: in-progress
   2-1-document-payload-zod-discriminated-union: done
-  2-2-business-rule-validators-for-arithmetic-integrity: backlog
+  2-2-business-rule-validators-for-arithmetic-integrity: ready-for-dev
   2-3-error-codes-enum-and-api-error-envelope-types: backlog
   2-4-schema-version-negotiation-helpers: backlog
   2-5-openapi-3-1-component-generation-from-zod: backlog
