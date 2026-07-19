@@ -4,7 +4,7 @@ baseline_commit: 6d1ef7624938fb8d008aa6cbe8249ec6b5619c5e
 
 # Story 0.4: GitHub Actions CI workflow
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -30,21 +30,21 @@ so that every PR validates code quality before merge (AD CI seed, SOLUTION-DESIG
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Create `.github/workflows/ci.yml` (AC: 1–8)
-  - [ ] Add workflow header: `name: CI`, triggers (`push` → `main`, `pull_request`), optional `concurrency` group cancel-in-progress
-  - [ ] Define shared job pattern: `actions/checkout@v4` → `oven-sh/setup-bun@v2` (`bun-version: "1.2.18"`) → `actions/cache@v4` for `~/.bun/install/cache` → `bun install --frozen-lockfile` → turbo command
-  - [ ] Job `lint`: `bunx turbo run lint`
-  - [ ] Job `typecheck`: `bunx turbo run typecheck`
-  - [ ] Job `unit`: `bunx turbo run test`
-  - [ ] Job `build`: `bunx turbo run build`
-  - [ ] Job `openapi-spectral`: placeholder step documenting Epic 7 Spectral wiring; exit 0
-  - [ ] All jobs use `runs-on: ubuntu-latest`
-- [ ] Task 2 — Verification gate (AC: 9–10)
-  - [ ] Run static YAML parse (always required)
-  - [ ] Run command-parity: `bunx turbo run lint typecheck test build` (always required)
-  - [ ] Optionally run `actionlint` if binary present — skip with note if absent
-  - [ ] Mark GitHub runner execution environment-gated; document re-verify on first remote push
-  - [ ] Record results in Dev Agent Record
+- [x] Task 1 — Create `.github/workflows/ci.yml` (AC: 1–8)
+  - [x] Add workflow header: `name: CI`, triggers (`push` → `main`, `pull_request`), optional `concurrency` group cancel-in-progress
+  - [x] Define shared job pattern: `actions/checkout@v4` → `oven-sh/setup-bun@v2` (`bun-version: "1.2.18"`) → `actions/cache@v4` for `~/.bun/install/cache` → `bun install --frozen-lockfile` → turbo command
+  - [x] Job `lint`: `bunx turbo run lint`
+  - [x] Job `typecheck`: `bunx turbo run typecheck`
+  - [x] Job `unit`: `bunx turbo run test`
+  - [x] Job `build`: `bunx turbo run build`
+  - [x] Job `openapi-spectral`: placeholder step documenting Epic 7 Spectral wiring; exit 0
+  - [x] All jobs use `runs-on: ubuntu-latest`
+- [x] Task 2 — Verification gate (AC: 9–10)
+  - [x] Run static YAML parse (always required)
+  - [x] Run command-parity: `bunx turbo run lint typecheck test build` (always required)
+  - [x] Optionally run `actionlint` if binary present — skip with note if absent
+  - [x] Mark GitHub runner execution environment-gated; document re-verify on first remote push
+  - [x] Record results in Dev Agent Record
 
 ## Dev Notes
 
@@ -314,13 +314,28 @@ No changes to `apps/`, `packages/`, `docker/`, or root toolchain files expected.
 
 ### Agent Model Used
 
-_(filled by dev agent)_
+Composer 2.5 (headless dev subagent)
 
 ### Debug Log References
 
+- Static YAML parse: `YAML parse OK`; structural greps all matched
+- Command-parity: `bunx turbo run lint typecheck test build` → 36/36 tasks successful (FULL TURBO, exit 0)
+- actionlint: skipped — binary not installed (optional per story scope)
+- GitHub runner: ENVIRONMENT-GATED — no GitHub remote configured; re-verify on first `git push -u origin main` or first PR
+
 ### Completion Notes List
 
+- Added `.github/workflows/ci.yml` per SOLUTION-DESIGN §10.1 subset: jobs `lint`, `typecheck`, `unit`, `build`, `openapi-spectral` (placeholder)
+- Workflow triggers on `push` to `main` and all `pull_request` events; concurrency cancel-in-progress enabled
+- Each job pins Bun 1.2.18 via `oven-sh/setup-bun@v2`, caches `~/.bun/install/cache` keyed by `bun.lock`, runs `bun install --frozen-lockfile`
+- Turbo invocations mirror local green gate: `lint`, `typecheck`, `test`, `build`
+- No changes to package graphs, scripts, or toolchain files
+
 ### File List
+
+- `.github/workflows/ci.yml` (new)
+- `_bmad-output/implementation-artifacts/0-4-github-actions-ci-workflow.md` (updated)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (updated)
 
 ## Story Validation Record
 
@@ -340,3 +355,4 @@ _(filled by dev agent)_
 ## Change Log
 
 - 2026-07-20: story created and validated — ready for dev
+- 2026-07-20: implemented CI workflow; local verification green; status → review
