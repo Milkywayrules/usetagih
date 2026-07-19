@@ -110,6 +110,9 @@ export function renderPreview(options: RenderPreviewOptions): PreviewResult {
 		pageCount = getPdfPageCount(templateAbs, extraArgs);
 		pages = parsePreviewPages(previewTempDir);
 
+		if (pageCount < 1) {
+			throw new Error(`invalid PDF page count: ${pageCount}`);
+		}
 		if (pages.length !== pageCount) {
 			throw new Error(
 				`SVG page count ${pages.length} !== PDF page count ${pageCount}`,

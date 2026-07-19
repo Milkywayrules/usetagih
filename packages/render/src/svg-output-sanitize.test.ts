@@ -96,6 +96,60 @@ test("javascript href is stripped and passes when clean", () => {
 	}
 });
 
+test("href tab-obfuscated javascript: is stripped and passes when clean", () => {
+	const input = WRAP('<a href="ja\tvascript:alert(1)"/>');
+	const result = sanitizeTypstOutputSvg(input);
+	expect(result.ok).toBe(true);
+	if (result.ok) {
+		expect(result.sanitized.toString("utf8")).not.toMatch(
+			/(?:xlink:)?href\s*=\s*["']?(?:javascript|data:|https?:)/i,
+		);
+	}
+});
+
+test("CDATA script section is stripped and passes when clean", () => {
+	const input =
+		'<svg xmlns="http://www.w3.org/2000/svg"><![CDATA[<script>alert(1)</script>]]></svg>';
+	const result = sanitizeTypstOutputSvg(input);
+	expect(result.ok).toBe(true);
+	if (result.ok) {
+		const out = result.sanitized.toString("utf8");
+		expect(out).not.toMatch(/<script/i);
+		expect(out).not.toMatch(/<!\[CDATA\[/i);
+	}
+});
+
+test("animate SMIL element is stripped and passes when clean", () => {
+	const input = WRAP(
+		'<animate attributeName="href" from="javascript:alert(1)" to="javascript:alert(2)"/>',
+	);
+	const result = sanitizeTypstOutputSvg(input);
+	expect(result.ok).toBe(true);
+	if (result.ok) {
+		expect(result.sanitized.toString("utf8")).not.toMatch(/<animate\b/i);
+	}
+});
+
+test("style @import block is stripped and passes when clean", () => {
+	const input = WRAP('<style>@import url("https://evil.com/x.css");</style>');
+	const result = sanitizeTypstOutputSvg(input);
+	expect(result.ok).toBe(true);
+	if (result.ok) {
+		const out = result.sanitized.toString("utf8");
+		expect(out).not.toMatch(/@import/i);
+		expect(out).not.toMatch(/<style\b/i);
+	}
+});
+
+test("onLoad mixed case handler is stripped and passes when clean", () => {
+	const input = WRAP('<rect OnLoad="alert(1)" width="1" height="1"/>');
+	const result = sanitizeTypstOutputSvg(input);
+	expect(result.ok).toBe(true);
+	if (result.ok) {
+		expect(result.sanitized.toString("utf8")).not.toMatch(/\son[a-z]+\s*=/i);
+	}
+});
+
 const rejectCases: Array<{ name: string; svg: string }> = [
 	{
 		name: "script tag survives strip",

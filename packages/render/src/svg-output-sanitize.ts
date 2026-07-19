@@ -3,6 +3,10 @@ import type { SvgSanitizeResult } from "./svg-sanitize";
 
 const SCRIPT_BLOCK = /<script\b[^>]*>[\s\S]*?<\/script>|<script\b[^>]*\/>/gi;
 const FOREIGN_OBJECT = /<foreignObject\b[^>]*>[\s\S]*?<\/foreignObject>/gi;
+const ANIMATION_ELEMENT =
+	/<(?:animate|set)\b[^>]*(?:\/>|>[\s\S]*?<\/(?:animate|set)>)/gi;
+const STYLE_BLOCK = /<style\b[^>]*>[\s\S]*?<\/style>/gi;
+const CDATA_BLOCK = /<!\[CDATA\[[\s\S]*?\]\]>/gi;
 const EVENT_HANDLER =
 	/\s(on[a-zA-Z]+)\s*=\s*("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[^\s>]+)/gi;
 
@@ -10,6 +14,9 @@ const ATTR = /([a-zA-Z_:][\w:.-]*)\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/g;
 
 const REJECT_SCRIPT = /<script/i;
 const REJECT_FOREIGN_OBJECT = /<foreignObject/i;
+const REJECT_ANIMATION = /<(?:animate|set)\b/i;
+const REJECT_DANGEROUS_STYLE =
+	/<style\b[^>]*>[\s\S]*?(?:@import|url\s*\(|javascript:|expression\s*\()/i;
 const REJECT_EVENT_HANDLER = /\son[a-zA-Z]+\s*=/i;
 
 function decodeNumericEntities(value: string): string {
@@ -51,8 +58,19 @@ function stripEventHandlers(svg: string): string {
 	return decoded.replace(EVENT_HANDLER, "");
 }
 
+function stripDangerousStyleBlocks(svg: string): string {
+	return svg.replace(STYLE_BLOCK, (block) => {
+		const inner = block.replace(/<\/?style\b[^>]*>/gi, "");
+		return isDangerousStyle(inner) ? "" : block;
+	});
+}
+
 function stripScriptAndForeignObject(svg: string): string {
-	return svg.replace(SCRIPT_BLOCK, "").replace(FOREIGN_OBJECT, "");
+	return svg
+		.replace(SCRIPT_BLOCK, "")
+		.replace(FOREIGN_OBJECT, "")
+		.replace(ANIMATION_ELEMENT, "")
+		.replace(CDATA_BLOCK, "");
 }
 
 function stripExternalHrefAttributes(svg: string): string {
@@ -122,6 +140,12 @@ function collectErrors(svg: string): string[] {
 	if (REJECT_FOREIGN_OBJECT.test(svg)) {
 		errors.push("foreignObject tag remains after sanitization");
 	}
+	if (REJECT_ANIMATION.test(svg)) {
+		errors.push("animation element remains after sanitization");
+	}
+	if (REJECT_DANGEROUS_STYLE.test(svg)) {
+		errors.push("dangerous style block remains after sanitization");
+	}
 	if (REJECT_EVENT_HANDLER.test(decodeNumericEntities(svg))) {
 		errors.push("event handler attribute remains after sanitization");
 	}
@@ -141,6 +165,7 @@ export function sanitizeTypstOutputSvg(
 	svg = stripScriptAndForeignObject(svg);
 	svg = stripEventHandlers(svg);
 	svg = stripExternalHrefAttributes(svg);
+	svg = stripDangerousStyleBlocks(svg);
 
 	const errors = collectErrors(svg);
 	if (errors.length > 0) {

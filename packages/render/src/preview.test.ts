@@ -1,9 +1,15 @@
 import { expect, test } from "bun:test";
-import { existsSync, readdirSync } from "node:fs";
+import {
+	existsSync,
+	mkdirSync,
+	readdirSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { join, resolve } from "node:path";
 import { loadManifest } from "./golden/manifest";
 import { buildTypstInputArgs, PACKAGE_ROOT } from "./golden/render-fixture";
-import { renderPreviewFromManifest } from "./preview";
+import { renderPreview, renderPreviewFromManifest } from "./preview";
 import { evalTypst, resolveTypstBinaryPath } from "./typst-driver";
 
 const MANIFEST_PATH = join(PACKAGE_ROOT, "manifest.json");
@@ -101,3 +107,25 @@ previewTest("renderPreview removes temp preview directory after return", () => {
 	renderPreviewFromManifest(manifestEntry(BASIC_FIXTURE, "free"), "free");
 	expect(listPreviewTempDirs()).toHaveLength(0);
 });
+
+previewTest(
+	"renderPreview removes temp preview directory after compile failure",
+	() => {
+		const badDir = join(PACKAGE_ROOT, ".tmp", "fail-probe");
+		mkdirSync(badDir, { recursive: true });
+		const badTyp = join(badDir, "bad.typ");
+		writeFileSync(badTyp, "#let x = {{{");
+		const payloadAbs = resolve(
+			PACKAGE_ROOT,
+			manifestEntry(BASIC_FIXTURE, "free").payload,
+		);
+		const before = listPreviewTempDirs();
+
+		expect(() =>
+			renderPreview({ templatePath: badTyp, payloadPath: payloadAbs }),
+		).toThrow(/Typst compile failed|unclosed delimiter/i);
+
+		expect(listPreviewTempDirs()).toHaveLength(before.length);
+		rmSync(badDir, { recursive: true, force: true });
+	},
+);
