@@ -27,6 +27,8 @@ export type RenderPreviewOptions = {
 	tier?: string;
 	/** Typst `--input` map; defaults to `{ tier }` when omitted */
 	inputs?: Record<string, string>;
+	/** Optional temp dir override (tests only — avoids parallel glob races) */
+	previewTempDir?: string;
 };
 
 const PAGE_SVG_PATTERN = /^page-(\d+)\.svg$/;
@@ -79,7 +81,8 @@ function parsePreviewPages(previewTempDir: string): PreviewPage[] {
 
 /** Compile same template+inputs as PDF; return sanitized multi-page SVG preview. */
 export function renderPreview(options: RenderPreviewOptions): PreviewResult {
-	const { templatePath, payloadPath, tier = "free", inputs } = options;
+	const { templatePath, payloadPath, tier = "free", inputs, previewTempDir } =
+		options;
 	const templateAbs = resolve(templatePath);
 	const payloadAbs = resolve(payloadPath);
 
@@ -92,23 +95,24 @@ export function renderPreview(options: RenderPreviewOptions): PreviewResult {
 
 	const typstInputs = inputs ?? { tier };
 	const extraArgs = buildTypstInputArgs(templateAbs, payloadAbs, typstInputs);
-	const previewTempDir = join(PACKAGE_ROOT, ".tmp", `preview-${randomUUID()}`);
+	const resolvedPreviewTempDir =
+		previewTempDir ?? join(PACKAGE_ROOT, ".tmp", `preview-${randomUUID()}`);
 
 	let pageCount = 0;
 	let pages: PreviewPage[] = [];
 
 	try {
-		mkdirSync(previewTempDir, { recursive: true });
+		mkdirSync(resolvedPreviewTempDir, { recursive: true });
 
 		compileTypst({
 			inputPath: templateAbs,
-			outputPath: join(previewTempDir, "page-{0p}.svg"),
+			outputPath: join(resolvedPreviewTempDir, "page-{0p}.svg"),
 			format: "svg",
 			extraArgs,
 		});
 
 		pageCount = getPdfPageCount(templateAbs, extraArgs);
-		pages = parsePreviewPages(previewTempDir);
+		pages = parsePreviewPages(resolvedPreviewTempDir);
 
 		if (pageCount < 1) {
 			throw new Error(`invalid PDF page count: ${pageCount}`);
@@ -119,7 +123,7 @@ export function renderPreview(options: RenderPreviewOptions): PreviewResult {
 			);
 		}
 	} finally {
-		rmSync(previewTempDir, { recursive: true, force: true });
+		rmSync(resolvedPreviewTempDir, { recursive: true, force: true });
 	}
 
 	return { pageCount, pages };
@@ -129,6 +133,7 @@ export function renderPreview(options: RenderPreviewOptions): PreviewResult {
 export function renderPreviewFromManifest(
 	entry: GoldenFixtureEntry,
 	tier = "free",
+	options?: Pick<RenderPreviewOptions, "previewTempDir">,
 ): PreviewResult {
 	const templateAbs = resolveTemplatePath(entry);
 	const payloadAbs = resolve(PACKAGE_ROOT, entry.payload);
@@ -138,5 +143,6 @@ export function renderPreviewFromManifest(
 		templatePath: templateAbs,
 		payloadPath: payloadAbs,
 		inputs,
+		previewTempDir: options?.previewTempDir,
 	});
 }

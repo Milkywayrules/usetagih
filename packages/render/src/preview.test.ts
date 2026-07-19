@@ -1,8 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { expect, test } from "bun:test";
 import {
 	existsSync,
 	mkdirSync,
-	readdirSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs";
@@ -45,12 +45,8 @@ function getPdfPageCountFromManifest(fixture: string, tier: string): number {
 	return Number(hits[0]?.value?.[0]);
 }
 
-function listPreviewTempDirs(): string[] {
-	const tmpDir = join(PACKAGE_ROOT, ".tmp");
-	if (!existsSync(tmpDir)) {
-		return [];
-	}
-	return readdirSync(tmpDir).filter((name) => name.startsWith("preview-"));
+function testPreviewTempDir(label: string): string {
+	return join(PACKAGE_ROOT, ".tmp", `preview-test-${label}-${randomUUID()}`);
 }
 
 if (!typstAvailable) {
@@ -104,8 +100,11 @@ previewTest(
 );
 
 previewTest("renderPreview removes temp preview directory after return", () => {
-	renderPreviewFromManifest(manifestEntry(BASIC_FIXTURE, "free"), "free");
-	expect(listPreviewTempDirs()).toHaveLength(0);
+	const previewTempDir = testPreviewTempDir("cleanup-success");
+	renderPreviewFromManifest(manifestEntry(BASIC_FIXTURE, "free"), "free", {
+		previewTempDir,
+	});
+	expect(existsSync(previewTempDir)).toBe(false);
 });
 
 previewTest(
@@ -119,13 +118,17 @@ previewTest(
 			PACKAGE_ROOT,
 			manifestEntry(BASIC_FIXTURE, "free").payload,
 		);
-		const before = listPreviewTempDirs();
+		const previewTempDir = testPreviewTempDir("cleanup-failure");
 
 		expect(() =>
-			renderPreview({ templatePath: badTyp, payloadPath: payloadAbs }),
+			renderPreview({
+				templatePath: badTyp,
+				payloadPath: payloadAbs,
+				previewTempDir,
+			}),
 		).toThrow(/Typst compile failed|unclosed delimiter/i);
 
-		expect(listPreviewTempDirs()).toHaveLength(before.length);
+		expect(existsSync(previewTempDir)).toBe(false);
 		rmSync(badDir, { recursive: true, force: true });
 	},
 );
