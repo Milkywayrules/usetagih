@@ -4,7 +4,7 @@ baseline_commit: aa3552e331c92f29c730a4e24117ee1e5bbcfe9b
 
 # Story 2.1: Document payload Zod discriminated union
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -455,12 +455,12 @@ Composer 2.5
 - Implemented canonical `DocumentPayloadSchema` discriminated union with strict object shapes under `packages/schema/src/document/`
 - Added minimal valid fixtures for invoice/quotation/receipt plus invalid fixtures proving `logoBytes` and cross-type field rejection
 - Added `checkDocumentTypeMismatch` helper exporting `DOCUMENT_TYPE_MISMATCH_CODE`
-- `bun test packages/schema`: 12 pass (6 unique tests × src + dist)
+- `bun test packages/schema`: 6 pass (single src run after build excludes `*.test.ts`)
 - `bunx turbo run lint typecheck test build --force`: 36/36 tasks successful
 
 ### File List
 
-- `packages/schema/package.json`
+- `packages/schema/tsconfig.build.json`
 - `packages/schema/src/index.ts`
 - `packages/schema/src/document/primitives.ts`
 - `packages/schema/src/document/money.ts`
@@ -500,3 +500,4 @@ Composer 2.5
 ## Change Log
 
 - 2026-07-20: canonical document payload Zod discriminated union, fixtures, tests, and mismatch helper (Story 2.1)
+- 2026-07-20: code review approved; schema build excludes test emit; story marked done

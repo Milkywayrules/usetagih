@@ -14,8 +14,8 @@
 	"scripts": {
 		"lint": "biome check .",
 		"typecheck": "tsc --noEmit",
-		"test": "bun test",
-		"build": "tsc --outDir dist"
+		"test": "bun test src",
+		"build": "tsc --project tsconfig.build.json --outDir dist"
 	},
 	"dependencies": {
 		"zod": "^4.4.3"
