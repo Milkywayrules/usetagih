@@ -1,5 +1,5 @@
 # generated: 2026-07-20
-# last_updated: 2026-07-20T06:30:00+07:00
+# last_updated: 2026-07-20T06:45:00+07:00
 # project: usetagih
 # project_key: NOKEY
 # tracking_system: file-system
@@ -45,7 +45,7 @@
 # Epic 5 after Epic 1+3 (Story 5.0 first) | Epic 6 after Epic 3+5 | Epic 7 after Epic 3 | Epic 8 last
 
 generated: 2026-07-20
-last_updated: 2026-07-20T06:30:00+07:00
+last_updated: 2026-07-20T06:45:00+07:00
 project: usetagih
 project_key: NOKEY
 tracking_system: file-system
@@ -84,13 +84,13 @@ development_status:
 
   # Epic 2: Canonical Schema & Contract Package
   # Gated by Epic 1 (spike PASS). Gates Epic 3.
-  epic-2: in-progress
+  epic-2: done
   2-1-document-payload-zod-discriminated-union: done
   2-2-business-rule-validators-for-arithmetic-integrity: done
   2-3-error-codes-enum-and-api-error-envelope-types: done
   2-4-schema-version-negotiation-helpers: done
   2-5-openapi-3-1-component-generation-from-zod: done
-  2-6-shared-validation-fixture-test-suite: review
+  2-6-shared-validation-fixture-test-suite: done
   epic-2-retrospective: optional
 
   # Epic 3: API Core — Auth, Keys, Idempotency, Sync Render, Share, Audit

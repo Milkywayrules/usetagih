@@ -1,4 +1,6 @@
 import { expect, test } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkDocumentTypeMismatch } from "../document/document-type-mismatch";
@@ -74,5 +76,39 @@ test("runFixtureExpectation accepts every declared outcome", () => {
 		expect(() =>
 			runFixtureExpectation(pair.payload, pair.expected),
 		).not.toThrow();
+	}
+});
+
+test("discoverFixturePairs rejects orphan payload without sidecar", () => {
+	const root = mkdtempSync(join(tmpdir(), "usetagih-fixture-orphan-"));
+	try {
+		mkdirSync(join(root, "invalid"), { recursive: true });
+		writeFileSync(
+			join(root, "invalid", "orphan-payload.json"),
+			'{"documentType":"invoice"}',
+		);
+
+		expect(() => discoverFixturePairs(root)).toThrow(
+			/Missing expected sidecar for payload/,
+		);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("discoverFixturePairs rejects orphan sidecar without payload", () => {
+	const root = mkdtempSync(join(tmpdir(), "usetagih-fixture-orphan-"));
+	try {
+		mkdirSync(join(root, "invalid"), { recursive: true });
+		writeFileSync(
+			join(root, "invalid", "orphan-sidecar.expected.json"),
+			'{"outcome":"pass"}',
+		);
+
+		expect(() => discoverFixturePairs(root)).toThrow(
+			/Missing payload JSON for expected sidecar/,
+		);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
 	}
 });

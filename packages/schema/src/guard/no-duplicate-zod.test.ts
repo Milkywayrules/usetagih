@@ -5,6 +5,13 @@ import { join, relative } from "node:path";
 const ALLOWLIST = new Set(["packages/config/src/env/schema.ts"]);
 const SCAN_ROOTS = ["packages", "apps"];
 
+/** Direct zod imports / object definitions outside the canonical schema owner. */
+const ZOD_VIOLATION_PATTERNS = [
+	/from\s+["']zod(?:\/[^"']+)?["']/,
+	/require\s*\(\s*["']zod(?:\/[^"']+)?["']/,
+	/\bz\.object\s*\(/,
+] as const;
+
 function collectTsFiles(dir: string): string[] {
 	const entries = readdirSync(dir);
 	const files: string[] = [];
@@ -45,7 +52,7 @@ test("no duplicate zod definitions outside packages/schema", () => {
 			}
 
 			const src = readFileSync(file, "utf8");
-			if (/from\s+["']zod["']/.test(src) || /\bz\.object\s*\(/.test(src)) {
+			if (ZOD_VIOLATION_PATTERNS.some((pattern) => pattern.test(src))) {
 				violations.push(rel);
 			}
 		}
