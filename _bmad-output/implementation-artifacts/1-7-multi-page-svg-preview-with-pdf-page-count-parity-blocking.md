@@ -4,7 +4,7 @@ baseline_commit: 63a0902
 
 # Story 1.7: Multi-page SVG preview with PDF page-count parity (blocking)
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -29,25 +29,25 @@ so that FR-10 preview uses same engine without HTML fallback (AD-10 blocking #4,
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Preview module (AC: 1, 2, 3, 5)
-  - [ ] Create `packages/render/src/preview.ts` with `renderPreview()` per Dev Notes §API contract
-  - [ ] Wire same input args as `renderFixtureFromManifest()` — `json=`, `tier=`, optional `logo=` via `prepareLogoForTypst()`
-  - [ ] Use Typst output path `{previewTempDir}/page-{0p}.svg`; glob + parse indices; sort ascending
-  - [ ] `finally`: `rmSync(previewTempDir, { recursive: true, force: true })`
-- [ ] Task 2 — Output SVG sanitizer profile (AC: 4)
-  - [ ] Add `sanitizeTypstOutputSvg()` in `packages/render/src/svg-output-sanitize.ts` (or co-locate in `svg-sanitize.ts` with clear section header — **separate export**, do not modify `sanitizeSvgLogo` behavior)
-  - [ ] Create `packages/render/src/svg-output-sanitize.test.ts` with malicious inline fixtures + clean Typst-output snippet containing `<use>`/`<symbol>`
-- [ ] Task 3 — Parity + cleanup tests (AC: 2, 3, 5, 6)
-  - [ ] Create `packages/render/src/preview.test.ts` (or extend `invoice-modern.test.ts`) — environment-gated via `typstAvailable`
-  - [ ] Assert pagination `pageCount === 3`, basic `pageCount === 1`, indices sorted, SVG page count === `getPdfPageCount()` helper
-  - [ ] Assert temp preview dir absent after `renderPreview()` returns
-  - [ ] Reuse stability constants `STABLE_BASIC` / `STABLE_PAGINATION` — run existing golden-stability tests unchanged
-- [ ] Task 4 — Export surface (AC: 1)
-  - [ ] Export `renderPreview`, types from `packages/render/src/index.ts` (or `./preview` subpath if index stays minimal)
-- [ ] Task 5 — Verification gate (AC: 7, 8)
-  - [ ] `bunx turbo run lint typecheck test build --force`
-  - [ ] In-container: `docker run --rm -e SOURCE_DATE_EPOCH=1700000000 usetagih-render-ci:local bun run --filter @usetagih/render golden:check`
-  - [ ] Record page counts, sanitizer profile decision, temp-dir cleanup proof in Dev Agent Record
+- [x] Task 1 — Preview module (AC: 1, 2, 3, 5)
+  - [x] Create `packages/render/src/preview.ts` with `renderPreview()` per Dev Notes §API contract
+  - [x] Wire same input args as `renderFixtureFromManifest()` — `json=`, `tier=`, optional `logo=` via `prepareLogoForTypst()`
+  - [x] Use Typst output path `{previewTempDir}/page-{0p}.svg`; glob + parse indices; sort ascending
+  - [x] `finally`: `rmSync(previewTempDir, { recursive: true, force: true })`
+- [x] Task 2 — Output SVG sanitizer profile (AC: 4)
+  - [x] Add `sanitizeTypstOutputSvg()` in `packages/render/src/svg-output-sanitize.ts` (or co-locate in `svg-sanitize.ts` with clear section header — **separate export**, do not modify `sanitizeSvgLogo` behavior)
+  - [x] Create `packages/render/src/svg-output-sanitize.test.ts` with malicious inline fixtures + clean Typst-output snippet containing `<use>`/`<symbol>`
+- [x] Task 3 — Parity + cleanup tests (AC: 2, 3, 5, 6)
+  - [x] Create `packages/render/src/preview.test.ts` (or extend `invoice-modern.test.ts`) — environment-gated via `typstAvailable`
+  - [x] Assert pagination `pageCount === 3`, basic `pageCount === 1`, indices sorted, SVG page count === `getPdfPageCount()` helper
+  - [x] Assert temp preview dir absent after `renderPreview()` returns
+  - [x] Reuse stability constants `STABLE_BASIC` / `STABLE_PAGINATION` — run existing golden-stability tests unchanged
+- [x] Task 4 — Export surface (AC: 1)
+  - [x] Export `renderPreview`, types from `packages/render/src/index.ts` (or `./preview` subpath if index stays minimal)
+- [x] Task 5 — Verification gate (AC: 7, 8)
+  - [x] `bunx turbo run lint typecheck test build --force`
+  - [x] In-container: `docker run --rm -e SOURCE_DATE_EPOCH=1700000000 usetagih-render-ci:local bun run --filter @usetagih/render golden:check`
+  - [x] Record page counts, sanitizer profile decision, temp-dir cleanup proof in Dev Agent Record
 
 ## Dev Notes
 
@@ -332,13 +332,35 @@ packages/render/
 
 ### Agent Model Used
 
-_(filled by dev agent on implementation)_
+Composer 2.5
 
 ### Debug Log References
 
+- parity: basic fixture PDF `<page-count>` = 1, SVG `page-1.svg`; pagination PDF = 3, SVG `page-1.svg` … `page-3.svg`
+- sanitizer: separate strip-list profile in `svg-output-sanitize.ts` — preserves `<use>`/`<symbol>`/`<path>`, strips active content
+- cleanup: `ls packages/render/.tmp/preview-*` → no matches after test suite
+
 ### Completion Notes List
 
+- implemented `renderPreview()` / `renderPreviewFromManifest()` compiling Typst `--format svg` to `page-{0p}.svg` with PDF `<page-count>` parity via `evalTypst(query(<page-count>))`
+- extracted shared `buildTypstInputArgs()` from golden render harness for PDF/preview input parity
+- added `sanitizeTypstOutputSvg()` defense-in-depth strip-list distinct from logo allowlist
+- verification: `bun test packages/render` 124 pass; `golden:check` all 5 fixtures; turbo `--force` 36/36; docker `golden:check` exit 0
+
 ### File List
+
+- `packages/render/src/preview.ts` (new)
+- `packages/render/src/preview.test.ts` (new)
+- `packages/render/src/svg-output-sanitize.ts` (new)
+- `packages/render/src/svg-output-sanitize.test.ts` (new)
+- `packages/render/src/index.ts` (modified — export preview + sanitizer)
+- `packages/render/src/golden/render-fixture.ts` (modified — shared `buildTypstInputArgs`)
+- `_bmad-output/implementation-artifacts/1-7-multi-page-svg-preview-with-pdf-page-count-parity-blocking.md` (modified)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (modified)
+
+## Change Log
+
+- 2026-07-20: multi-page SVG preview module with PDF page-count parity, output sanitizer, and CI verification gates (AD-10 blocking #4)
 
 ## Story Validation Record
 

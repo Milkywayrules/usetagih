@@ -25,7 +25,7 @@ function sha256Buffer(buffer: Buffer): string {
 	return createHash("sha256").update(buffer).digest("hex");
 }
 
-function resolveTemplatePath(entry: GoldenFixtureEntry): string {
+export function resolveTemplatePath(entry: GoldenFixtureEntry): string {
 	const templateAbs = resolve(PACKAGE_ROOT, entry.template);
 	if (!existsSync(templateAbs)) {
 		throw new Error(
@@ -35,35 +35,44 @@ function resolveTemplatePath(entry: GoldenFixtureEntry): string {
 	return templateAbs;
 }
 
+export function buildTypstInputArgs(
+	templatePath: string,
+	payloadPath: string,
+	inputs: Record<string, string>,
+): string[] {
+	const templateDir = dirname(templatePath);
+	const payloadInput = relative(templateDir, payloadPath);
+
+	const inputArgs = Object.entries(inputs).flatMap(([key, value]) => [
+		"--input",
+		`${key}=${value}`,
+	]);
+
+	const logoPrep = prepareLogoForTypst(payloadPath, templateDir);
+	const logoArgs =
+		logoPrep.logoInputArg !== undefined
+			? ["--input", logoPrep.logoInputArg]
+			: [];
+
+	return ["--input", `json=${payloadInput}`, ...inputArgs, ...logoArgs];
+}
+
 export function renderFixtureFromManifest(
 	entry: GoldenFixtureEntry,
 	options: RenderFixtureOptions = {},
 ): RenderFixtureResult {
 	const templateAbs = resolveTemplatePath(entry);
-	const templateDir = dirname(templateAbs);
 	const payloadAbs = resolve(PACKAGE_ROOT, entry.payload);
-	const payloadInput = relative(templateDir, payloadAbs);
 
 	const outputPath =
 		options.outputPath ?? resolve(PACKAGE_ROOT, ".tmp", `${entry.id}.pdf`);
 
 	mkdirSync(dirname(outputPath), { recursive: true });
 
-	const inputArgs = Object.entries(entry.inputs).flatMap(([key, value]) => [
-		"--input",
-		`${key}=${value}`,
-	]);
-
-	const logoPrep = prepareLogoForTypst(payloadAbs, templateDir);
-	const logoArgs =
-		logoPrep.logoInputArg !== undefined
-			? ["--input", logoPrep.logoInputArg]
-			: [];
-
 	compileTypst({
 		inputPath: templateAbs,
 		outputPath,
-		extraArgs: ["--input", `json=${payloadInput}`, ...inputArgs, ...logoArgs],
+		extraArgs: buildTypstInputArgs(templateAbs, payloadAbs, entry.inputs),
 	});
 
 	const pdfBytes = readFileSync(outputPath);
