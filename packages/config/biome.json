@@ -17,7 +17,7 @@
       "!!**/.bmad-loop",
       "!!**/design-artifacts",
       "!!**/dist",
-      "!!**/openapi",
+      "!!packages/schema/openapi",
       "!!**/.tmp",
       "!!**/docs",
       "!!**/knowledge-base-of-king-the-user"

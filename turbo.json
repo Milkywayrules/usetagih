@@ -6,7 +6,7 @@
 		"test": { "dependsOn": ["^build"] },
 		"build": {
 			"dependsOn": ["^build"],
-			"outputs": ["dist/**", ".next/**"]
+			"outputs": ["dist/**", "openapi/**", ".next/**"]
 		},
 		"dev": { "cache": false, "persistent": true }
 	}
