@@ -4,7 +4,7 @@ baseline_commit: 9a20e4e
 
 # Story 1.9: Spike gate documentation and board escalation protocol
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -30,24 +30,24 @@ so that agents know to halt when engine proof fails (AD-10).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Author `SPIKE-RESULT.md` (AC: 1, 2, 3)
-  - [ ] Create `packages/render/SPIKE-RESULT.md` from Dev Notes §SPIKE-RESULT.md template (fill with §Evidence snapshot values — do not invent numbers)
-  - [ ] Include machine-readable `status: PASS` line
-  - [ ] Document CI-pending follow-up per Epic 0 retro
-- [ ] Task 2 — Extend README spike gate section (AC: 4)
-  - [ ] Add **Spike gate** section with FAIL halt protocol + PASS unblock + `spike:gate` command
-- [ ] Task 3 — Implement `spike-gate.ts` + parser module (AC: 5, 8)
-  - [ ] Create `packages/render/src/golden/spike-gate.ts` with `parseSpikeStatus(markdown: string): "PASS" | "FAIL"` and `readSpikeResultStatus(path): "PASS" | "FAIL"`
-  - [ ] Create `packages/render/scripts/spike-gate.ts` thin CLI (exit codes + messages per AC)
-  - [ ] Create `packages/render/src/golden/spike-gate.test.ts`
-- [ ] Task 4 — Wire package script (AC: 6, 7)
-  - [ ] Add `"spike:gate"` to `packages/render/package.json`
-- [ ] Task 5 — Verification gate (AC: 9, 10)
-  - [ ] `bun run --filter @usetagih/render spike:gate` → exit 0
-  - [ ] Optional FAIL probe: temp edit `status: FAIL` → exit 1 with halt message → revert
-  - [ ] In-container `golden:check` + soak spot-check (or cite Story 1.8 recorded baselines if image unchanged)
-  - [ ] `bunx turbo run lint typecheck test build --force`
-  - [ ] Record verification in Dev Agent Record
+- [x] Task 1 — Author `SPIKE-RESULT.md` (AC: 1, 2, 3)
+  - [x] Create `packages/render/SPIKE-RESULT.md` from Dev Notes §SPIKE-RESULT.md template (fill with §Evidence snapshot values — do not invent numbers)
+  - [x] Include machine-readable `status: PASS` line
+  - [x] Document CI-pending follow-up per Epic 0 retro
+- [x] Task 2 — Extend README spike gate section (AC: 4)
+  - [x] Add **Spike gate** section with FAIL halt protocol + PASS unblock + `spike:gate` command
+- [x] Task 3 — Implement `spike-gate.ts` + parser module (AC: 5, 8)
+  - [x] Create `packages/render/src/golden/spike-gate.ts` with `parseSpikeStatus(markdown: string): "PASS" | "FAIL"` and `readSpikeResultStatus(path): "PASS" | "FAIL"`
+  - [x] Create `packages/render/scripts/spike-gate.ts` thin CLI (exit codes + messages per AC)
+  - [x] Create `packages/render/src/golden/spike-gate.test.ts`
+- [x] Task 4 — Wire package script (AC: 6, 7)
+  - [x] Add `"spike:gate"` to `packages/render/package.json`
+- [x] Task 5 — Verification gate (AC: 9, 10)
+  - [x] `bun run --filter @usetagih/render spike:gate` → exit 0
+  - [x] Optional FAIL probe: temp edit `status: FAIL` → exit 1 with halt message → revert
+  - [x] In-container `golden:check` + soak spot-check (or cite Story 1.8 recorded baselines if image unchanged)
+  - [x] `bunx turbo run lint typecheck test build --force`
+  - [x] Record verification in Dev Agent Record
 
 ## Dev Notes
 
@@ -334,19 +334,35 @@ packages/render/
 
 ### Agent Model Used
 
-_(filled by dev agent)_
+Composer 2.5 Fast
 
 ### Debug Log References
 
-_(filled by dev agent)_
+- container digest verified via `docker image inspect usetagih-render-ci:local --format '{{.Id}}'` → `sha256:fec59812849c6903f4d55d54e3778a02f6afbcf1a1a884d59940939a0dc7d21a` (matches Story 1.8 image; soak baselines cited from 1.8 Dev Agent Record)
 
 ### Completion Notes List
 
-_(filled by dev agent)_
+- authored `SPIKE-RESULT.md` with exact template section order, machine-readable `status: PASS`, local-container evidence, CI-pending note, 5-fixture manifest snapshot, soak baselines, escalation protocol
+- extended `README.md` with Spike gate (Epic 1 exit) section per AD-10
+- implemented `parseSpikeStatus` / `readSpikeResultStatus` parser + `spike-gate.ts` CLI with exit 0/1 messages per AC
+- added 7 unit tests covering PASS, FAIL, lowercase rejection, missing line/file
+- wired `spike:gate` script in `package.json`
+- verification 2026-07-20: `spike:gate` exit 0; FAIL probe exit 1 with halt message; `bun test packages/render` 161 pass; `turbo run lint typecheck test build --force` 36/36 tasks green
 
 ### File List
 
-_(filled by dev agent)_
+- packages/render/SPIKE-RESULT.md (new)
+- packages/render/README.md (modified)
+- packages/render/package.json (modified)
+- packages/render/scripts/spike-gate.ts (new)
+- packages/render/src/golden/spike-gate.ts (new)
+- packages/render/src/golden/spike-gate.test.ts (new)
+- _bmad-output/implementation-artifacts/1-9-spike-gate-documentation-and-board-escalation-protocol.md (modified)
+- _bmad-output/implementation-artifacts/sprint-status.yaml (modified)
+
+## Change Log
+
+- 2026-07-20: Epic 1 exit artifact — SPIKE-RESULT.md PASS gate, spike:gate CLI/parser, README escalation protocol
 
 ## Story Validation Record
 

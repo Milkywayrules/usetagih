@@ -22,7 +22,8 @@
 		"golden:render": "bun scripts/golden-render.ts",
 		"golden:check": "bun scripts/golden-check.ts",
 		"golden:soak": "bun scripts/golden-soak.ts",
-		"golden:update": "bun scripts/golden-check.ts --update"
+		"golden:update": "bun scripts/golden-check.ts --update",
+		"spike:gate": "bun scripts/spike-gate.ts"
 	},
 	"devDependencies": {
 		"@usetagih/config": "workspace:*",
