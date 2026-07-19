@@ -46,6 +46,7 @@ test("schema helper sources do not assign bare string error codes", () => {
 		"validation/validate-arithmetic.ts",
 		"document/document-type-mismatch.ts",
 		"validation/validate-document-payload.ts",
+		"validation/finding.ts",
 	];
 
 	const bareStringAssignment = /code:\s*"/;

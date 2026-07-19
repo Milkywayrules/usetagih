@@ -4,7 +4,7 @@ baseline_commit: f71cd845f5475b557f2c556cc0845652f50d6129
 
 # Story 2.3: Error codes enum and API error envelope types
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -408,7 +408,8 @@ Composer 2.5 Fast
 - `packages/schema/src/errors/envelope.ts` (new)
 - `packages/schema/src/errors/codes.test.ts` (new)
 - `packages/schema/src/errors/envelope.test.ts` (new)
-- `packages/schema/src/errors/bare-string-guard.test.ts` (new)
+- `packages/schema/src/errors/bare-string-guard.test.ts` (new; review: widened source audit)
+- `packages/render/src/preview.test.ts` (review: typst preview timeout flake fix)
 - `packages/schema/src/validation/codes.ts` (modified)
 - `packages/schema/src/validation/finding.ts` (modified)
 - `packages/schema/src/document/document-type-mismatch.ts` (modified)
@@ -420,3 +421,42 @@ Composer 2.5 Fast
 
 - 2026-07-20: story context created for error codes enum and API error envelope types (Story 2.3)
 - 2026-07-20: implemented canonical error codes enum, HTTP status map, API error envelope types, migration, and tests (Story 2.3)
+- 2026-07-20: code review approved — PRD §10.3 closed set verified; preview typst timeout flake fixed; bare-string guard widened
+
+## Senior Developer Review (AI)
+
+_Reviewer: code-review subagent on 2026-07-20_
+
+### Outcome
+
+**APPROVED** — canonical 13-code enum, HTTP 1:1 map, strict envelope/detail schemas, and seam re-exports match PRD §10.3; review fixes applied for typst preview timeout flake and bare-string guard coverage.
+
+### PRD §10.3 fidelity audit
+
+| Check | Result |
+| --- | --- |
+| Envelope shape `{ error: { code, message, requestId, details[] } }` | PASS — `ApiErrorEnvelopeSchema` + builder defaults `details` to `[]` |
+| Closed set count (13 codes) | PASS — matches story table exactly |
+| `400` codes: `INVALID_REQUEST`, `UNSUPPORTED_SCHEMA_VERSION`, `DOCUMENT_TYPE_MISMATCH` | PASS |
+| `401`/`403`: `UNAUTHORIZED`, `FORBIDDEN` | PASS |
+| `402` exclusive: `QUOTA_EXCEEDED` | PASS |
+| `404`: `NOT_FOUND` | PASS |
+| `409`: `IDEMPOTENCY_CONFLICT` | PASS |
+| `422`: `VALIDATION_FAILED`, `LINE_TOTAL_MISMATCH`, `TAX_TOTAL_MISMATCH` | PASS |
+| `429` exclusive: `RATE_LIMITED` | PASS |
+| `500`: `INTERNAL_ERROR` | PASS |
+| `RENDER_TIMEOUT` excluded (§10.5 webhook) | PASS — not in enum |
+| `INVALID_TEMPLATE` folded into `INVALID_REQUEST` (FR-6) | PASS — no separate code |
+
+### Single-source-of-truth grep
+
+Production literals confined to `packages/schema/src/errors/codes.ts`. `validation/codes.ts` and `document/document-type-mismatch.ts` are pure re-exports. Test files hardcode literals for contract pinning (acceptable). No stray literals in `packages/schema/src` outside `errors/codes.ts`.
+
+### Flaky test adjudication
+
+First `--force` turbo run: 1 fail — `pagination fixture preview has three pages matching PDF page count` hit bun default 5000ms timeout (~15s under parallel typst load). **Not** the same race as `0b3bd18` (temp-dir glob isolation); resource contention / marginal timeout. Fix: 30s timeout on typst preview tests in `preview.test.ts`. Re-run: 36/36 tasks green.
+
+### Review fixes applied
+
+- `packages/render/src/preview.test.ts` — 30s timeout for typst preview tests
+- `packages/schema/src/errors/bare-string-guard.test.ts` — added `validation/finding.ts` to source audit list

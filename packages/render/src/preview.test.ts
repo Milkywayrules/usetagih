@@ -12,7 +12,12 @@ const BASIC_FIXTURE = "invoice-modern-basic";
 const PAGINATION_FIXTURE = "invoice-modern-pagination-25";
 
 const typstAvailable = existsSync(resolveTypstBinaryPath());
-const previewTest = typstAvailable ? test : test.skip;
+/** Pagination preview compiles 3 SVG pages; default 5s bun timeout flakes under parallel turbo load. */
+const TYPST_PREVIEW_TEST_TIMEOUT_MS = 30_000;
+const previewTest = typstAvailable
+	? (name: string, fn: () => void | Promise<void>) =>
+			test(name, fn, TYPST_PREVIEW_TEST_TIMEOUT_MS)
+	: test.skip;
 
 function manifestEntry(fixture: string, tier: string) {
 	const manifest = loadManifest(MANIFEST_PATH);
