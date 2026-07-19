@@ -144,7 +144,7 @@ On `POST /v1/{type}/render` success:
 
 - `Alert` `color="green"`: "Render complete"
 - `Button` `{components.button-render}`: Download PDF → `GET /v1/renders/{renderId}/download`
-- `CopyButton` + `TextInput` readOnly: share URL from response `pdfUrl`
+- `CopyButton` + `TextInput` readOnly: share URL from response `shareUrl`
 - `Anchor`: View in history → `/app/documents/{renderId}`
 
 ### Data tables
@@ -160,7 +160,7 @@ Server-side pagination: `page`/`pageSize` query params matching API defaults (20
 ### API key create flow
 
 1. `Button` "Create key" opens `Modal`
-2. Form: `TextInput` name, `Checkbox.Group` scopes (`documents:read`, `documents:write`, `render:write`, `webhooks:manage`), optional `DateInput` expiry
+2. Form: `TextInput` name, `Checkbox.Group` scopes (`renders:read`, `renders:write`, `webhooks:manage`, `audit:read`), optional `DateInput` expiry
 3. Submit → `POST /v1/api-keys` (endpoint per architecture; scopes per FR-22)
 4. Success modal replaces content: show-once `Code` block with full secret, `CopyButton`, `Alert` "This secret won't be shown again"
 5. Close → list refreshes
@@ -261,7 +261,7 @@ Desktop-primary aligns with UJ-1 (Maya at laptop) and embed integrators testing 
 - Payment status badges (Paid / Unpaid / Overdue)
 - Drag-and-drop template editor
 - Visual JSON editor as primary input (form-first; JSON import deferred post-MVP)
-- Diagonal free-tier watermark (use subtle PDF footer bar per `[ASSUMPTION]`)
+- Diagonal free-tier watermark (resolved: single footer line per PRD OQ-2)
 
 ## API Action Map
 
@@ -569,14 +569,14 @@ sequenceDiagram
   UI-->>M: Field error on grandTotal
   M->>UI: Correct total
   UI->>API: POST /v1/invoices/render
-  API-->>UI: renderId, pdfUrl
+  API-->>UI: renderId, shareUrl
   UI-->>M: Download + copy link
 ```
 
 ### Flow 2 — Alex verifies API key UX (UJ-2 web parallel)
 
 1. Alex signs in, navigates to `SCR-API-KEYS`.
-2. Creates key with scopes `render:write`, `documents:read`.
+2. Creates key with scopes `renders:write`, `renders:read`.
 3. Show-once secret copied; modal closed.
 4. Checks `SCR-AUDIT-LOG`: "api_key.created" event present.
 5. (Embed work happens outside web UI via REST.)
@@ -622,7 +622,7 @@ TextInput label="Grand total"
 
 | Tag | Item | Resolution |
 |---|---|---|
-| `[ASSUMPTION]` | Free-tier watermark: subtle PDF footer bar | Pending product confirmation (PRD OQ-2) |
+| `[RESOLVED]` | Free-tier watermark: single footer line "Rendered with usetagih · usetagih.com" | PRD §11 OQ-2 — never diagonal; removed at Embed Pro+ (white-label) |
 | `[ASSUMPTION]` | Share link default TTL 90 days shown in UI | Per PRD FR-19 |
 | `[ASSUMPTION]` | `POST /v1/api-keys` and settings endpoints follow architecture doc naming | Exact paths may vary; behavior locked |
 | `[NOTE]` | Webhooks API-only | No UI at MVP |
@@ -633,7 +633,7 @@ TextInput label="Grand total"
 
 1. **Shared Zod package:** Form, SDK, and API must import the same `@usetagih/schema` package — UI error codes match server 1:1.
 2. **Preview transport:** Decide HTML string vs signed preview URL in architecture; UI supports iframe either way.
-3. **Branding injection:** Settings values merge into render payload server-side — web app sends branding profile ID, not raw logo bytes on every render.
+3. **Branding injection:** Account branding stored via settings (`PATCH /v1/settings/branding`); server-side merge at render. Optional per-payload `branding` override takes precedence (PRD §10.1, Story 3.16). Web app does not send raw logo bytes on every render.
 4. **Idempotency in web UI:** Generate one `Idempotency-Key` per user export click; store with render record to prevent double-click duplicates.
 5. **Share route vs API:** Public page may be SSR/edge route that calls internal resolver — still backed by public share contract, no auth bypass of validation.
 6. **mantine-datatable:** Add as explicit dependency in web package; pin version compatible with Mantine v8.

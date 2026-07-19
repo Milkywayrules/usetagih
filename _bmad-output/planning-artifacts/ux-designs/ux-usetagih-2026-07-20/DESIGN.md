@@ -274,7 +274,7 @@ Mantine v8 components used as-is unless noted. Brand overrides apply via Mantine
 | Show validation paths in `{typography.mono}` adjacent to field labels | Silently correct financial values in the UI |
 | Label surfaces "Documents", "Renders", "History" — artifact language | Label surfaces "Invoices", "Clients", "Payments" as primary nav |
 | Preview frame shows exact template output | Show a simplified wireframe that diverges from PDF |
-| Free-tier watermark as subtle footer bar in PDF only | Block web UI features behind payment walls at MVP |
+| Free-tier PDF footer line "Rendered with usetagih · usetagih.com" (never diagonal); removed at Embed Pro+ | Block web UI features behind payment walls at MVP |
 | Map every action to a documented REST endpoint | Imply server-side bypass of validation |
 | Use `DataTable` with sortable columns for history/audit | Build custom table markup |
 | English-only labels per MVP scope | Add locale switcher |
