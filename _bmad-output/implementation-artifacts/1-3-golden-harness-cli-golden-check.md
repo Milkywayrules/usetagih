@@ -4,7 +4,7 @@ baseline_commit: 9557386
 
 # Story 1.3: Golden harness CLI (`golden:check`)
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -112,7 +112,7 @@ Deliver the **golden harness CLI** that turns Story 1.2's single fixture + hash 
 {
   "id": "invoice-modern-basic",
   "payload": "__fixtures__/payloads/invoice-modern-basic.json",
-  "template": "../../templates/invoice/modern.typ",
+  "template": "../templates/invoice/modern.typ",
   "sha256": "b11be4533d38f525326164b530a143bd71270440dc4b98f42cec426f2d3a105c",
   "typstVersion": "0.15.1",
   "schemaVersion": "2026-07-20",
@@ -441,7 +441,7 @@ Composer 2.5 (implementation subagent)
 
 ### Debug Log References
 
-- Story 1.2 manifest `template` path (`../../templates/...`) resolves one level too high from `packages/render/`; `resolveTemplatePath()` normalizes to `../templates/...` when direct path missing.
+- Story 1.2 manifest `template` path was wrong (`../../templates/...` resolves above `packages/`); corrected in `manifest.json` during review; `render-fixture.ts` now hard-fails on missing template paths.
 
 ### Completion Notes List
 
@@ -470,6 +470,15 @@ Composer 2.5 (implementation subagent)
 ### Change Log
 
 - 2026-07-20: Story 1.3 — golden harness CLI (`golden:check`, `golden:update`, `golden:soak`, `golden:render`) with manifest-driven render helper and pure unit tests.
+- 2026-07-20: Code review approved — manifest template path corrected; silent path normalization removed.
+
+### Code Review Record
+
+- **Reviewed:** 2026-07-20 against commit `e6c8dfe` (+ fix commits below)
+- **Verdict:** APPROVED
+- **Priority adjudication:** removed `resolveTemplatePath()` silent `../../` → `../` fallback; corrected `manifest.json` `template` to `../templates/invoice/modern.typ`; golden hash unchanged (`b11be453…105c`)
+- **Findings noted (low, accepted):** `golden:update` always prints warning banner even when manifest/`.sha256` bytes unchanged; `sha256Buffer` duplicated with pre-existing test/smoke helpers (not golden-only duplication)
+- **Verification:** `golden:check` exit 0; corrupt `.sha256` drift report exit 1; restore exit 0; `golden:soak --iterations 5` identical hashes; `golden:update` byte-identical no-op; `bun test packages/render` 38 pass; turbo 36/36 `--force`
 
 ### Story Validation Record
 
