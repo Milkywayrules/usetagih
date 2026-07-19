@@ -22,22 +22,22 @@ Operational and implementation detail for agents building from `ARCHITECTURE-SPI
 | Bun monorepo | Dev via Bun; prod Node standalone (acceptable) | Native Bun runtime |
 | Share page SSR | App Router SSR for `/share/[token]` | Supported via TanStack Start SSR |
 
-**Decision:** Next.js 15 App Router. The web app is a thin Mantine consumer of the public REST API; Mantine's first-class Next integration and Coolify deployment path outweigh TanStack Start's Bun-native runtime for this workload.
+**Decision:** Next.js 15 App Router (latest maintained 15.x patch pinned in root `package.json`). The web app is a thin Mantine consumer of the public REST API; Mantine's first-class Next integration and Coolify deployment path outweigh TanStack Start's Bun-native runtime for this workload.
 
-### 1.2 PDF Engine: Typst CLI 0.13.x
+### 1.2 PDF Engine: Typst CLI 0.15.x
 
-| Criterion | Typst | Playwright print-to-PDF | @react-pdf/renderer |
+| Criterion | Typst 0.15.x | Playwright print-to-PDF | @react-pdf/renderer |
 | --- | --- | --- | --- |
-| Byte-identical (FR-7) | Yes with pinned fonts + `SOURCE_DATE_EPOCH` | No — metadata/timestamps vary | No — known non-deterministic bytes |
+| Byte-identical (FR-7) | Yes with pinned fonts, `#set document(date: none)`, `SOURCE_DATE_EPOCH` (pre-0.15 Typst leaked local timezone even with epoch — fixed in 0.15.0) | No — metadata/timestamps vary | No — known non-deterministic bytes |
 | NFR-1 P95 ≤2s | 5–50ms compile warm | 1–5s+ cold Chromium | ~100–500ms |
 | 12 GB VPS memory | ~40 MB binary, no browser pool | 200–400 MB per Chromium | Moderate |
 | Pagination (FR-8) | Native paged media | CSS print quirks | Known pagination bugs |
 | Template DX (6 templates) | `.typ` + JSON `--input` | HTML/CSS React components | JSX layout components |
 | Preview = same engine (FR-10) | Compile same `.typ` → SVG pages | Same HTML | N/A for preview |
 
-**Decision:** Typst CLI with vendored fonts in `packages/render/fonts/`. Preview endpoint returns `text/html` wrapping Typst-compiled SVG (multi-page via `<div class="page">` per SVG). PDF path runs `typst compile` with identical template + input JSON.
+**Decision:** Typst CLI **0.15.x** with exact patch pinned in `packages/render/typst-version.txt`; binary checksum and `Dockerfile.render-ci` container digest recorded in `manifest.json`. Vendored fonts in `packages/render/fonts/`. Shared preamble (`packages/templates/_shared/preamble.typ`) includes `#set document(date: none)` alongside fixed `SOURCE_DATE_EPOCH`. Always `--ignore-system-fonts`. Preview endpoint returns multi-page SVG compiled from the same `.typ` (see §4.2). PDF path runs `typst compile` with identical template + input JSON.
 
-**Rejected Chromium:** Memory footprint and byte-instability on shared VPS violate FR-7/NFR-1 unless accepting pixel-golden fallback (deferred).
+**Rejected Chromium:** Memory footprint and byte-instability on shared VPS violate FR-7/NFR-1. No pixel-golden fallback — FR-7 is byte-identical PDF only; spike failure reopens engine decision at board.
 
 **Rejected @react-pdf:** Non-deterministic PDF bytes and pagination instability at 25+ line items fail FR-7/FR-8 gates.
 
@@ -61,13 +61,19 @@ Operational and implementation detail for agents building from `ARCHITECTURE-SPI
 | 7 | CI Docker image | `docker/Dockerfile.render-ci` |
 | 8 | CI workflow | `.github/workflows/pdf-golden.yml` |
 
-### 2.2 Spike Acceptance Criteria
+### 2.2 Spike Acceptance Criteria (all blocking)
 
-- [ ] `bun run golden:check` exits 0 locally and in CI Docker
-- [ ] Re-run produces identical SHA-256 (byte-stable)
+Failure on **any** criterion reopens the engine decision at the board before any further template is authored — no silent Chromium fallback.
+
+- [ ] `bun run golden:check` exits 0 in CI Docker (`Dockerfile.render-ci` amd64 image)
+- [ ] Re-run produces identical SHA-256 in CI Docker (byte-stable)
 - [ ] Footer watermark renders for `tier=free` flag in template input
-- [ ] 25-line-item pagination fixture added as stretch (not blocking spike merge if ≤5 passes)
-- [ ] Documented Typst version pin in `packages/render/typst-version.txt`
+- [ ] **25-line-item pagination fixture (FR-8)** — `invoice-modern-pagination-25.json` + golden hash; blocking
+- [ ] **Logo determinism fixture** — fetch once, persist immutable bytes + checksum on render record, render from persisted bytes; cover PNG, JPEG, SVG
+- [ ] **Multi-page SVG preview** — same `.typ` fixture compiled with `--format svg` (one file per page); page count matches PDF; naming, ordering, cleanup, response shape, and SVG sanitization documented and tested
+- [ ] **Determinism soak** — `golden:check` ≥100 consecutive iterations in CI Docker with zero hash drift
+- [ ] Shared preamble includes `#set document(date: none)` + fixed `SOURCE_DATE_EPOCH`
+- [ ] Typst version pin in `packages/render/typst-version.txt` (0.15.x exact patch); binary checksum + container digest in manifest
 
 ### 2.3 Spike → Production Path
 
@@ -98,18 +104,21 @@ packages/render/__fixtures__/
 
 | Check | Policy |
 | --- | --- |
-| Primary | SHA-256 byte equality of PDF bytes |
-| Date fields | Fixed `issuedAt` in fixtures; `SOURCE_DATE_EPOCH=1700000000` in CI |
+| Primary (authoritative) | SHA-256 byte equality of PDF bytes **only** inside pinned `Dockerfile.render-ci` image (linux/amd64) |
+| Local dev / other platforms | `golden:check` is **advisory** — upstream float/platform variance (typst/typst#7683) may differ; CI Docker is contract |
+| Date fields | Fixed `issuedAt` in fixtures; `SOURCE_DATE_EPOCH=1700000000` in CI; preamble `#set document(date: none)` |
 | Fonts | `--ignore-system-fonts`; only `packages/render/fonts/` |
-| Typst version | Pinned in Docker CI image; bump requires manifest update |
-| Logo URLs | Fixtures use embedded base64 logo in JSON or local `file://` stub — no network in CI |
+| Typst version | 0.15.x exact patch in `typst-version.txt`; binary checksum + container digest in `manifest.json`; bump requires manifest update |
+| Logo URLs | Production: fetch once with SSRF hardening, persist bytes + checksum; fixtures use embedded base64 or local stub — no network in CI |
 | Failure | CI blocks merge; update golden via PR labeled `golden-update` + visual diff attachment |
+| **Not acceptable** | Pixel-golden or PNG snapshot fallback for FR-7 — byte-identical PDF only |
 
 ### 3.3 Font Pinning
 
 - **UI fonts (web):** Inter, JetBrains Mono via `@fontsource` or Google Fonts link — unrelated to PDF determinism
 - **PDF fonts:** vendored TTF/OTF in `packages/render/fonts/` referenced in `preamble.typ` via `#set text(font: "...")`
-- **CI reproducibility:** `docker/Dockerfile.render-ci` FROM `debian:bookworm-slim` + pinned Typst `.deb` + copy fonts; no system font packages
+- **Preamble determinism:** `packages/templates/_shared/preamble.typ` must include `#set document(date: none)` alongside font/color setup
+- **CI reproducibility:** `docker/Dockerfile.render-ci` FROM `debian:bookworm-slim` + pinned Typst 0.15.x `.deb` (checksum verified) + copy fonts; record image digest in `manifest.json`; no system font packages
 
 ### 3.4 Harness Commands
 
@@ -118,6 +127,7 @@ packages/render/__fixtures__/
 {
   "golden:render": "bun scripts/render-fixture.ts",
   "golden:check": "bun scripts/golden-check.ts",
+  "golden:soak": "bun scripts/golden-soak.ts",
   "golden:update": "bun scripts/golden-check.ts --update"
 }
 ```
@@ -142,6 +152,7 @@ jobs:
       - checkout
       - run: bun install --frozen-lockfile
       - run: bun run --filter @usetagih/render golden:check
+      - run: bun run --filter @usetagih/render golden:soak --iterations 100
     env:
       SOURCE_DATE_EPOCH: "1700000000"
       TYPST_IGNORE_SYSTEM_FONTS: "1"
@@ -184,8 +195,8 @@ sequenceDiagram
 1. **Authenticate** — API key or session-derived token; scope check
 2. **Idempotency** — lookup `idempotency_keys` table; return cached response if hit
 3. **Validate** — Zod parse + business rules (§10.1 arithmetic)
-4. **Resolve branding** — merge account defaults + payload override; fetch `logoUrl` once, store checksum on render record
-5. **Render** — build Typst input JSON; invoke `typst compile --input json=<path>`
+4. **Resolve branding** — merge account defaults + payload override; logo pipeline (see §4.4)
+5. **Render** — build Typst input JSON; invoke `typst compile --input json=<path>` (from persisted logo bytes when applicable)
 6. **Store** — upload R2; insert/update `renders` row with `sha256`, `byteSize`, `r2Key`
 7. **Share URL** — sign JWT/HMAC token with expiry
 8. **Webhook** — if registered, enqueue delivery job
@@ -195,20 +206,58 @@ sequenceDiagram
 
 `POST /v1/{documentType}/preview`:
 
-- Same validate + branding resolve
-- `typst compile --format svg` (or multi-page SVG set)
-- Return `{ html: "<div>...</div>", valid: true }` wrapping SVGs
-- No R2 persist; no render record (ephemeral)
+- Same validate + branding resolve (persisted logo bytes)
+- `typst compile --format svg` on the **same** `.typ` template as PDF — one SVG file per page
+- **Output naming:** `{renderTempDir}/page-{n}.svg` (1-indexed, zero-padded to page count width)
+- **Ordering:** pages sorted ascending by index; response `pages[]` mirrors PDF page order
+- **Page count:** must match PDF page count for identical input (acceptance test in spike)
+- **Cleanup:** temp SVG dir removed in `finally` block; no R2 persist
+- **Response shape:**
+
+```json
+{
+  "valid": true,
+  "pageCount": 2,
+  "pages": [
+    { "index": 1, "svg": "<svg>...</svg>" }
+  ],
+  "html": "<div class=\"page\" data-page=\"1\">...</div>"
+}
+```
+
+- **SVG sanitization:** strip `<script>`, event handlers, external references, and `foreignObject`; reject if active content remains
+- No render record (ephemeral); no share URL
 
 ### 4.3 Free-Tier Watermark
 
 Typst template receives `showWatermark: boolean` from account tier. Footer text: `Rendered with usetagih · usetagih.com` at 8pt gray when true.
+
+### 4.4 Logo Ingestion (SSRF-hardened)
+
+Logo fetch occurs **once** at first use per distinct URL; subsequent renders use persisted immutable bytes + checksum on the render record.
+
+| Control | Requirement |
+| --- | --- |
+| SSRF | Block private/link-local IP ranges; resolve-then-connect with IP pinning against DNS rebinding |
+| Redirects | Cap at 3; reject non-HTTPS after first hop |
+| Size | Max 2 MB raw; max 10 MB decompressed |
+| Content-Type | Allow `image/png`, `image/jpeg`, `image/svg+xml` only; sniff magic bytes |
+| Decompression bomb | Limit expansion ratio; abort on zip/gzip bombs in SVG |
+| SVG active content | Strip/reject `<script>`, event handlers, external refs, `foreignObject` |
+| Storage | Persist bytes + SHA-256 checksum on `renders.logo_checksum` + object key; Typst reads local path only |
+| Determinism | Re-render from persisted bytes — never re-fetch mid-idempotency window |
+
+Fixtures in CI use embedded base64 logos — no network fetch in golden tests.
 
 ---
 
 ## 5. Async Job / Queue Mechanism
 
 **Choice:** `pg-boss` on existing PostgreSQL — no Redis.
+
+**Deployment:** Worker runs as a **separate process/container** from API, same Docker image, different entrypoint (`worker.ts`). Requires integration test proving Bun compatibility + graceful shutdown (SIGTERM drains in-flight jobs within 30s).
+
+**Idempotency:** All job handlers must be idempotent — pg-boss at-least-once delivery means crash-after-side-effect duplicates are possible. Use render status checks, delivery attempt IDs, and conditional updates.
 
 | Job type | Payload | Concurrency |
 | --- | --- | --- |
@@ -274,7 +323,8 @@ usetagih/
 │   │   ├── invoice/{modern,classic}.typ
 │   │   ├── quotation/{modern,classic}.typ
 │   │   ├── receipt/{modern,classic}.typ
-│   │   └── _shared/preamble.typ
+│   │   ├── _shared/preamble.typ
+│   │   └── CONTRIBUTING.md           # prerequisite before parallel template stories merge
 │   ├── sdk/
 │   │   ├── src/client.ts             # validateLocally, render, types
 │   │   └── package.json              # name: @usetagih/sdk
@@ -307,19 +357,21 @@ flowchart BT
   db[db]
   render[render]
   templates[templates]
-  core[core]
+  core[core ports + use-cases]
   sdk[sdk]
-  api[api]
+  api[api composition root]
   web[web]
   core --> schema
-  core --> db
-  core --> render
   render --> templates
-  sdk --> schema
   api --> core
+  api --> db
+  api --> render
   api --> schema
+  sdk --> schema
   web --> sdk
 ```
+
+`packages/core` depends on `packages/schema` only. `apps/api` wires Drizzle repos (`packages/db`), Typst driver (`packages/render`), R2, and pg-boss to core ports.
 
 ---
 
@@ -432,6 +484,8 @@ Prod uses Cloudflare R2 endpoint without path-style forcing.
 | `openapi` | Spectral validate generated OpenAPI |
 | `build` | `turbo build` |
 | `e2e` | Playwright against docker compose stack (postgres, minio, api, web) |
+| `worker-integration` | pg-boss Bun compatibility + graceful shutdown (SIGTERM drain) |
+| `docker-push` | On `main` merge: build + push `ghcr.io/verasic-labs/usetagih-api`, `usetagih-web`, `usetagih-render-ci` |
 
 ### 10.2 Bun in CI
 
@@ -454,7 +508,8 @@ flowchart TB
   subgraph vps [Contabo VPS 6c/12GB]
     COOL[Coolify]
     WEB[app.usetagih.com web]
-    API[api.usetagih.com api+worker]
+    API[api.usetagih.com api]
+    WORKER[worker container]
     PG[(PostgreSQL 16)]
     UM[umami.usetagih.com]
   end
@@ -465,9 +520,12 @@ flowchart TB
   CF --> UM
   WEB --> API
   API --> PG
+  WORKER --> PG
   API --> R2
+  WORKER --> R2
   COOL --> WEB
   COOL --> API
+  COOL --> WORKER
   COOL --> PG
   COOL --> UM
 ```
@@ -477,24 +535,33 @@ flowchart TB
 | Resource | Domain | Notes |
 | --- | --- | --- |
 | `usetagih-web` | `app.usetagih.com` | Next.js standalone |
-| `usetagih-api` | `api.usetagih.com` | Elysia compiled binary + worker same image, `worker` command variant |
+| `usetagih-api` | `api.usetagih.com` | Elysia compiled binary |
+| `usetagih-worker` | internal | Same image as API; `worker.ts` entrypoint; separate Coolify resource |
 | `usetagih-postgres` | internal | Persistent volume 20 GB |
 | `usetagih-umami` | `analytics.usetagih.com` | Optional MVP-launch |
 
 ### 11.2 Deploy Flow
 
 1. Push to `main` → GitHub Actions build + test
-2. Coolify webhook builds Docker images from `apps/*/Dockerfile`
-3. Pre-deploy: `bun run --filter @usetagih/db migrate`
-4. Health checks: `GET /health` on API, `/` on web
-5. Doppler sync injects secrets into Coolify env
+2. GitHub Actions builds Docker images (`Dockerfile.api`, `Dockerfile.web`, `Dockerfile.render-ci`) and pushes to **GHCR** (`ghcr.io/verasic-labs/usetagih-*`)
+3. Coolify **pulls prebuilt images** from GHCR — never builds on the production VPS (competes with render traffic, threatens NFR budgets)
+4. Pre-deploy: `bun run --filter @usetagih/db migrate`
+5. Health checks: `GET /health` on API, `/` on web
+6. Doppler sync injects secrets into Coolify env
 
-### 11.3 Resource Budget (12 GB)
+### 11.3 Launch Readiness (blocking before prod traffic)
+
+- [ ] External uptime monitoring on `api.usetagih.com` and `app.usetagih.com`
+- [ ] Container restart policies configured (`unless-stopped` or Coolify equivalent) for api, worker, web, postgres
+- [ ] One successful Postgres restore drill documented and executed (`docs/runbooks/restore-postgres.md`)
+
+### 11.4 Resource Budget (12 GB)
 
 | Process | Memory cap |
 | --- | --- |
 | PostgreSQL | 2 GB |
-| API + worker | 1.5 GB |
+| API | 768 MB |
+| Worker | 768 MB |
 | Web | 512 MB |
 | umami + its PG | 512 MB |
 | Typst renders | ephemeral ≤256 MB each, max 2 concurrent |
@@ -531,8 +598,9 @@ Required fields on render path:
 | `usetagih_render_duration_seconds` | histogram |
 | `usetagih_webhook_deliveries_total` | counter by outcome |
 | `usetagih_validation_failures_total` | counter by error_code |
+| `usetagih_queue_depth` | gauge by job type (`render.process`, `webhook.deliver`) |
 
-MVP: export via structured logs + manual dashboards; add Prometheus exporter post-launch if needed.
+MVP: export via structured logs + manual dashboards; alert when `render.process` or `webhook.deliver` queue depth exceeds threshold (e.g. >50 for 5 min). Add Prometheus exporter post-launch if needed.
 
 ### 12.3 umami Analytics
 
@@ -549,7 +617,7 @@ MVP: export via structured logs + manual dashboards; add Prometheus exporter pos
 | Full backup | Daily 03:00 UTC via `pg_dump` cron on VPS |
 | Retention | 7 daily, 4 weekly (copy to R2 `backups/postgres/`) |
 | R2 artifacts | Versioning off; artifacts reproducible from payload if retained metadata exists — backup optional |
-| Restore drill | Document in `docs/runbooks/restore-postgres.md`; test quarterly |
+| Restore drill | Document in `docs/runbooks/restore-postgres.md`; **one successful drill required before launch**; test quarterly thereafter |
 | Encryption | R2 backup objects SSE-S3; dumps gzip |
 
 ---
@@ -568,7 +636,8 @@ MVP: export via structured logs + manual dashboards; add Prometheus exporter pos
 ## 15. Web App Integration Notes
 
 - **Auth:** better-auth mounted at `apps/api` `/api/auth/*`; web redirects via `BETTER_AUTH_URL`
-- **API client:** `@usetagih/sdk` in browser with session token exchange endpoint `POST /v1/session/token` (returns short-lived Bearer for API calls) — still hits same auth layer as API keys
+- **Session token exchange (auth epic story):** `POST /v1/session/token` — issues short-lived (≤15 min), audience-bound Bearer tokens with CSRF protection (double-submit cookie or SameSite + custom header). Scopes of session-derived tokens must be exactly equivalent to API-key scopes; scope-parity acceptance test matrix required. No browser-exposed session→Bearer bridge; no internal route may skip idempotency (AD-5) or audit (AD-7).
+- **API client:** `@usetagih/sdk` in browser calls public API with exchanged Bearer token
 - **Share page:** Next.js `app/share/[token]/page.tsx` calls `GET /v1/share/{token}` public endpoint
 - **Theme:** port `DESIGN.md` YAML tokens to `apps/web/theme/tokens.ts` → Mantine `createTheme`
 - **Playwright e2e:** `apps/web/e2e/uj1-invoice-export.spec.ts` per FR-29
@@ -588,14 +657,14 @@ MVP: export via structured logs + manual dashboards; add Prometheus exporter pos
 
 | Risk | Severity | Epic impact |
 | --- | --- | --- |
-| Typst byte-stability edge case (logo fetch, float) | High | Epic-1 spike must fail fast; fallback plan: pixel PNG golden |
-| Typst template authoring velocity (6 templates) | Medium | Parallelize templates epic after spike; shared preamble |
+| Typst byte-stability edge case (logo fetch, float) | High | Epic-1 spike must pass all blocking criteria; failure reopens engine decision at board — no pixel fallback |
+| Typst template authoring velocity (6 templates) | Medium | `packages/templates/CONTRIBUTING.md` prerequisite before parallel template stories; shared preamble |
 | Next.js + Bun monorepo friction | Low | Use Node for Next prod build in Docker only |
-| pg-boss load on Postgres | Low | Monitor; acceptable for MVP volume |
-| Logo URL fetch breaks determinism | High | AD: checksum fetched bytes on render record; reject changed logo mid-idempotency |
+| pg-boss load on Postgres | Low | Monitor queue depth; acceptable for MVP volume |
+| Logo URL fetch breaks determinism | High | SSRF-hardened pipeline; checksum persisted bytes on render record; reject changed logo mid-idempotency |
 | 10s sync timeout with large payloads | Medium | Async path + clear `RENDER_TIMEOUT` error code |
 | Single VPS outage = full downtime | Medium | Accept for 99.5% MVP; document HA as post-MVP |
-| Web session → API token bridge complexity | Medium | Dedicated story in auth epic; must not bypass scopes |
+| Web session → API token exchange complexity | Medium | Dedicated story in auth epic; scope-parity matrix; must not bypass idempotency or audit |
 
 ---
 

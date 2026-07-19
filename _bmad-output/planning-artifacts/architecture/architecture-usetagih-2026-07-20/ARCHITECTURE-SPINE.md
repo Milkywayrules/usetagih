@@ -23,7 +23,7 @@ companions:
 
 ## Design Paradigm
 
-**Hexagonal (ports-and-adapters).** The product core — canonical Zod contract + deterministic render pipeline — lives in `packages/schema` and `packages/render` with zero knowledge of HTTP, UI, or storage drivers. Adapters (`apps/api`, `apps/web`, future `apps/mcp`) call inward through typed application services in `packages/core`. Infrastructure (Drizzle repos, R2 client, Typst subprocess, webhook dispatcher) implements outbound ports.
+**Hexagonal (ports-and-adapters).** The product core — canonical Zod contract + deterministic render pipeline — lives in `packages/schema` and `packages/core` with zero knowledge of HTTP, UI, or storage drivers. `packages/core` defines outbound ports (repos, artifact store, queue, render driver); it must **not** depend directly on `packages/db` or `packages/render`. `apps/api` is the **composition root** wiring port implementations to adapters (Drizzle repos, R2 client, Typst subprocess, pg-boss). `apps/web` and future `apps/mcp` call inward through the public REST API only.
 
 ```mermaid
 flowchart TB
@@ -46,12 +46,12 @@ flowchart TB
   WEB -->|public REST only| API
   MCP -.->|v1.1| API
   API --> CORE
+  API --> REN
+  API --> PG
+  API --> R2
   CORE --> SCH
-  CORE --> REN
   REN --> TPL
   REN --> TYP
-  CORE --> PG
-  CORE --> R2
 ```
 
 ## Invariants & Rules
@@ -66,19 +66,19 @@ flowchart TB
 
 - **Binds:** FR-11..FR-17, FR-28..FR-30; UX architecture constraint
 - **Prevents:** Web app or MCP implementing render/validation logic outside the API
-- **Rule:** `apps/web` calls the same public REST endpoints as integrators (`Authorization: Bearer` session-derived token or cookie-proxied API token). No internal-only routes that skip validation, idempotency, or audit. MCP (v1.1) is a thin HTTP client wrapper — max 5 tools, zero render logic.
+- **Rule:** `apps/web` calls the same public REST endpoints as integrators. Browser sessions obtain API access via `POST /v1/session/token` (short-lived ≤15 min, audience-bound Bearer with CSRF protection) — never a browser-exposed session→Bearer bridge. No internal-only routes that skip validation (AD-5), idempotency, or audit (AD-7). MCP (v1.1) is a thin HTTP client wrapper — max 5 tools, zero render logic.
 
 ### AD-3 — Deterministic render via Typst
 
 - **Binds:** FR-6..FR-9, FR-7, NFR-1, NFR-6; SM-1, SM-3
 - **Prevents:** Byte drift from browser engines; OOM from headless Chromium on 12 GB VPS
-- **Rule:** PDF output uses Typst CLI with pinned font bundle, `--ignore-system-fonts`, fixed `SOURCE_DATE_EPOCH`, and version-pinned Typst binary in Docker. Preview compiles the **same** `.typ` template to SVG (or embeds generated PDF) — never a separate HTML layout engine. Golden-file CI compares SHA-256 of PDF bytes; intentional drift requires fixture PR + visual review.
+- **Rule:** PDF output uses Typst CLI **0.15.x** (exact patch pinned in `packages/render/typst-version.txt`; binary checksum + container digest recorded in `manifest.json`). Shared preamble (`packages/templates/_shared/preamble.typ`) sets `#set document(date: none)` alongside fixed `SOURCE_DATE_EPOCH`. Always pass `--ignore-system-fonts`; vendored fonts only. Preview compiles the **same** `.typ` template to SVG — never a separate HTML layout engine or silent Chromium fallback. SHA-256 golden hashes are authoritative only inside the pinned `Dockerfile.render-ci` image (amd64); local `golden:check` on other platforms is advisory (upstream float/platform variance, typst/typst#7683). FR-7 is byte-identical PDF — no pixel-golden fallback. Intentional drift requires fixture PR labeled `golden-update`.
 
 ### AD-4 — Sync/async render contract
 
 - **Binds:** FR-12, FR-24, FR-26; PRD §10.2, §11 OQ-3
 - **Prevents:** Ad-hoc background threads; unbounded sync blocking
-- **Rule:** ≤100 line items + completes within 10s → sync `201`. Else `202` (`>100` items, timeout, or `Prefer: respond-async`). Hard cap 500 line items at validation. Async work enqueued to Postgres-backed job queue; worker process co-located with API container on VPS.
+- **Rule:** ≤100 line items + completes within 10s → sync `201`. Else `202` (`>100` items, timeout, or `Prefer: respond-async`). Hard cap 500 line items at validation. Async work enqueued to Postgres-backed job queue (`pg-boss`); worker runs as a **separate process/container** from the same image as API (not in-process). Job handlers must be idempotent (pg-boss at-least-once delivery).
 
 ### AD-5 — Idempotency and financial integrity
 
@@ -96,7 +96,7 @@ flowchart TB
 
 - **Binds:** FR-21..FR-23, FR-27; NFR-5, NFR-11
 - **Prevents:** Plaintext key storage; cross-tenant leakage
-- **Rule:** better-auth for web sessions (email/password + GitHub OAuth). API keys scoped (`renders:read`, `renders:write`, `webhooks:manage`, `audit:read`); hashed at rest (argon2); show-once on create. All mutating actions append audit row. Cross-tenant resource access returns `404`.
+- **Rule:** better-auth for web sessions (email/password + GitHub OAuth). API keys scoped (`renders:read`, `renders:write`, `webhooks:manage`, `audit:read`); hashed at rest (argon2); show-once on create. Session→API access via `POST /v1/session/token`: short-lived (≤15 min), audience-bound tokens with CSRF protection; scopes of session-derived tokens must be exactly equivalent to API-key scopes (scope-parity acceptance test matrix). Explicit auth-epic story — no browser-exposed Bearer bridge. Logo ingestion defends against SSRF (block private/link-local IPs, resolve-then-connect pinning against DNS rebinding), caps redirects, enforces size/content-type limits, decompression-bomb protection, strips/rejects active SVG content; fetch once at first use, render only from persisted immutable bytes + checksum on render record. All mutating actions append audit row. Cross-tenant resource access returns `404`.
 
 ### AD-8 — Webhook delivery semantics
 
@@ -108,13 +108,18 @@ flowchart TB
 
 - **Binds:** FR-28..FR-30, NFR-9; UX EXPERIENCE.md
 - **Prevents:** Framework mismatch with Mantine v8; over-coupled server logic in web tier
-- **Rule:** `apps/web` uses **Next.js 15 App Router** + Mantine v8. Client components for interactive UI; SSR for `/`, `/share/[token]`, auth pages. All document operations via `@usetagih/sdk` or fetch to public API base URL — no server actions that bypass API validation.
+- **Rule:** `apps/web` uses **Next.js 15 App Router** (latest maintained 15.x patch pinned in root `package.json`) + Mantine v8. Client components for interactive UI; SSR for `/`, `/share/[token]`, auth pages. All document operations via `@usetagih/sdk` or fetch to public API base URL — no server actions that bypass API validation.
 
-### AD-10 — Epic-1 spike gate
+### AD-10 — Epic-1 spike gate (blocking acceptance)
 
-- **Binds:** NFR-6; board mandate
-- **Prevents:** Broad feature work before PDF determinism proven
-- **Rule:** No epic beyond spike merges until `packages/render` produces byte-stable invoice/`modern` PDF from fixture, golden SHA-256 passes in CI Docker job `pdf-golden`. Spike delivers: Typst template, font bundle, harness CLI, one fixture, CI workflow stub.
+- **Binds:** FR-6..FR-10, NFR-6; board mandate gate-3
+- **Prevents:** Broad feature work before PDF determinism proven; silent Chromium fallback
+- **Rule:** No epic beyond spike merges until **all** blocking criteria pass in CI Docker (`pdf-golden`). Failure on any criterion reopens the engine decision at the board before any further template is authored — no silent Chromium fallback. Blocking deliverables:
+  1. Typst `invoice`/`modern` template + font bundle + harness CLI + CI workflow
+  2. **25-line-item pagination fixture (FR-8)** — blocking, not stretch
+  3. **Logo determinism fixture** — fetch once, persist immutable bytes + checksum on render record, render from persisted bytes; cover PNG/JPEG/SVG
+  4. **Multi-page SVG preview** from same `.typ` fixture (`--format svg`, one file per page); page count matches PDF; output naming, ordering, cleanup, response shape, and SVG sanitization defined
+  5. **Determinism soak:** `golden:check` ≥100 consecutive iterations in CI Docker with zero hash drift
 
 ### AD-11 — Error envelope uniformity
 
@@ -139,7 +144,7 @@ flowchart TB
 | IDs in DB | PostgreSQL `uuid` primary keys; idempotency stored as SHA-256 hash of key |
 | State mutation | Use-cases in `packages/core` own transactions; repos never called from route handlers directly |
 | Logging | Structured JSON via `pino`; fields: `requestId`, `accountId`, `renderId`, `stage`, `durationMs` |
-| Auth | API: `Authorization: Bearer <api_key>`. Web: better-auth session cookie; BFF optional proxy adds Bearer for API calls |
+| Auth | API: `Authorization: Bearer <api_key>`. Web: better-auth session cookie → `POST /v1/session/token` for short-lived audience-bound Bearer |
 | Config | Doppler project `usetagih`; configs `dev`, `staging`, `prod` — never commit secrets |
 
 ## Stack
@@ -154,8 +159,8 @@ flowchart TB
 | ORM | Drizzle ORM 0.40+ |
 | Database | PostgreSQL 16 |
 | Auth | better-auth 1.x |
-| Web | Next.js 15.x, React 19, Mantine 8.x |
-| PDF engine | Typst 0.13.x (pinned binary) |
+| Web | Next.js 15.x (latest maintained patch pinned), React 19, Mantine 8.x |
+| PDF engine | Typst 0.15.x (exact patch in `packages/render/typst-version.txt`; binary checksum + container digest) |
 | Object storage | Cloudflare R2 (S3 API) |
 | Queue | pg-boss 10.x (Postgres-backed) |
 | Unit/integration test | bun test |
@@ -172,7 +177,7 @@ flowchart TB
 usetagih/
   apps/
     api/                 # Elysia REST + OpenAPI + workers entry
-    web/                 # Next.js 15 Mantine consumer
+    web/                 # Next.js 15 Mantine consumer; theme tokens in apps/web/theme/
     mcp/                 # v1.1 placeholder — package.json stub only at MVP
   packages/
     schema/              # Canonical Zod + OpenAPI export
@@ -182,7 +187,6 @@ usetagih/
     sdk/                 # @usetagih/sdk npm client
     db/                  # Drizzle schema, migrations, client
     config/              # Shared tsconfig, biome, env validation
-    ui/                  # Shared Mantine theme tokens from DESIGN.md (optional v1)
   docker/
     Dockerfile.api
     Dockerfile.web
@@ -200,7 +204,7 @@ flowchart LR
   subgraph deploy [Coolify VPS]
     WEB_C[web container]
     API_C[api container]
-    WORKER[pg-boss worker in api]
+    WORKER_C[worker container]
     PG_C[(postgres)]
     UMAMI[umami]
   end
@@ -209,9 +213,9 @@ flowchart LR
   CF --> WEB_C
   CF --> API_C
   API_C --> PG_C
-  WORKER --> PG_C
+  WORKER_C --> PG_C
   API_C --> R2
-  WORKER --> R2
+  WORKER_C --> R2
 ```
 
 ## Capability → Architecture Map
@@ -229,6 +233,8 @@ flowchart LR
 | Web UI | `apps/web` | AD-2, AD-9 |
 | TS SDK | `packages/sdk` | AD-1, AD-2 |
 | Golden-file CI | `packages/render/__fixtures__` + `.github/workflows/pdf-golden.yml` | AD-3, AD-10 |
+| Theme tokens | `apps/web/theme/` | AD-9; extract to package only when second consumer exists |
+| Template authoring guide | `packages/templates/CONTRIBUTING.md` | Prerequisite before parallel template stories merge |
 | MCP adapter | `apps/mcp` (v1.1) | AD-2 |
 
 ## Deferred
@@ -236,10 +242,10 @@ flowchart LR
 | Item | Reason |
 | --- | --- |
 | `apps/mcp` implementation | v1.1 per PRD; REST must stabilize first |
+| `packages/ui` shared theme package | Theme lives in `apps/web/theme/` until second consumer |
 | Webhook management UI | API-only at MVP per UX spine |
 | JSON payload import in web | Post-MVP |
 | Redis / separate queue broker | Postgres queue sufficient on single VPS until proven otherwise |
 | Multi-region / HA | MVP 99.5% on single VPS |
 | Enterprise SLA tier | Post-MVP waitlist |
 | Non-English localization | Explicit non-goal |
-| Pixel-fallback golden tests | Only if Typst byte-stable harness fails a edge case — spike validates first |
