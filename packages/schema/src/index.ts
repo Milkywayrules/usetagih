@@ -39,6 +39,7 @@ export {
 	moneyAmountSchema,
 	quantitySchema,
 	schemaVersionSchema,
+	type Template,
 	taxRateSchema,
 	templateSchema,
 } from "./document/primitives";
@@ -86,3 +87,21 @@ export {
 	type ValidateDocumentPayloadResult,
 	validateDocumentPayload,
 } from "./validation/validate-document-payload";
+export {
+	assertSupportedSchemaVersion,
+	type NormalizeSchemaVersionResult,
+	normalizePayloadSchemaVersion,
+	type SchemaVersionAssertResult,
+	type UnsupportedSchemaVersionResult,
+} from "./version/assert-schema-version";
+export {
+	CURRENT_SCHEMA_VERSION,
+	type SchemaVersion,
+	SUPPORTED_SCHEMA_VERSIONS,
+	TEMPLATE_OPTIONS_BY_DOCUMENT_TYPE,
+} from "./version/constants";
+export {
+	getSchemaMetadata,
+	type SchemaMetadata,
+	SchemaMetadataSchema,
+} from "./version/metadata";

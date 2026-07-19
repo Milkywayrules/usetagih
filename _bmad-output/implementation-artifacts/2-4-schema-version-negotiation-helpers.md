@@ -4,7 +4,7 @@ baseline_commit: 955aff44131862623ed6a43f36150dc3d86f00ed
 
 # Story 2.4: Schema version negotiation helpers
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -29,25 +29,25 @@ so that contract upgrades are explicit (FR-3, AD-12, NFR-10).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Version constants module (AC: 1, 6)
-  - [ ] Create `version/constants.ts` with `CURRENT_SCHEMA_VERSION`, `SUPPORTED_SCHEMA_VERSIONS`, `SchemaVersion` type, `TEMPLATE_OPTIONS_BY_DOCUMENT_TYPE`
-  - [ ] Derive `templateSchema` contract alignment — constants are authoritative for metadata; existing `primitives.ts` `templateSchema` stays `z.enum(["modern", "classic"])`
-- [ ] Task 2 — Version assertion + normalization (AC: 2, 3, 4, 5)
-  - [ ] Create `version/assert-schema-version.ts` with `assertSupportedSchemaVersion()` and `normalizePayloadSchemaVersion()`
-  - [ ] Update `validation/validate-document-payload.ts` — add `schemaVersion` stage before structural parse
-  - [ ] Update `document/base-document-payload.ts` — add `.default(CURRENT_SCHEMA_VERSION)` on `schemaVersion` field (import constant)
-- [ ] Task 3 — Metadata helper (AC: 6, 7)
-  - [ ] Export `Template` type from `document/primitives.ts` (`z.infer<typeof templateSchema>`)
-  - [ ] Create `version/metadata.ts` with `SchemaMetadataSchema`, `SchemaMetadata` type, `getSchemaMetadata()`
-- [ ] Task 4 — Public exports (AC: 1)
-  - [ ] Update `src/index.ts` — export version module surface
-- [ ] Task 5 — Tests (AC: 8)
-  - [ ] `version/assert-schema-version.test.ts` — default, pass, reject with supported list
-  - [ ] `version/metadata.test.ts` — shape, Zod round-trip, template map per type
-  - [ ] Extend or add orchestration test for `validateDocumentPayload` version stage
-- [ ] Task 6 — Verification gate (AC: 9)
-  - [ ] `bun test packages/schema`
-  - [ ] `bunx turbo run lint typecheck test build --force`
+- [x] Task 1 — Version constants module (AC: 1, 6)
+  - [x] Create `version/constants.ts` with `CURRENT_SCHEMA_VERSION`, `SUPPORTED_SCHEMA_VERSIONS`, `SchemaVersion` type, `TEMPLATE_OPTIONS_BY_DOCUMENT_TYPE`
+  - [x] Derive `templateSchema` contract alignment — constants are authoritative for metadata; existing `primitives.ts` `templateSchema` stays `z.enum(["modern", "classic"])`
+- [x] Task 2 — Version assertion + normalization (AC: 2, 3, 4, 5)
+  - [x] Create `version/assert-schema-version.ts` with `assertSupportedSchemaVersion()` and `normalizePayloadSchemaVersion()`
+  - [x] Update `validation/validate-document-payload.ts` — add `schemaVersion` stage before structural parse
+  - [x] Update `document/base-document-payload.ts` — add `.default(CURRENT_SCHEMA_VERSION)` on `schemaVersion` field (import constant)
+- [x] Task 3 — Metadata helper (AC: 6, 7)
+  - [x] Export `Template` type from `document/primitives.ts` (`z.infer<typeof templateSchema>`)
+  - [x] Create `version/metadata.ts` with `SchemaMetadataSchema`, `SchemaMetadata` type, `getSchemaMetadata()`
+- [x] Task 4 — Public exports (AC: 1)
+  - [x] Update `src/index.ts` — export version module surface
+- [x] Task 5 — Tests (AC: 8)
+  - [x] `version/assert-schema-version.test.ts` — default, pass, reject with supported list
+  - [x] `version/metadata.test.ts` — shape, Zod round-trip, template map per type
+  - [x] Extend or add orchestration test for `validateDocumentPayload` version stage
+- [x] Task 6 — Verification gate (AC: 9)
+  - [x] `bun test packages/schema`
+  - [x] `bunx turbo run lint typecheck test build --force`
 
 ## Dev Notes
 
@@ -413,7 +413,24 @@ Composer 2.5 Fast
 
 ### Completion Notes List
 
+- added `version/` module with constants, assert/normalize helpers, and `getSchemaMetadata()` sourced from single constants module
+- two-layer defaulting: pre-parse `normalizePayloadSchemaVersion()` plus Zod `.default(CURRENT_SCHEMA_VERSION)` on base payload shape
+- `validateDocumentPayload` routes unsupported versions to `stage: "schemaVersion"` before structural/business stages
+- `schemaVersionSchema` in primitives now derives literal from `CURRENT_SCHEMA_VERSION` — no duplicate version strings
+- verification: `bun test packages/schema` — 44 pass; `bunx turbo run lint typecheck test build --force` — 36/36 tasks green
+
 ### File List
+
+- packages/schema/src/version/constants.ts (new)
+- packages/schema/src/version/assert-schema-version.ts (new)
+- packages/schema/src/version/assert-schema-version.test.ts (new)
+- packages/schema/src/version/metadata.ts (new)
+- packages/schema/src/version/metadata.test.ts (new)
+- packages/schema/src/document/base-document-payload.ts (modified)
+- packages/schema/src/document/primitives.ts (modified)
+- packages/schema/src/validation/validate-document-payload.ts (modified)
+- packages/schema/src/validation/validate-document-payload.test.ts (new)
+- packages/schema/src/index.ts (modified)
 
 ## Story Validation
 
@@ -434,3 +451,4 @@ _Validated against create-story checklist (headless) on 2026-07-20._
 
 - 2026-07-20: story context created for schema version negotiation helpers (Story 2.4)
 - 2026-07-20: validation pass — fixed baseline hash, Template type export task, non-object normalize behavior
+- 2026-07-20: implemented schema version negotiation helpers — default injection, unsupported rejection, metadata export, orchestrator stage

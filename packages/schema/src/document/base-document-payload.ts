@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CURRENT_SCHEMA_VERSION } from "../version/constants";
 import { BrandingSchema } from "./branding";
 import { LineItemSchema } from "./line-item";
 import { MetadataSchema } from "./metadata";
@@ -14,7 +15,7 @@ import { TaxLineSchema } from "./tax-line";
 import { TotalsSchema } from "./totals";
 
 export const baseDocumentPayloadShape = {
-	schemaVersion: schemaVersionSchema.optional(),
+	schemaVersion: schemaVersionSchema.default(CURRENT_SCHEMA_VERSION),
 	template: templateSchema,
 	documentNumber: z.string().max(64),
 	issuedAt: isoDateSchema,
