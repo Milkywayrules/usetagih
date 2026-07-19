@@ -4,7 +4,7 @@ baseline_commit: df6a5117fb1095bc51cd683b8a49d141bb22d8b9
 
 # Story 2.2: Business-rule validators for arithmetic integrity
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -431,3 +431,47 @@ Composer 2.5
 
 - 2026-07-20: story context created for business-rule arithmetic validators (Story 2.2)
 - 2026-07-20: implemented arithmetic integrity validators with bigint decimal math, 10 failure fixtures, and full test coverage
+- 2026-07-20: code review approved — adversarial decimal probes pass; regression tests added for pagination fixture, scale combos, and taxLines skip
+
+## Senior Developer Review (AI)
+
+_Reviewer: code-review subagent on 2026-07-20_
+
+### Outcome
+
+**APPROVED** — bigint decimal math verified against reference implementation; PRD §10.1 rules correctly implemented.
+
+### Decimal-math probe summary
+
+| Probe | Cases | Result |
+| --- | --- | --- |
+| Scale combos (qty 0–3dp × price 0–2dp × JPY/USD minor units) | 9,621 | PASS |
+| Half-up boundaries (0.125×2, 3×0.335, 1×0.005, 1×1.005, etc.) | 6 | PASS |
+| Quantity float scaling brute-force (i/1000 for i=1..999999) | 999,999 | PASS |
+| String normalization (0.50 vs 0.5, 99.90 vs 99.9) | 3 | PASS |
+| Huge values (15-digit amounts, 25-item sum) | 3 | PASS |
+| Pagination-25 fixture subtotal drift | 1 | PASS |
+| JPY zero-decimal multiply | 1 | PASS |
+
+### PRD §10.1 cross-check
+
+| Rule | Implementation | Verdict |
+| --- | --- | --- |
+| lineTotal = qty × unitPrice half-up | `multiplyQuantityByMoney` + `LINE_TOTAL_MISMATCH` at `/lineItems/{n}/lineTotal` | OK |
+| subtotal = Σ lineTotals | `addMoneyAmounts` + `VALIDATION_FAILED` at `/totals/subtotal` | OK |
+| taxTotal = Σ taxLines when present | skip when absent/`[]`; `TAX_TOTAL_MISMATCH` at `/totals/taxTotal` | OK |
+| grandTotal tax-exclusive | subtotal − discount + taxTotal (declared totals) | OK |
+| grandTotal tax-inclusive | subtotal − discount | OK |
+| discount ≤ subtotal | `/discount` `VALIDATION_FAILED` | OK |
+| FR-4 JPY / USD minor units | `validateMoneyMinorUnits` walk | OK |
+| No float on money strings | grep clean; quantity uses `Math.round(qty*1000)` per dev notes | OK |
+| Findings-not-throws, no mutation | pure function returns array | OK |
+| Story 2.3 code seam | `codes.ts` exports three constants | OK |
+
+### Findings
+
+| Severity | Finding | Action |
+| --- | --- | --- |
+| LOW | `Math.round(quantity * 1000)` uses IEEE float on quantity — safe for ≤3dp per brute-force proof, but Story 2.6 could add string-based qty scaling if quantities ever become strings | noted |
+| LOW | `.5` / leading-zero amounts handled in `decimal.ts` but rejected by `moneyAmountSchema` regex — defensive only | noted |
+| — | Added regression tests: scale-combo property loop, huge-value sum, pagination-25 fixture, taxLines skip | fixed in review |

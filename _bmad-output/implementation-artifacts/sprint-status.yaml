@@ -86,7 +86,7 @@ development_status:
   # Gated by Epic 1 (spike PASS). Gates Epic 3.
   epic-2: in-progress
   2-1-document-payload-zod-discriminated-union: done
-  2-2-business-rule-validators-for-arithmetic-integrity: review
+  2-2-business-rule-validators-for-arithmetic-integrity: done
   2-3-error-codes-enum-and-api-error-envelope-types: backlog
   2-4-schema-version-negotiation-helpers: backlog
   2-5-openapi-3-1-component-generation-from-zod: backlog
