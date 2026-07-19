@@ -1,5 +1,5 @@
 # generated: 2026-07-20
-# last_updated: 2026-07-20T06:45:00+07:00
+# last_updated: 2026-07-20T06:20:00+07:00
 # project: usetagih
 # project_key: NOKEY
 # tracking_system: file-system
@@ -45,7 +45,7 @@
 # Epic 5 after Epic 1+3 (Story 5.0 first) | Epic 6 after Epic 3+5 | Epic 7 after Epic 3 | Epic 8 last
 
 generated: 2026-07-20
-last_updated: 2026-07-20T06:45:00+07:00
+last_updated: 2026-07-20T06:20:00+07:00
 project: usetagih
 project_key: NOKEY
 tracking_system: file-system
@@ -91,7 +91,7 @@ development_status:
   2-4-schema-version-negotiation-helpers: done
   2-5-openapi-3-1-component-generation-from-zod: done
   2-6-shared-validation-fixture-test-suite: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   # Epic 3: API Core — Auth, Keys, Idempotency, Sync Render, Share, Audit
   # Gated by Epic 2. Gates Epics 4–7.
@@ -189,7 +189,31 @@ action_items:
     status: done
   - epic: 0
     action: "standardize --force on turbo verification commands in story templates"
-    owner: "Amelia (Developer)"
+    owner: "create-story"
+    status: done
+  - epic: 2
+    action: "add scope-boundary gate in dev-story checklist before touching out-of-scope packages"
+    owner: "dev-story"
+    status: open
+  - epic: 2
+    action: "require tsconfig.build.json exclude *.test.ts when build emits to dist/"
+    owner: "dev-story"
+    status: open
+  - epic: 2
+    action: "generated-artifact checklist — turbo.json outputs plus narrow biome exclude for generated dirs only"
+    owner: "code-review"
+    status: open
+  - epic: 2
+    action: "contract changes must update OpenAPI structural tests and runtime Zod atomically"
+    owner: "code-review"
+    status: open
+  - epic: 2
+    action: "typst/render tests under parallel turbo need explicit timeout budget or serial isolation"
+    owner: "code-review"
+    status: open
+  - epic: 2
+    action: "run correct-course amendment for harness directives before epic 3 kickoff"
+    owner: "correct-course"
     status: open
   - epic: 0
     action: "document environment-gated AC re-verification checklist for first push"

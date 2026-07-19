@@ -36,6 +36,10 @@ validation-rules:
 - [ ] **No Ambiguous Implementation:** Clear, unambiguous implementation that meets story requirements
 - [ ] **Edge Cases Handled:** Error conditions and edge cases appropriately addressed
 - [ ] **Dependencies Within Scope:** Only uses dependencies specified in story or project-context.md
+- [ ] **Scope Boundary:** No files touched outside story out-of-scope fence / declared package unless an AC explicitly requires it
+- [ ] **Build Test Emit:** If package build writes to `dist/`, `tsconfig.build.json` excludes `*.test.ts` so tests are not executed twice from src and dist
+- [ ] **Generated Artifacts:** New build outputs declared in `turbo.json` `build.outputs`; biome excludes target generated dirs only (not source siblings like `src/openapi/`)
+- [ ] **Turbo Verification:** Final gate uses `bunx turbo run lint typecheck test build --force` (never treat cache timing as proof)
 
 ## 🧪 Testing & Quality Assurance
 

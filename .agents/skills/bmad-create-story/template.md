@@ -27,6 +27,12 @@ so that {{benefit}}.
 - Source tree components to touch
 - Testing standards summary
 
+### Verification (required)
+
+- Unit tests: `bun test <package-or-path>`
+- Workspace gate: `bunx turbo run lint typecheck test build --force` from repo root (always `--force` — cache hits are not proof)
+- Generated artifacts: if build emits gitignored outputs, declare matching paths in `turbo.json` `build.outputs` and narrow biome excludes to the generated dir only (not sibling source paths)
+
 ### Project Structure Notes
 
 - Alignment with unified project structure (paths, modules, naming)
