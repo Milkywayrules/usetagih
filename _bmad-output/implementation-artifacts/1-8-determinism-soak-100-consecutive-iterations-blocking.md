@@ -4,7 +4,7 @@ baseline_commit: 234a911
 
 # Story 1.8: Determinism soak ≥100 consecutive iterations (blocking)
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -341,6 +341,18 @@ Composer 2.5 Fast (headless subagent)
 ## Change Log
 
 - 2026-07-20: CI determinism soak — `--fixture` filter, SOAK SUMMARY, pdf-golden workflow step (Story 1.8)
+- 2026-07-20: code review — hardened `--fixture`/`--iterations` parsing, drift helper unit tests; APPROVED
+
+## Code Review Record
+
+- **Reviewed:** 2026-07-20 (headless adversarial, commit `1d17668` + review fixes)
+- **Verdict:** APPROVED
+- **Findings fixed:**
+  - **medium:** `--fixture` / `--iterations` without values silently ignored → now exit 1 with usage
+  - **medium:** `--fixture --iterations` treated flag as id → now rejected as invalid fixture
+  - **low:** fractional `--iterations 1.5` truncated to 1 → now rejected
+  - **low:** no unit coverage for drift stderr contract → `detectSoakHashDrift` + `formatSoakDriftReport` tested
+- **Verified:** container soak 25× zero drift; golden:check 5/5; host 2-iter all-fixtures; turbo 36/36; workflow exit propagation; YAML parses
 
 ## Story Validation Record
 
