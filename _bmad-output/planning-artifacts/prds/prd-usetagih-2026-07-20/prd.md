@@ -51,9 +51,9 @@ The product core is one canonical document schema and deterministic render pipel
 - **UJ-1. Maya creates and exports an invoice from the web app**
   - **Persona + context:** Maya, a solo freelance designer in Bandung, needs a polished invoice for a client without installing PDF software.
   - **Entry state:** Unauthenticated; lands on usetagih marketing/home page.
-  - **Path:** Signs up via email (better-auth single-user account) → selects document type *invoice* → fills form fields mapped to the canonical schema (seller, buyer, line items, tax, totals) → selects template style *modern* → taps **Preview** → reviews rendered HTML preview → taps **Export PDF** → downloads PDF and copies share link.
+  - **Path:** Signs up via email or GitHub OAuth (better-auth) → **mandatory first workspace creation** (name + slug) → selects document type *invoice* → fills form fields mapped to the canonical schema (seller, buyer, line items, tax, totals) → selects template style *modern* → taps **Preview** → reviews rendered HTML preview → taps **Export PDF** → downloads PDF and copies share link.
   - **Climax:** PDF opens with correct totals, currency formatting, and pagination; share link loads the same artifact in browser.
-  - **Resolution:** Render record stored in her account history; she can re-download or re-share later.
+  - **Resolution:** Render record stored in her active workspace history; she can re-download or re-share later.
   - **Edge case:** She enters line items whose computed subtotal does not match declared total; validation blocks export with field-path errors — no silent correction.
 
 - **UJ-2. Alex embeds render in a finance SaaS via REST API**
@@ -82,7 +82,7 @@ The product core is one canonical document schema and deterministic render pipel
 
 - **UJ-5. Priya validates locally with SDK before first API call**
   - **Persona + context:** Priya, indie developer, evaluates usetagih against Invovate during a hackathon.
-  - **Entry state:** Free-tier account; TS SDK installed.
+  - **Entry state:** `trial` tier workspace; TS SDK installed.
   - **Path:** `validateLocally('invoice', payload)` in Node REPL → fixes errors offline → `client.render('invoice', payload, { template: 'modern', idempotencyKey })` → compares PDF side-by-side with Invovate output → promotes to production API key.
   - **Climax:** Local validation errors are as clear as server errors; first successful render in under one hour from SDK install.
   - **Resolution:** Priya embeds usetagih as render layer; keeps canonical data in her own DB.
@@ -104,7 +104,7 @@ The product core is one canonical document schema and deterministic render pipel
 - **Artifact** — The rendered PDF binary stored in **Object Storage** (Cloudflare R2).
 - **Object Storage** — Cloudflare R2 bucket holding rendered PDF artifacts; PostgreSQL holds pointers and metadata only.
 - **API Key** — Scoped secret for programmatic access. Scopes: `renders:read`, `renders:write`, `webhooks:manage`, `audit:read`.
-- **Idempotency Key** — Client-supplied key (1–255 printable ASCII characters, not UUID-only), scoped per account + endpoint, ensuring repeated render requests produce the same Render Record and Artifact without duplicate quota consumption.
+- **Idempotency Key** — Client-supplied key (1–255 printable ASCII characters, not UUID-only), scoped per workspace + endpoint, ensuring repeated render requests produce the same Render Record and Artifact without duplicate quota consumption.
 - **Webhook** — HTTPS callback on events such as `render.completed` and `render.failed`, with signed payloads.
 - **Audit Log** — Append-only record of authentication, validation, render, download, and configuration events for accountability.
 - **Integrator** — External application or agent embedding usetagih via REST API or MCP adapter.
@@ -185,7 +185,7 @@ Identical Payload + template + schema version produces byte-identical PDF output
 **Consequences (testable):**
 - Golden-file test suite passes for all 3 Document Types × 2 Templates.
 - CI fails on unintended PDF drift without explicit golden update approval.
-- Free-tier PDFs include a single footer line `Rendered with usetagih · usetagih.com` (~8pt gray); never a diagonal watermark. Embed Pro and above (white-label) omit the footer.
+- Workspace tier `trial` PDFs include a single footer line `Rendered with usetagih · usetagih.com` (~8pt gray); never a diagonal watermark. `starter`, `pro`, and `business` tiers omit the footer (white-label).
 
 #### FR-8: Pagination and layout stability
 
@@ -254,7 +254,7 @@ Authenticated users and API clients can request HTML (or visual) Preview of a va
 
 #### FR-15: List render history
 
-Authenticated account can list own Render Records with pagination and filters (document type, date range). Realizes UJ-1.
+Authenticated workspace can list own Render Records with pagination and filters (document type, date range). Realizes UJ-1.
 
 **Consequences (testable):**
 - Default page size 20; max 100.
@@ -270,7 +270,7 @@ Published OpenAPI 3.1 spec at stable URL; used to generate TS SDK types. Realize
 
 #### FR-17: Rate limiting and quotas
 
-API enforces per-account rate limits and monthly render quotas by tier. Realizes UJ-2, UJ-4.
+API enforces per-workspace rate limits and monthly render quotas by workspace tier (enum: `trial` | `starter` | `pro` | `business`). Realizes UJ-2, UJ-4.
 
 **Consequences (testable):**
 - Exceeding rate limit returns `429` with code `RATE_LIMITED` and `Retry-After`.
@@ -311,21 +311,25 @@ Artifacts persist per documented retention policy; cleanup job removes expired o
 
 ### 4.5 Authentication & API Keys
 
-**Description:** Single-user authentication via better-auth for web app; scoped API keys for integrators. No multi-tenant org model at MVP. Realizes UJ-1, UJ-2, UJ-5.
+**Description:** better-auth with organization plugin (product: workspace; teams disabled) for web app; scoped API keys per workspace for integrators. Realizes UJ-1, UJ-2, UJ-5.
 
 **Functional Requirements:**
 
-#### FR-21: Single-user account registration and login
+#### FR-21: Account registration, login, and mandatory workspace
 
-Users register/login via email (better-auth); session powers web app. Realizes UJ-1.
+Users register/login via email or GitHub OAuth (better-auth). Each user must belong to at least one **workspace** (better-auth organization plugin, teams disabled). Signup cannot complete without creating the first workspace. Users may create additional workspaces and switch active workspace. Session tracks `activeOrganizationId`. Realizes UJ-1.
 
 **Consequences (testable):**
 - Unauthenticated users cannot access render history or issue API keys.
+- Authenticated user with zero workspaces receives `403 WORKSPACE_REQUIRED` on `/v1/*` (except workspace bootstrap endpoints).
+- POST `/v1/workspaces` creates workspace; creator is sole owner member.
+- POST `/v1/workspaces/active` sets session active workspace.
 - Password reset and session expiry follow better-auth defaults.
+- No invite, join, or team endpoints at MVP; better-auth invitation, member-add/remove, join, and team operations explicitly disabled/rejected.
 
 #### FR-22: API key issuance and scopes
 
-Account owner creates API keys via `POST /v1/api-keys` with name, scopes (`renders:read`, `renders:write`, `webhooks:manage`, `audit:read`), and optional expiry; secret shown once. Lists keys via `GET /v1/api-keys`. Realizes UJ-2, UJ-5.
+Workspace owner creates API keys scoped to active workspace via `POST /v1/api-keys` (workspace inferred from key context or active session org) with name, scopes (`renders:read`, `renders:write`, `webhooks:manage`, `audit:read`), and optional expiry; secret shown once. Lists keys via `GET /v1/api-keys`. Realizes UJ-2, UJ-5.
 
 **Consequences (testable):**
 - Keys hash at rest; plaintext never stored after creation.
@@ -347,7 +351,7 @@ Owner revokes keys immediately via `DELETE /v1/api-keys/{keyId}`; revoked keys f
 
 #### FR-24: Idempotent render requests
 
-`POST /v1/{documentType}/render` accepts `Idempotency-Key` header (1–255 printable ASCII characters, scoped per account + endpoint); duplicates within 24h return same Render Record without re-render or double quota charge. Realizes UJ-2, UJ-4.
+`POST /v1/{documentType}/render` accepts `Idempotency-Key` header (1–255 printable ASCII characters, scoped per workspace + endpoint); duplicates within 24h return same Render Record without re-render or double quota charge. Realizes UJ-2, UJ-4.
 
 **Consequences (testable):**
 - Same key + same payload → identical `renderId` and `shareUrl`.
@@ -355,7 +359,7 @@ Owner revokes keys immediately via `DELETE /v1/api-keys/{keyId}`; revoked keys f
 
 #### FR-25: Webhook registration
 
-Account registers HTTPS webhook endpoints via `POST /v1/webhooks` and subscribes to `render.completed` and `render.failed`. Lists via `GET /v1/webhooks`; deletes via `DELETE /v1/webhooks/{webhookId}` (no secret-rotation endpoint at MVP — rotate via delete + recreate). Realizes UJ-4.
+Account registers HTTPS webhook endpoints via `POST /v1/webhooks` and subscribes to `render.completed` and `render.failed` (denied on `trial` and `starter` tiers; allowed from `pro` up). Lists via `GET /v1/webhooks`; deletes via `DELETE /v1/webhooks/{webhookId}` (no secret-rotation endpoint at MVP — rotate via delete + recreate). Realizes UJ-4.
 
 **Consequences (testable):**
 - Webhook event envelope signed with `X-Usetagih-Signature` (see §10.5).
@@ -474,7 +478,7 @@ Accepts document type, template, payload, optional idempotency key; returns rend
 - **System of record** — usetagih will not own canonical clients, products, inventory, payments, or accounting entries.
 - **Payments and money movement** — no payment links, Stripe integration, or reconciliation.
 - **Sending and reminders** — no email delivery, dunning, or "invoice sent" workflow.
-- **Multi-tenant orgs and teams** — single-user accounts only at MVP.
+- **Teams, invites, and multi-member workspaces** — workspaces are single-owner at MVP; no better-auth teams plugin, no member invites, no role matrix. Multi-workspace per user is in scope (see FR-21).
 - **Template marketplace and visual template editor** — curated templates only.
 - **Non-English localization** — English output only at MVP.
 - **Regulated e-invoicing clearance** — no UBL/PEPPOL/e-Faktur network submission; PDF is customer-facing artifact only.
@@ -490,7 +494,7 @@ Accepts document type, template, payload, optional idempotency key; returns rend
 - Templates: ~2 visual styles per type (6 total)
 - Workflows: create (web), validate, preview, render, download, retrieve
 - Outputs: PDF export + signed share link
-- Auth: better-auth single-user + scoped API keys
+- Auth: better-auth + organization plugin (workspace model, no teams) + scoped API keys per workspace
 - Data: PostgreSQL (metadata, history, audit) via Drizzle; Cloudflare R2 (artifacts)
 - API: REST/OpenAPI 3.1 + official TS SDK
 - Web: Mantine app consuming same API
@@ -505,7 +509,7 @@ Accepts document type, template, payload, optional idempotency key; returns rend
 |------|--------|--------|
 | MCP adapter | REST contract must stabilize first | v1.1 (FR-33–35) |
 | Payments, sending, reminders | Product boundary | Never MVP |
-| Multi-tenant orgs/teams | Complexity vs. wedge focus | Post-MVP |
+| Teams, workspace invites, member roles | Complexity vs. wedge focus | Post-MVP |
 | Template marketplace / editor | Opposite of opinionated embed UX | Post-MVP |
 | Non-English localization | Scope control | Post-MVP |
 | UBL/PEPPOL/e-Faktur clearance | Compliance is different product | Future adapter/partner |
@@ -524,7 +528,7 @@ Accepts document type, template, payload, optional idempotency key; returns rend
 **Secondary (90 days post-launch)**
 
 - **SM-5:** 3 design-partner embed integrators in active production use. Validates FR-11–FR-17.
-- **SM-6:** 100+ free-tier accounts; 10+ paid Embed Pro conversions. Validates FR-17, monetization hypothesis.
+- **SM-6:** 100+ trial-tier workspaces; 10+ paid `starter+` conversions. Validates FR-17, monetization hypothesis.
 - **SM-7:** Official TS SDK referenced in ≥3 external integrator repos. Validates FR-31, FR-32.
 
 **Counter-metrics (do not optimize)**
@@ -553,7 +557,7 @@ No secrets in repository; Doppler (or equivalent) injects secrets at runtime.
 
 #### NFR-5: Data isolation
 
-Render Records and API keys isolated per account; no cross-tenant data leakage in queries or URLs.
+Render Records and API keys isolated per workspace; cross-workspace access returns 404.
 
 #### NFR-6: PDF determinism CI gate
 
@@ -609,7 +613,7 @@ Payloads processed for render are not marketed as permanently stored canonical b
 
 `documentType` in the URL path is authoritative. If `documentType` is present in the request body, it must match the path; mismatch → `400` with code `DOCUMENT_TYPE_MISMATCH`. Fields belonging to another document type are rejected.
 
-Account settings hold default branding (logo, accent color, business identity). Optional per-payload override: `branding?: { logoUrl?: string; accentColor?: string }`. `logoUrl` must be HTTPS-only; fetched once per render; byte checksum recorded on the Render Record so determinism is defined over fetched bytes. Logo limits: max 2 MB; content types `image/png`, `image/jpeg`, `image/svg+xml` only.
+Workspace settings hold default branding (logo, accent color, business identity). Optional per-payload override: `branding?: { logoUrl?: string; accentColor?: string }`. `logoUrl` must be HTTPS-only; fetched once per render; byte checksum recorded on the Render Record so determinism is defined over fetched bytes. Logo limits: max 2 MB; content types `image/png`, `image/jpeg`, `image/svg+xml` only.
 
 ```typescript
 // Schema Version: 2026-07-20 — board-ratified contract v1
@@ -708,7 +712,7 @@ type DocumentPayload = InvoicePayload | QuotationPayload | ReceiptPayload;
 - `discount ≤ subtotal`; tax rates in range 0..1.
 - Rounding mode half-up documented in FR-4; enforced across all monetary calculations.
 
-**Idempotency keys:** 1–255 printable ASCII characters (not UUID-only), scoped per account + endpoint.
+**Idempotency keys:** 1–255 printable ASCII characters (not UUID-only), scoped per workspace + endpoint.
 
 ### 10.2 Key REST endpoints
 
@@ -816,10 +820,10 @@ HTTP mapping (one code → one status): `400` invalid request, unsupported schem
 All former open questions resolved by decision board gate-2 ruling 2026-07-20:
 
 1. **Share link TTL (OQ-1):** Default TTL 90 days. Per-render optional `shareTtlDays` integer 1–365 (default 90). Share-link expiry is distinct from authenticated artifact access; artifact retention policy documented explicitly in FR-20 and API docs.
-2. **Free-tier watermark (OQ-2):** Single footer line `Rendered with usetagih · usetagih.com` (~8pt gray) on all free-tier PDFs; never diagonal watermark. Removed at Embed Pro+ (white-label).
+2. **Trial-tier watermark (OQ-2):** Single footer line `Rendered with usetagih · usetagih.com` (~8pt gray) on all `trial` tier PDFs; never diagonal watermark. Removed at `starter+` (white-label).
 3. **Hybrid sync/async (OQ-3):** Sync `201` for documents ≤100 line items within 10s hard render timeout; >100 line items or timeout → `202` + webhook/poll; hard cap 500 line items per document; `Prefer: respond-async` header forces `202`.
 4. **Webhook delivery (OQ-4):** 8 attempts spanning ~24h, exponential backoff with jitter (≈30s, 2m, 10m, 30m, 1h, 3h, 8h, 12h); same stable `eventId` on every attempt; retry only on network errors/`408`/`429`/`5xx` (other `4xx` terminal); every delivery attempt in audit log; auto-disable endpoint after 7 consecutive days of 100% failure with owner notification.
-5. **Pricing (OQ-5):** Endorsed as working hypothesis; final numbers confirmed pre-launch GTM. Structural tiers in addendum: Free ($0/100 renders/mo) includes scoped API keys + idempotency + footer watermark; Embed Pro ($29/2k) adds webhooks + white-label; Scale ($99/10k + $0.01 overage); Enterprise = post-MVP waitlist (no MVP SLA).
+5. **Pricing (OQ-5):** Four MVP-enforced tier enums on workspace (hypothesis until pre-launch GTM): `trial` ($0, 100 renders/mo, footer watermark, no webhooks), `starter` ($19, 1k/mo), `pro` ($29, 2k/mo, webhooks, white-label), `business` ($99, 10k/mo + $0.01 overage). Limits enforced in API (FR-17); payment/checkout post-MVP. Enterprise waitlist remains post-MVP (no fifth enum). Full hypothesis table in addendum.
 
 ## 12. Assumptions Index
 

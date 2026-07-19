@@ -1,7 +1,9 @@
 ---
 title: "Correct Course Proposal: Harness Directives (2026-07-20)"
-status: draft
+status: applied
 awaiting: board-ratification
+applied: 2026-07-20
+ratification: 2x YES_WITH_NOTES
 created: 2026-07-20
 project: usetagih
 author: correct-course (headless)
@@ -607,4 +609,30 @@ Update action item `run correct-course amendment for harness directives` → `do
 
 ---
 
-**Document status:** Draft — awaiting board ratification. Do not apply until voted.
+**Document status:** Applied 2026-07-20 — board ratified (2× YES_WITH_NOTES). See audit trail below.
+
+---
+
+## Applied 2026-07-20 with board notes
+
+**Ratification:** 2× YES_WITH_NOTES (board reviewers merged).
+
+**Binding board notes applied (notes override proposal text where they conflict):**
+
+1. **A3 (base-ui):** do NOT require/install `@base-ui/react` in any package.json now. Planning docs amended: UI primitives from Mantine; if a needed primitive is missing, use `@base-ui/react` — NEVER radix-ui or shadcn/ui. Installation happens only when first needed (Epic 6).
+2. **A5/A8 (pricing):** keep four tiers `trial | starter | pro | business` as HYPOTHESES (per-tier monthly render quota + rate limits). Removed newly invented API-key count caps and tier-specific retention/TTL rules — marked "TBD pending separate approval". Entitlement wording: watermark on `trial` only, `starter` and above remove it; webhooks from `pro` up. Updated addendum.md rejected-alternatives row and gate-2 watermark note references `trial` tier.
+3. **A6 (extend):** amended PRD §11 OQ-2 wording — replaced "Free-tier"/"Embed Pro+" language with `trial` / `starter+` consistent with 4-tier model.
+4. **A10:** quota enforcement stays in Story 3.15; webhook tier-gating moves to Story 4.3's ACs.
+5. **A11 (critical, determinism):** Epic 3 render path maps `workspace_settings.tier === 'trial'` → Typst `--input tier=free`; all paid tiers → `tier=pro`. Did NOT rename Typst input enum, fixtures, manifests, or golden hashes (Epic 5 template pass owns any rename). AC wording: "trial workspace tier applies footer watermark via Typst `tier=free` input". No interval where trial omits watermark.
+6. **A21/A26 (better-auth hardening):** explicitly disable/reject better-auth invitation, member-add/remove, join, and team operations. Story 3.3/3.18 ACs include integration test proving a workspace cannot gain a second member.
+7. **A24/A25 (data model):** better-auth's `organization` table IS the workspace identity — NO duplicate `workspaces` table. Included all plugin-required tables/constraints/indexes. Workspace-less audit events allowed only for signup/login/bootstrap; all tenant-resource events require `workspace_id`. Render records SNAPSHOT resolved render-affecting inputs (tier/watermark flag, branding, logo checksum).
+8. **A27 (workspace endpoints):** membership/ownership checks required on list, rename, and active-selection endpoints; added/reconciled `GET /v1/workspaces/active` with SOLUTION-DESIGN §5.4.
+9. **A28 (extend):** Story 3.4 session tokens carry and validate active `workspaceId`; workspace filtering propagates through repository, worker job, webhook delivery, audit query, settings route, and structured log — amended relevant story ACs.
+10. **A29/A31:** workspace UI stories cover creating ADDITIONAL workspaces (not just first-run onboarding) and the switcher; amended UJ-1 (PRD §2.3 signup path) to include mandatory first-workspace step.
+11. **UJ-1 apply pass:** completed before Epic 3 story file generation.
+
+**Artifacts modified:** `ARCHITECTURE-SPINE.md`, `SOLUTION-DESIGN.md`, `prd.md`, `addendum.md`, `epics.md`, `DESIGN.md`, `EXPERIENCE.md`, `sprint-status.yaml`, this proposal doc.
+
+**Story keys added to sprint-status:** `3-18-workspace-crud-and-active-workspace-selection`, `6-14-workspace-create-bootstrap-and-switcher-scr-workspace`.
+
+**Story count:** 83 → 85 (+2 net).

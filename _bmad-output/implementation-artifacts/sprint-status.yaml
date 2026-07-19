@@ -1,5 +1,5 @@
 # generated: 2026-07-20
-# last_updated: 2026-07-20T06:20:00+07:00
+# last_updated: 2026-07-20T06:50:00+07:00
 # project: usetagih
 # project_key: NOKEY
 # tracking_system: file-system
@@ -45,7 +45,7 @@
 # Epic 5 after Epic 1+3 (Story 5.0 first) | Epic 6 after Epic 3+5 | Epic 7 after Epic 3 | Epic 8 last
 
 generated: 2026-07-20
-last_updated: 2026-07-20T06:20:00+07:00
+last_updated: 2026-07-20T06:50:00+07:00
 project: usetagih
 project_key: NOKEY
 tracking_system: file-system
@@ -113,6 +113,7 @@ development_status:
   3-15-rate-limiting-and-monthly-quota-enforcement: backlog
   3-16-account-settings-and-branding-endpoints-for-web: backlog
   3-17-sync-embed-flow-integration-test-sm-4: backlog
+  3-18-workspace-crud-and-active-workspace-selection: backlog
   epic-3-retrospective: optional
 
   # Epic 4: Async Render Path, Webhooks & Artifact Lifecycle
@@ -138,7 +139,7 @@ development_status:
   5-5-template-quality-benchmark-checklist-sm-1: backlog
   epic-5-retrospective: optional
 
-  # Epic 6: Web Application (14 Screens)
+  # Epic 6: Web Application (16 Screens)
   # Gated by Epic 3 (session token) + Epic 5 (templates).
   epic-6: backlog
   6-1-next-js-app-router-scaffold-with-mantine-theme-tokens: backlog
@@ -154,6 +155,7 @@ development_status:
   6-11-settings-scr-settings: backlog
   6-12-public-share-page-scr-share-public: backlog
   6-13-accessibility-wcag-2-1-aa-verification: backlog
+  6-14-workspace-create-bootstrap-and-switcher-scr-workspace: backlog
   epic-6-retrospective: optional
 
   # Epic 7: TypeScript SDK & OpenAPI Publishing
@@ -214,7 +216,7 @@ action_items:
   - epic: 2
     action: "run correct-course amendment for harness directives before epic 3 kickoff"
     owner: "correct-course"
-    status: open
+    status: done
   - epic: 0
     action: "document environment-gated AC re-verification checklist for first push"
     owner: "Dana (QA Engineer)"

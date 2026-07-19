@@ -21,7 +21,7 @@ headless: true
 
 ## Overview
 
-Phase-3 gate artifact decomposing PRD contract v1 (§10), architecture AD-1–AD-12, and UX spine (14 screens) into agent-implementable epics and stories. **Epic 1 (PDF pipeline spike) gates all feature epics.** Spike failure on any blocking AC halts downstream work and reopens the PDF engine decision at the board — no silent Chromium fallback (AD-10).
+Phase-3 gate artifact decomposing PRD contract v1 (§10), architecture AD-1–AD-13, and UX spine (16 screens) into agent-implementable epics and stories. **Epic 1 (PDF pipeline spike) gates all feature epics.** Spike failure on any blocking AC halts downstream work and reopens the PDF engine decision at the board — no silent Chromium fallback (AD-10).
 
 **Sequencing (board-ratified):** Epic 0 monorepo/CI → Epic 1 spike (gate) → Epic 2 schema → Epic 3 API core → Epic 4 async/webhooks → Epic 5 templates → Epic 6 web app → Epic 7 SDK/OpenAPI → Epic 8 launch readiness → Epic 9 MCP v1.1 (POST-MVP).
 
@@ -36,7 +36,7 @@ FR-3: Schema version negotiation — optional schemaVersion default 2026-07-20; 
 FR-4: Multi-currency and precision — ISO 4217; JPY no fractions; USD/EUR two decimals half-up; decimal strings only.
 FR-5: Date and locale formatting — ISO 8601 dates; English labels in PDF; invalid dates fail validation.
 FR-6: Template selection — enum modern|classic per document type; invalid → 400; two templates per type at launch.
-FR-7: Deterministic PDF output — byte-identical for identical payload+template+schemaVersion; golden CI gate; free-tier footer watermark only.
+FR-7: Deterministic PDF output — byte-identical for identical payload+template+schemaVersion; golden CI gate; trial workspace tier footer watermark via Typst tier=free input.
 FR-8: Pagination and layout stability — ≥25 line items golden; headers/footers repeat; totals on final page.
 FR-9: Tax and totals rendering — display matches payload per §10.1; LINE_TOTAL_MISMATCH and TAX_TOTAL_MISMATCH rejected pre-render.
 FR-10: Preview before render — POST /v1/{documentType}/preview; same Typst engine as PDF; no artifact persist.
@@ -50,7 +50,7 @@ FR-17: Rate limiting and quotas — 429 RATE_LIMITED with Retry-After; 402 QUOTA
 FR-18: Artifact upload to object storage — R2 on success; failed upload → render failed; checksum on download verify.
 FR-19: Signed share URLs — default TTL 90d; shareTtlDays 1–365; DELETE /v1/renders/{renderId}/share revokes; expired → 403/branded page.
 FR-20: Artifact lifecycle — retention ≥ share TTL + grace; cleanup job; re-render new idempotency key → new artifact.
-FR-21: Single-user account registration and login — better-auth email + session; unauthenticated blocked from history/keys.
+FR-21: Multi-workspace auth — better-auth organization plugin (teams disabled) + mandatory first workspace; session activeOrganizationId; unauthenticated blocked from history/keys.
 FR-22: API key issuance and scopes — POST/GET /v1/api-keys; scopes renders:read|write, webhooks:manage, audit:read; show-once secret; hashed at rest.
 FR-23: API key revocation — DELETE /v1/api-keys/{keyId}; revoked → 401; audit logged.
 FR-24: Idempotent render requests — Idempotency-Key header 1–255 ASCII; same key+payload → same renderId; different payload → 409; 24h window.
@@ -74,7 +74,7 @@ NFR-1: Render API P95 ≤2s for ≤100 line items sync path.
 NFR-2: 99.5% monthly uptime API + share link resolution.
 NFR-3: HTTPS only; HSTS in production.
 NFR-4: No secrets in repo; Doppler runtime injection.
-NFR-5: Per-account data isolation; cross-tenant → 404.
+NFR-5: Per-workspace data isolation; cross-workspace → 404.
 NFR-6: Golden-file PDF tests block CI merge on drift (AD-3, AD-10).
 NFR-7: Unified error envelope all endpoints (AD-11).
 NFR-8: Structured logs + render/webhook metrics.
@@ -91,9 +91,9 @@ NFR-12: Rate limits per API key; documented defaults + headers.
 - AD-2: apps/web and apps/mcp call public REST only; POST /v1/session/token for browser API access.
 - AD-3: Typst 0.15.x pinned; vendored fonts; --ignore-system-fonts; SOURCE_DATE_EPOCH + #set document(date: none).
 - AD-4: Sync/async contract; pg-boss separate worker container; idempotent job handlers.
-- AD-5: Idempotency hash accountId+endpoint+key; validation rejects arithmetic mismatches pre-render.
-- AD-6: R2 path renders/{accountId}/{renderId}.pdf; share HMAC TTL; artifact retention ≥ TTL+7d.
-- AD-7: better-auth; API keys argon2 hashed; session token ≤15min audience-bound CSRF; logo SSRF hardening.
+- AD-5: Idempotency hash workspaceId+endpoint+key; validation rejects arithmetic mismatches pre-render.
+- AD-6: R2 path renders/{workspaceId}/{renderId}.pdf; share HMAC TTL; artifact retention ≥ TTL+7d.
+- AD-7: better-auth + organization plugin (teams disabled); API keys argon2 hashed; session token ≤15min audience-bound CSRF; logo SSRF hardening.
 - AD-8: Webhook retry schedule 30s,2m,10m,30m,1h,3h,8h,12h + jitter; terminal 4xx no retry.
 - AD-9: Next.js 15 App Router + Mantine v8; no server actions bypassing API validation.
 - AD-10: Epic 1 spike blocking ACs — 25-line pagination, logo determinism PNG/JPEG/SVG, multi-page SVG preview parity, golden soak ≥100 iterations in CI Docker; failure reopens engine decision.
@@ -131,7 +131,7 @@ UX-DR16: WCAG 2.1 AA — labels, aria-describedby errors, aria-live validation, 
 UX-DR17: Line items responsive — Table md+; card-per-row <sm; min 1 row; add/remove ActionIcons.
 UX-DR18: Idempotency-Key uuid v4 per export click in web UI session storage.
 UX-DR19: Voice/tone — infrastructure copy; "Document history" not "Your invoices"; no emoji celebration.
-UX-DR20: All 14 screens from EXPERIENCE.md route map implemented with API action map parity.
+UX-DR20: All 16 screens from EXPERIENCE.md route map implemented with API action map parity.
 ```
 
 ### FR Coverage Map
@@ -200,7 +200,7 @@ pg-boss worker container, async 202 render path, webhook registration/delivery/r
 CONTRIBUTING.md prerequisite, then invoice/classic + quotation/receipt × modern/classic with golden fixtures per template.
 **FRs covered:** FR-5, FR-6, FR-7, FR-8, FR-9 **Gated by:** Epic 1, Epic 3 **Gates:** Epic 6 quality bar
 
-### Epic 6: Web Application (14 Screens)
+### Epic 6: Web Application (16 Screens)
 Next.js 15 Mantine thin API consumer implementing all EXPERIENCE.md screens with Playwright UJ-1 e2e.
 **FRs covered:** FR-28, FR-29, FR-30 **Gated by:** Epic 3 (session token), Epic 5 (templates) **Gates:** Epic 8
 
@@ -544,16 +544,16 @@ Composition root wiring Drizzle, R2, Typst driver, and core use-cases into Elysi
 ### Story 3.1: Drizzle database schema and migrations for core tables
 
 As a backend developer,
-I want PostgreSQL tables for users, api_keys, renders, idempotency_keys, audit_events, account_settings, usage_counters,
-So that API core can persist metadata (SOLUTION-DESIGN §7, AD-6).
+I want PostgreSQL tables for better-auth organization plugin, workspace_settings, api_keys, renders, idempotency_keys, audit_events, usage_counters,
+So that API core can persist workspace-scoped metadata (SOLUTION-DESIGN §7, AD-6).
 
 **Acceptance Criteria:**
 
 **Given** `packages/db/src/schema/` with Drizzle models matching SOLUTION-DESIGN §7.1
 **When** `bun run --filter @usetagih/db migrate` runs against compose Postgres
-**Then** tables created: api_keys (key_hash argon2, scopes[]), renders (status, sha256, r2_key, share_expires_at, logo_checksum), idempotency_keys, audit_events (append-only), account_settings (tier, branding), usage_counters
-**And** better-auth tables generated/managed per better-auth drizzle adapter
-**And** bun test covers repo CRUD for renders and idempotency_keys
+**Then** tables created: better-auth organization plugin tables (`organization`, `member`, `session`, etc.) with teams disabled; `workspace_settings` (organization id PK, tier enum `trial`|`starter`|`pro`|`business`, branding); `api_keys` (workspace_id FK); `renders` (workspace_id FK, snapshot columns for tier/watermark/branding/logo_checksum); `idempotency_keys` (workspace_id); `audit_events` (workspace_id + user_id actor, nullable workspace_id only for signup/login/bootstrap); `usage_counters` (workspace_id)
+**And** no duplicate `workspaces` table — better-auth `organization` is workspace identity
+**And** bun test covers workspace-scoped render repo queries and cross-workspace isolation
 **And** only tables needed for Epic 3 created — webhooks tables deferred to Epic 4
 
 ### Story 3.2: packages/core ports and validate use-case
@@ -581,8 +581,12 @@ So that I can access the web app securely (FR-21, AD-7).
 **Given** better-auth mounted at `apps/api` `/api/auth/*` with Drizzle adapter
 **When** user registers via email or GitHub OAuth
 **Then** session cookie issued; unauthenticated requests to `/v1/renders` return 401
+**And** better-auth organization plugin enabled with `teams` disabled; invitation, member-add/remove, join, and team operations explicitly disabled/rejected
+**And** signup flow includes mandatory first workspace creation (name, slug)
+**And** user cannot access `/v1/renders` until ≥1 workspace exists and active org set
 **And** password reset flows work per better-auth defaults
-**And** bun test/integration covers register + session cookie auth
+**And** bun test/integration covers register + create workspace + session.activeOrganizationId set
+**And** integration test: workspace cannot gain a second member via any better-auth org API
 **And** login event appended to audit_events (FR-27 partial)
 
 ### Story 3.4: POST /v1/session/token — short-lived audience-bound CSRF-protected Bearer
@@ -595,8 +599,10 @@ So that browser calls public API without exposing long-lived secrets (AD-2, AD-7
 
 **Given** authenticated better-auth session and valid CSRF token (double-submit cookie or SameSite + custom header)
 **When** `POST /v1/session/token` is called
-**Then** returns Bearer token TTL ≤15 minutes, audience-bound to `USETAGIH_WEB_PUBLIC_URL`
+**Then** returns Bearer token TTL ≤15 minutes, audience-bound to `USETAGIH_WEB_PUBLIC_URL`, carrying active `workspaceId`
 **And** token scopes exactly match API key scope enum: renders:read, renders:write, webhooks:manage, audit:read
+**And** middleware validates token workspace matches resource workspace scope on all `/v1/*` routes
+**And** workspace filtering propagates through render, idempotency, audit, settings, webhook delivery, worker jobs, and structured log contexts
 **And** scope-parity test matrix in `apps/api/src/routes/v1/session.token.test.ts` asserts each scope grants/denies same endpoints as API key equivalent
 **And** missing/invalid CSRF returns 403
 **And** expired session returns 401
@@ -610,7 +616,7 @@ So that I can authenticate REST calls (FR-22, FR-23, AD-7).
 
 **Acceptance Criteria:**
 
-**Given** authenticated account owner
+**Given** authenticated workspace owner (session active org or API key workspace context)
 **When** `POST /v1/api-keys` with name, scopes[], optional expiresAt
 **Then** response includes full secret once; only prefix+hash stored
 **And** `GET /v1/api-keys` lists metadata without secrets
@@ -631,13 +637,13 @@ So that integration is predictable (NFR-7, AD-11, NFR-5).
 **When** any v1 route errors
 **Then** response matches PRD §10.3 envelope with requestId prefix `req_`
 **And** API key and session token both authenticate via Authorization Bearer
-**And** cross-tenant resource access returns 404 not 403 (NFR-5)
+**And** cross-workspace resource access returns 404 not 403 (NFR-5)
 **And** bun test covers 401/403/404 mapping
 
 ### Story 3.7: Idempotency middleware for render endpoints
 
 As an embed integrator,
-I want Idempotency-Key header deduplication per account+endpoint 24h,
+I want Idempotency-Key header deduplication per workspace+endpoint 24h,
 So that retries do not double-charge quota or duplicate artifacts (FR-24, AD-5).
 
 **Acceptance Criteria:**
@@ -672,7 +678,7 @@ So that branding is safe and deterministic (AD-7, SOLUTION-DESIGN §4.4).
 
 **Acceptance Criteria:**
 
-**Given** branding.logoUrl HTTPS-only on payload or account settings
+**Given** branding.logoUrl HTTPS-only on payload or workspace settings
 **When** logo fetched at first use
 **Then** blocks private/link-local IPs; resolve-then-connect IP pinning; max 3 redirects; max 2MB raw / 10MB decompressed; content-types PNG/JPEG/SVG only with magic sniff
 **And** SVG active content stripped/rejected
@@ -706,8 +712,9 @@ So that embed flow completes in one request (FR-12 sync, FR-7, NFR-1).
 **Given** payload with ≤100 line items and render completes within 10s hard timeout
 **When** POST /v1/invoices/render with renders:write scope
 **Then** returns 201, Location `/v1/renders/{renderId}`, body `{ renderId, status: "completed", shareUrl, expiresAt, schemaVersion, documentType, template }`
-**And** PDF uploaded to R2 at `renders/{accountId}/{renderId}.pdf` with sha256 stored (FR-18)
-**And** free-tier account tier=free applies footer watermark; pro tier omits (FR-7, §11 OQ-2)
+**And** PDF uploaded to R2 at `renders/{workspaceId}/{renderId}.pdf` with sha256 stored (FR-18)
+**And** trial workspace tier applies footer watermark via Typst `tier=free` input; starter, pro, and business tiers map to `tier=pro` (FR-7, §11 OQ-2)
+**And** render record snapshots resolved render-affecting inputs (tier/watermark flag, branding, logo checksum) for deterministic reproduction
 **And** validation failure → 422 before Typst invoked
 **And** payloads >500 line items rejected at validation
 **And** integration test asserts P95 target mock ≤2s for basic fixture in CI (NFR-1 smoke)
@@ -721,13 +728,13 @@ So that I can retrieve artifacts after render (FR-13, FR-14, FR-15).
 
 **Acceptance Criteria:**
 
-**Given** completed render owned by account
+**Given** completed render owned by workspace
 **When** GET /v1/renders/{renderId}, GET /v1/renders?page&pageSize&documentType&from&to, GET /v1/renders/{renderId}/download
 **Then** metadata includes status, shareUrl, expiresAt, template, schemaVersion, idempotency fingerprint
 **And** list defaults pageSize 20 max 100 metadata only
 **And** download returns Content-Type application/pdf, Content-Disposition attachment, checksum verified
 **And** download audit event logged (FR-27)
-**And** cross-tenant renderId returns 404
+**And** cross-workspace renderId returns 404
 
 ### Story 3.13: Signed share URLs, public resolver, and revoke
 
@@ -747,7 +754,7 @@ So that PDFs distribute without API keys (FR-19, AD-6).
 
 ### Story 3.14: Audit log capture and GET /v1/audit
 
-As an account owner,
+As a workspace owner,
 I want append-only audit trail queryable via API,
 So that embed flows are accountable (FR-27, NFR-11, AD-7).
 
@@ -763,19 +770,19 @@ So that embed flows are accountable (FR-27, NFR-11, AD-7).
 ### Story 3.15: Rate limiting and monthly quota enforcement
 
 As a platform operator,
-I want per-account rate limits and tier quotas,
+I want per-workspace rate limits and tier quotas,
 So that abuse is controlled (FR-17, NFR-12).
 
 **Acceptance Criteria:**
 
-**Given** usage_counters tracks monthly renders per account tier (free 100/mo hypothesis §11 OQ-5)
-**When** rate limit exceeded
+**Given** usage_counters tracks monthly renders per workspace tier per hypothesis table (trial 100/mo default)
+**When** rate limit exceeded (per-tier renders/min hypothesis)
 **Then** 429 code RATE_LIMITED with Retry-After header
-**And** quota exceeded returns 402 QUOTA_EXCEEDED with upgrade guidance
+**And** quota exceeded returns 402 QUOTA_EXCEEDED naming current tier and next tier
 **And** idempotent retry same key does not double-count quota (FR-24)
-**And** bun test covers limit boundaries
+**And** bun test covers limit boundaries per tier enum
 
-### Story 3.16: Account settings and branding endpoints for web
+### Story 3.16: Workspace settings and branding endpoints for web
 
 As a direct user,
 I want PATCH business/branding settings and logo upload,
@@ -783,11 +790,11 @@ So that PDFs use my identity (PRD §10.1 branding, UX-DR13).
 
 **Acceptance Criteria:**
 
-**Given** authenticated session token or API key
+**Given** authenticated session token or API key scoped to active workspace
 **When** PATCH /v1/settings/business, PATCH /v1/settings/branding, POST /v1/settings/branding/logo
-**Then** account_settings updated; logo obeys same SSRF/size rules as Story 3.9
-**And** render merges account defaults with payload branding override
-**And** bun test covers merge precedence payload override > account default
+**Then** workspace_settings updated; logo obeys same SSRF/size rules as Story 3.9
+**And** render merges workspace defaults with payload branding override
+**And** bun test covers merge precedence payload override > workspace default
 
 ### Story 3.17: Sync embed flow integration test (SM-4)
 
@@ -802,6 +809,21 @@ So that MVP embed path is proven before web (SM-4).
 **Then** all steps pass under `bun test` integration tag
 **And** audit log contains validate, render, download entries
 **And** documents test in `apps/api/tests/embed-sync-flow.test.ts`
+
+### Story 3.18: Workspace CRUD and active workspace selection
+
+As a user with multiple clients,
+I want to create, list, rename, and switch workspaces,
+So that renders and API keys isolate per client project (FR-21).
+
+**Acceptance Criteria:**
+
+**Given** authenticated user who is member of workspace
+**When** POST /v1/workspaces, GET /v1/workspaces, PATCH /v1/workspaces/{id}, POST /v1/workspaces/active, GET /v1/workspaces/active
+**Then** CRUD works; slug unique; creator becomes sole owner member
+**And** membership/ownership checks on list, rename, and active-selection endpoints
+**And** 403 WORKSPACE_REQUIRED when no active workspace on resource routes
+**And** bun test + integration cover switch + isolation (workspace A key cannot read workspace B render)
 
 ---
 
@@ -848,10 +870,11 @@ So that my system gets async notification (FR-25, AD-8).
 
 **Acceptance Criteria:**
 
-**Given** webhooks table and webhooks:manage scope
+**Given** webhooks table and webhooks:manage scope on pro or business tier workspace
 **When** POST /v1/webhooks with HTTPS url and events[]
 **Then** invalid SSL/HTTP url rejected at registration
-**And** GET lists endpoints; DELETE stops deliveries and audits deletion
+**And** POST /v1/webhooks denied on trial and starter tiers (403 with tier upgrade hint)
+**And** GET lists endpoints scoped to workspace; DELETE stops deliveries and audits deletion
 **And** no secret rotation endpoint — documented delete+recreate pattern
 **And** bun test covers CRUD + scope enforcement
 
@@ -946,7 +969,7 @@ So that I can choose alternate visual style (FR-6, FR-7).
 **When** `packages/templates/invoice/classic.typ` renders fixture `invoice-classic-basic.json`
 **Then** golden SHA-256 committed; CI Docker golden:check passes
 **And** totals/tax display matches payload (FR-9)
-**And** free-tier watermark when tier=free
+**And** trial workspace tier watermark when Typst `tier=free` input applied
 
 ### Story 5.2: Quotation modern and classic templates + golden fixtures
 
@@ -1003,7 +1026,7 @@ So that template quality gate is auditable (SM-1).
 
 ---
 
-## Epic 6: Web Application (14 Screens)
+## Epic 6: Web Application (16 Screens)
 
 Next.js 15 Mantine consumer implementing EXPERIENCE.md with Playwright e2e.
 
@@ -1018,6 +1041,8 @@ So that all screens share brand layer (UX-DR1, AD-9).
 **Given** Next.js 15.x pinned in root package.json and Mantine v8
 **When** `apps/web/theme/tokens.ts` maps DESIGN.md colors/typography/spacing to createTheme
 **Then** accent color used only for render/export actions per DESIGN do's
+**And** UI primitives use Mantine v8; if a needed headless primitive is missing, use `@base-ui/react` (install only when first needed in Epic 6) — never `@radix-ui/*` or shadcn/ui
+**And** CONTRIBUTING note in `apps/web/README.md`: headless primitives = Mantine first, base-ui fallback only
 **And** Inter + JetBrains Mono loaded; `@usetagih/sdk` dependency wired
 **And** bun/turbo build apps/web succeeds
 
@@ -1032,7 +1057,7 @@ So that I can access the app (FR-21, UX-DR4, SCR-AUTH-*).
 **Given** routes `/sign-in`, `/sign-up`, `/forgot-password`, `/reset-password`
 **When** user submits email/password or GitHub OAuth button
 **Then** better-auth flows run; errors show in Alert; loading on submit
-**And** successful auth redirects to `/app` or redirect query param
+**And** successful auth redirects to `/app/onboarding/workspace` if user has zero workspaces, else `/app` (or redirect query param)
 **And** Playwright smoke test covers sign-up happy path
 
 ### Story 6.3: Landing page SCR-LANDING
@@ -1139,7 +1164,7 @@ So that I manage embed credentials (FR-22/23, UX-DR11).
 
 ### Story 6.10: Audit log screen SCR-AUDIT-LOG
 
-As an account owner,
+As a workspace owner,
 I want paginated audit log viewer,
 So that I trust embed activity (FR-27, UX-DR12).
 
@@ -1190,6 +1215,21 @@ So that NFR-9 is satisfied (UX-DR16, NFR-9).
 **Then** form labels, aria-describedby errors, aria-live validation, stepper aria-current, contrast ≥4.5:1 on primary/accent buttons
 **And** prefers-reduced-motion honored
 **And** document accessibility findings in `apps/web/a11y-audit.md` with zero critical blockers
+
+### Story 6.14: Workspace create, bootstrap, and switcher (SCR-WORKSPACE-*)
+
+As a user,
+I want to create my first workspace after signup and switch between workspaces,
+So that I isolate client projects (FR-21, UX addendum).
+
+**Acceptance Criteria:**
+
+**Given** new signup without workspace → redirect `/app/onboarding/workspace`
+**When** user submits workspace name → POST /v1/workspaces → active set → `/app`
+**And** user can create additional workspaces from AppShell (modal or `/app/workspaces/new`) beyond first-run onboarding
+**And** AppShell header includes workspace switcher (Select or Menu) calling POST /v1/workspaces/active
+**And** Playwright: signup → onboarding → dashboard blocked without workspace; create second workspace and switch
+**And** WCAG: switcher labeled "Active workspace"
 
 ---
 
@@ -1361,7 +1401,7 @@ So that NFR-8 observability baseline exists.
 
 **Given** API and worker render paths
 **When** render completes or fails
-**Then** JSON logs include requestId, accountId, renderId, stage, durationMs per SOLUTION-DESIGN §12.1
+**Then** JSON logs include requestId, workspaceId, renderId, stage, durationMs per SOLUTION-DESIGN §12.1
 **And** counters documented: usetagih_renders_total, render_duration_seconds histogram, webhook_deliveries_total, queue_depth gauge
 **And** alert threshold documented queue depth >50 for 5min
 
@@ -1389,6 +1429,7 @@ So that MVP exit criteria are explicit.
 **Given** epics 0–7 complete
 **When** `_bmad-output/planning-artifacts/launch-checklist.md` filled
 **Then** includes: golden 100% SM-3, template benchmark SM-1, validation clarity SM-2 sampling plan, embed demo SM-4 link, MCP explicitly out of scope, privacy policy published placeholder (§9.4 assumption)
+**And** launch checklist includes tier limit smoke test per enum and documents payment integration explicitly out of MVP scope
 **And** counter-metrics SM-C1–C3 copy review checklist included
 
 ---
@@ -1472,11 +1513,11 @@ So that agents poll/retrieve artifacts (PRD §4.10 optional).
 | POST /v1/session/token in Epic 3 Story 3.4 with scope-parity matrix | PASS |
 | Sequencing: 0→1 gate→2→3→4→5→6→7→8 | PASS |
 | CONTRIBUTING.md before template parallel (Story 5.0 gates 5.1–5.5) | PASS |
-| 14 UX screens covered Epic 6 | PASS |
-| No payments/orgs/marketplace/i18n/e-invoicing stories | PASS |
+| 16 UX screens covered Epic 6 | PASS |
+| No payments/teams/marketplace/i18n/e-invoicing stories | PASS |
 | Testing in ACs: bun test, Playwright, golden CI | PASS |
 | NFR coverage via Epic 1,3,6,8 stories | PASS |
 
-**Total stories:** 83 (Epic 0: 6, Epic 1: 9, Epic 2: 6, Epic 3: 17, Epic 4: 7, Epic 5: 6, Epic 6: 13, Epic 7: 6, Epic 8: 8, Epic 9 POST-MVP: 5)
+**Total stories:** 85 (Epic 0: 6, Epic 1: 9, Epic 2: 6, Epic 3: 18, Epic 4: 7, Epic 5: 6, Epic 6: 14, Epic 7: 6, Epic 8: 8, Epic 9 POST-MVP: 5)
 
 **FR coverage gaps:** None for MVP FR-1–FR-32. FR-33–FR-35 intentionally deferred to Epic 9 POST-MVP with stub preservation in Story 0.1.

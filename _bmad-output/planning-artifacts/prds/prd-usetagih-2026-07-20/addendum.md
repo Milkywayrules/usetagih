@@ -11,20 +11,26 @@ Overflow from the PRD — mechanism details, pricing hypothesis, competitive rat
 
 ## Pricing Hypothesis (Working — Final Numbers Pre-Launch GTM)
 
-Endorsed as working hypothesis by decision board gate-2 ruling 2026-07-20. Final tier numbers confirmed before public launch GTM.
+Endorsed as working hypothesis by decision board gate-2 ruling 2026-07-20; amended 2026-07-20 for four workspace tier enums. Final tier numbers confirmed before public launch GTM.
 
 Benchmarks from July 2026 market research:
 
-| Tier | Price | Includes |
-|------|-------|----------|
-| **Free** | $0/mo | 100 renders/mo; scoped API keys; idempotency; footer watermark (`Rendered with usetagih · usetagih.com`) |
-| **Embed Pro** | $29/mo | 2,000 renders/mo; webhooks; white-label (no footer watermark) |
-| **Scale** | $99/mo | 10,000 renders/mo + PAYG $0.01/render overage |
-| **Enterprise** | Waitlist | Post-MVP; no MVP SLA — dedicated templates, custom terms when available |
+| Tier (enum) | Price (hypothesis) | Renders/mo (hypothesis) | Rate limit renders/min (hypothesis) | Webhooks | Footer watermark |
+| --- | --- | --- | --- | --- | --- |
+| `trial` | $0/mo | 100 | 30 | No | **Yes** |
+| `starter` | $19/mo | 1,000 | 60 | No | No |
+| `pro` | $29/mo | 2,000 | 120 | **Yes** | No |
+| `business` | $99/mo + $0.01/render over 10k | 10,000 | 300 | Yes | No |
+
+**Enterprise waitlist:** Post-MVP; no enum value at MVP — landing-page waitlist only.
+
+**TBD pending separate approval:** per-tier API key count caps; tier-specific share TTL defaults; tier-specific artifact retention rules.
+
+MVP: tier stored as metadata + enforced limits (renders/mo, rate limits, webhook gating); billing integration deferred.
 
 Competitor anchors: Invovate free tier; invoice-generator.com 100 free/mo; PDFMonkey €5/300; APITemplate $19/3k.
 
-**Resolved (gate-2):** Free tier uses single footer line watermark (~8pt gray); never diagonal. Removed at Embed Pro+.
+**Resolved (gate-2, amended):** `trial` tier uses single footer line watermark (~8pt gray); never diagonal. Removed at `starter+` (white-label).
 
 ## Competitive Positioning (Decision-Grade)
 
@@ -73,9 +79,9 @@ packages/
 
 | Store | Holds | Does NOT hold |
 |-------|-------|---------------|
-| PostgreSQL | Render Records, API keys, webhooks, audit, account metadata | Canonical clients, payments, inventory |
+| PostgreSQL | Render Records, API keys, webhooks, audit, workspace metadata (`workspace_settings`) | Canonical clients, payments, inventory |
 | Cloudflare R2 | PDF artifacts | Business logic |
-| better-auth tables | User sessions, credentials | Org/team membership |
+| better-auth tables | User sessions, credentials, organization plugin (`organization`, `member`) | Teams; multi-member workspaces at MVP |
 
 ### Render pipeline stages
 
@@ -88,7 +94,7 @@ packages/
 ### Idempotency implementation notes
 
 - Key format: 1–255 printable ASCII characters (not UUID-only)
-- Hash `Idempotency-Key` + account id + endpoint
+- Hash `Idempotency-Key` + workspace id + endpoint
 - Store response snapshot for 24h minimum
 - Payload hash mismatch → `409`
 
@@ -153,6 +159,6 @@ Use in landing page, OpenAPI descriptions, and README:
 |-------------|------------------------|
 | MCP-first interface | Finance backends and contract stability favor REST; MCP is distribution |
 | Visual template editor | Pushes cost to customer; opposite of opinionated embed UX |
-| Multi-tenant orgs | Complexity without validated demand |
+| Teams, workspace invites, multi-member workspaces | Complexity without validated demand; MVP is single-owner workspaces with multi-workspace per user |
 | UBL output at MVP | Blurs compliance expectations; Invovate UBL is archival not clearance |
 | Building client CRUD | Violates system-of-record boundary; competes with suites |

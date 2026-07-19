@@ -84,19 +84,19 @@ flowchart TB
 
 - **Binds:** FR-2, FR-9, FR-24; PRD §10.1 arithmetic rules
 - **Prevents:** Silent total correction; duplicate renders on retry
-- **Rule:** Hash `Idempotency-Key` + `accountId` + endpoint; store response snapshot ≥24h. Same key + different payload → `409`. Validation rejects `LINE_TOTAL_MISMATCH`, `TAX_TOTAL_MISMATCH` before render. Displayed PDF values mirror payload — never recomputed at render time.
+- **Rule:** Hash `Idempotency-Key` + `workspaceId` + endpoint; store response snapshot ≥24h. Same key + different payload → `409`. Validation rejects `LINE_TOTAL_MISMATCH`, `TAX_TOTAL_MISMATCH` before render. Displayed PDF values mirror payload — never recomputed at render time.
 
 ### AD-6 — Artifact and share-link lifecycle
 
 - **Binds:** FR-18..FR-20, FR-19
 - **Prevents:** Orphan R2 objects; conflated TTL policies
-- **Rule:** PDF stored at `renders/{accountId}/{renderId}.pdf` in R2; metadata + checksum in PostgreSQL. Share URLs are HMAC-signed with TTL (default 90d, per-render `shareTtlDays` 1–365). `DELETE /v1/renders/{renderId}/share` revokes; no reissue. Artifact retention ≥ share TTL + 7d grace; cleanup job deletes R2 object after retention, retains audit metadata.
+- **Rule:** PDF stored at `renders/{workspaceId}/{renderId}.pdf` in R2; metadata + checksum in PostgreSQL. Share URLs are HMAC-signed with TTL (default 90d, per-render `shareTtlDays` 1–365). `DELETE /v1/renders/{renderId}/share` revokes; no reissue. Artifact retention ≥ share TTL + 7d grace; cleanup job deletes R2 object after retention, retains audit metadata.
 
 ### AD-7 — Auth, API keys, audit
 
 - **Binds:** FR-21..FR-23, FR-27; NFR-5, NFR-11
 - **Prevents:** Plaintext key storage; cross-tenant leakage
-- **Rule:** better-auth for web sessions (email/password + GitHub OAuth). API keys scoped (`renders:read`, `renders:write`, `webhooks:manage`, `audit:read`); hashed at rest (argon2); show-once on create. Session→API access via `POST /v1/session/token`: short-lived (≤15 min), audience-bound tokens with CSRF protection; scopes of session-derived tokens must be exactly equivalent to API-key scopes (scope-parity acceptance test matrix). Explicit auth-epic story — no browser-exposed Bearer bridge. Logo ingestion defends against SSRF (block private/link-local IPs, resolve-then-connect pinning against DNS rebinding), caps redirects, enforces size/content-type limits, decompression-bomb protection, strips/rejects active SVG content; fetch once at first use, render only from persisted immutable bytes + checksum on render record. All mutating actions append audit row. Cross-tenant resource access returns `404`.
+- **Rule:** better-auth for web sessions (email/password + GitHub OAuth) with organization plugin mapped to workspaces (teams disabled; invitation, member-add/remove, join, and team operations explicitly disabled/rejected at app layer). Mandatory ≥1 workspace per user. API keys and quotas scoped to `workspace_id`. API keys scoped (`renders:read`, `renders:write`, `webhooks:manage`, `audit:read`); hashed at rest (argon2); show-once on create. Session→API access via `POST /v1/session/token`: short-lived (≤15 min), audience-bound tokens with CSRF protection; session tokens carry active `workspaceId`. Scopes of session-derived tokens must be exactly equivalent to API-key scopes (scope-parity acceptance test matrix). Explicit auth-epic story — no browser-exposed Bearer bridge. Logo ingestion defends against SSRF (block private/link-local IPs, resolve-then-connect pinning against DNS rebinding), caps redirects, enforces size/content-type limits, decompression-bomb protection, strips/rejects active SVG content; fetch once at first use, render only from persisted immutable bytes + checksum on render record. Render records snapshot resolved render-affecting inputs (tier/watermark flag, branding, logo checksum). All mutating actions append audit row. Cross-workspace resource access returns `404`.
 
 ### AD-8 — Webhook delivery semantics
 
@@ -133,6 +133,12 @@ flowchart TB
 - **Prevents:** Breaking changes without migration path
 - **Rule:** Support N and N-1 schema versions for 90 days. `GET /v1/schemas` is authority. SDK warns when bundled version ≠ server version.
 
+### AD-13 — UI headless primitives (@base-ui/react)
+
+- **Binds:** AD-9, NFR-9; Epic 6
+- **Prevents:** Radix UI dependency drift; shadcn/Radix coupling
+- **Rule:** UI primitives come from Mantine v8. When Mantine does not supply a needed headless pattern (Dialog, Popover, Menu, Tooltip, etc.), use `@base-ui/react` — install only when first needed (Epic 6). **Never** `@radix-ui/*` or shadcn/ui (Radix-backed). Mantine v8 remains the styled component layer. If Radix is found in `apps/web`, refactor to base-ui + Mantine before merge.
+
 ## Consistency Conventions
 
 | Concern | Convention |
@@ -143,7 +149,7 @@ flowchart TB
 | Data & formats | Money = decimal string; dates ISO 8601 date; currency ISO 4217; errors JSON Pointer paths |
 | IDs in DB | PostgreSQL `uuid` primary keys; idempotency stored as SHA-256 hash of key |
 | State mutation | Use-cases in `packages/core` own transactions; repos never called from route handlers directly |
-| Logging | Structured JSON via `pino`; fields: `requestId`, `accountId`, `renderId`, `stage`, `durationMs` |
+| Logging | Structured JSON via `pino`; fields: `requestId`, `workspaceId`, `renderId`, `stage`, `durationMs` |
 | Auth | API: `Authorization: Bearer <api_key>`. Web: better-auth session cookie → `POST /v1/session/token` for short-lived audience-bound Bearer |
 | Config | Doppler project `usetagih`; configs `dev`, `staging`, `prod` — never commit secrets |
 

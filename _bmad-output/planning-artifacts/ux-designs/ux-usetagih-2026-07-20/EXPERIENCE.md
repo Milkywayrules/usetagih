@@ -38,6 +38,8 @@ updated: 2026-07-20
 | `/sign-up` | Public | `SCR-AUTH-SIGNUP` | Registration |
 | `/forgot-password` | Public | `SCR-AUTH-RESET` | Password reset request |
 | `/reset-password` | Public | `SCR-AUTH-RESET-CONFIRM` | New password entry (token from email) |
+| `/app/onboarding/workspace` | Session | `SCR-WORKSPACE-ONBOARD` | Mandatory first workspace creation after signup |
+| `/app/workspaces/new` | Session | `SCR-WORKSPACE-CREATE` | Create additional workspace (modal or page) |
 | `/app` | Session | `SCR-DASHBOARD` | Authenticated home — quick actions + recent renders |
 | `/app/documents/new` | Session | `SCR-DOC-CREATE` | Document creation wizard (Stepper) |
 | `/app/documents` | Session | `SCR-DOC-HISTORY` | Paginated render history |
@@ -217,7 +219,10 @@ Branding applies to rendered PDF templates, not app chrome (app uses `DESIGN.md`
 - "Mark as paid", "Send reminder", "Record payment" actions
 - Client-side-only export without server validation pass
 - Webhook UI at MVP
-- Multi-tenant org switcher
+
+**Required**
+
+- Workspace switcher in AppShell header (SCR-WORKSPACE-SWITCHER)
 
 ## Accessibility Floor
 
@@ -282,6 +287,10 @@ Every screen action → endpoint. Session auth uses cookie; API keys page uses s
 | Update settings | PATCH | `/v1/settings/business`, `/v1/settings/branding` |
 | Upload logo | POST | `/v1/settings/branding/logo` |
 | Resolve share link | GET | `/v1/share/{token}` (public metadata + download redirect) |
+| Create workspace | POST | `/v1/workspaces` |
+| List workspaces | GET | `/v1/workspaces` |
+| Set active workspace | POST | `/v1/workspaces/active` |
+| Get active workspace | GET | `/v1/workspaces/active` |
 | Sign in/up/out | — | better-auth routes (`/api/auth/*`) |
 
 Error envelope (PRD §10.3): all errors render `error.message` + expandable `details` list with `Code` paths.
@@ -546,15 +555,16 @@ flowchart TD
 **Protagonist:** Maya, solo freelance designer, Bandung.
 
 1. Maya lands on `SCR-LANDING`, clicks **Get started**.
-2. `SCR-AUTH-SIGNUP`: email + password → session → redirect `/app`.
-3. `SCR-DASHBOARD`: clicks **New invoice** → `SCR-DOC-CREATE?type=invoice`.
-4. Step 0: Invoice pre-selected; Continue.
-5. Step 1: selects **modern** template thumbnail; Continue.
-6. Step 2: fills seller (her business), buyer (client), 2 line items, totals. On blur, client Zod flags quantity × unitPrice ≠ lineTotal — she fixes before continuing.
-7. Clicks **Validate** → `POST /v1/invoices/validate` returns 200. Preview pane loads via `POST /v1/invoices/preview`.
-8. Step 3: reviews preview — pagination, currency formatting correct.
-9. **Climax:** Clicks **Export PDF** → `POST /v1/invoices/render` → success panel → PDF downloads → share link copied. She opens share URL in incognito — `SCR-SHARE-PUBLIC` shows same document.
-10. **Resolution:** Render appears in `SCR-DOC-HISTORY`; she re-downloads next week from detail.
+2. `SCR-AUTH-SIGNUP`: email + password → session → redirect `/app/onboarding/workspace` (zero workspaces).
+3. `SCR-WORKSPACE-ONBOARD`: submits workspace name → `POST /v1/workspaces` → active set → redirect `/app`.
+4. `SCR-DASHBOARD`: clicks **New invoice** → `SCR-DOC-CREATE?type=invoice`.
+5. Step 0: Invoice pre-selected; Continue.
+6. Step 1: selects **modern** template thumbnail; Continue.
+7. Step 2: fills seller (her business), buyer (client), 2 line items, totals. On blur, client Zod flags quantity × unitPrice ≠ lineTotal — she fixes before continuing.
+8. Clicks **Validate** → `POST /v1/invoices/validate` returns 200. Preview pane loads via `POST /v1/invoices/preview`.
+9. Step 3: reviews preview — pagination, currency formatting correct.
+10. **Climax:** Clicks **Export PDF** → `POST /v1/invoices/render` → success panel → PDF downloads → share link copied. She opens share URL in incognito — `SCR-SHARE-PUBLIC` shows same document.
+11. **Resolution:** Render appears in `SCR-DOC-HISTORY`; she re-downloads next week from detail.
 
 **Edge — total mismatch:** Maya enters `grandTotal` 1100 but computed is 1089. Server returns `422` with path `/totals/grandTotal`, expected/received. Field highlights red; export disabled. No silent fix.
 
@@ -622,7 +632,7 @@ TextInput label="Grand total"
 
 | Tag | Item | Resolution |
 |---|---|---|
-| `[RESOLVED]` | Free-tier watermark: single footer line "Rendered with usetagih · usetagih.com" | PRD §11 OQ-2 — never diagonal; removed at Embed Pro+ (white-label) |
+| `[RESOLVED]` | Trial-tier watermark: single footer line "Rendered with usetagih · usetagih.com" | PRD §11 OQ-2 — never diagonal; removed at `starter+` (white-label) |
 | `[ASSUMPTION]` | Share link default TTL 90 days shown in UI | Per PRD FR-19 |
 | `[ASSUMPTION]` | `POST /v1/api-keys` and settings endpoints follow architecture doc naming | Exact paths may vary; behavior locked |
 | `[NOTE]` | Webhooks API-only | No UI at MVP |

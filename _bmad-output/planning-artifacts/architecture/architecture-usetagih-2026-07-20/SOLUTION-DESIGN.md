@@ -195,8 +195,8 @@ sequenceDiagram
 1. **Authenticate** — API key or session-derived token; scope check
 2. **Idempotency** — lookup `idempotency_keys` table; return cached response if hit
 3. **Validate** — Zod parse + business rules (§10.1 arithmetic)
-4. **Resolve branding** — merge account defaults + payload override; logo pipeline (see §4.4)
-5. **Render** — build Typst input JSON; invoke `typst compile --input json=<path>` (from persisted logo bytes when applicable)
+4. **Resolve branding** — merge workspace defaults + payload override; logo pipeline (see §4.4); snapshot resolved tier/watermark/branding/logo checksum on render record
+5. **Render** — map `workspace_settings.tier`: `trial` → Typst `--input tier=free`; paid tiers → `tier=pro`; build Typst input JSON; invoke `typst compile --input json=<path>` (from persisted logo bytes when applicable)
 6. **Store** — upload R2; insert/update `renders` row with `sha256`, `byteSize`, `r2Key`
 7. **Share URL** — sign JWT/HMAC token with expiry
 8. **Webhook** — if registered, enqueue delivery job
@@ -228,9 +228,9 @@ sequenceDiagram
 - **SVG sanitization:** strip `<script>`, event handlers, external references, and `foreignObject`; reject if active content remains
 - No render record (ephemeral); no share URL
 
-### 4.3 Free-Tier Watermark
+### 4.3 Trial-Tier Watermark (Typst tier input)
 
-Typst template receives `showWatermark: boolean` from account tier. Footer text: `Rendered with usetagih · usetagih.com` at 8pt gray when true.
+Typst template receives `--input tier=free|pro` (enum unchanged until Epic 5 template pass). Render path maps `workspace_settings.tier === 'trial'` → `tier=free`; all paid tiers (`starter`, `pro`, `business`) → `tier=pro`. Footer text when `tier=free`: `Rendered with usetagih · usetagih.com` at 8pt gray. Render records snapshot resolved tier/watermark flag at render time so deterministic reproduction never depends on mutable workspace settings.
 
 ### 4.4 Logo Ingestion (SSRF-hardened)
 
@@ -274,6 +274,18 @@ const forceAsync = preferAsyncHeader || payload.lineItems.length > 100;
 ```
 
 **Hard timeout:** 10s wall clock for sync path; worker uses 120s internal timeout.
+
+### 5.4 Workspace API Endpoints
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/v1/workspaces` | Create workspace (auth required); creator becomes sole owner member |
+| GET | `/v1/workspaces` | List user's workspaces (membership check) |
+| PATCH | `/v1/workspaces/{workspaceId}` | Rename workspace (ownership check) |
+| POST | `/v1/workspaces/active` | Set active workspace (`{ workspaceId }`; membership check) |
+| GET | `/v1/workspaces/active` | Get active workspace + tier (membership check) |
+
+All existing `/v1/*` resource routes resolve tenant from API key's workspace or session active org. Returns `403 WORKSPACE_REQUIRED` when user has zero workspaces or active workspace unset on resource routes (except workspace bootstrap endpoints).
 
 ---
 
@@ -381,16 +393,16 @@ flowchart BT
 
 | Table | Purpose |
 | --- | --- |
-| `users` | better-auth managed |
-| `accounts`, `sessions`, `verifications` | better-auth |
-| `api_keys` | `id`, `user_id`, `name`, `prefix`, `key_hash`, `scopes[]`, `expires_at`, `revoked_at` |
-| `renders` | `id`, `user_id`, `document_type`, `template`, `schema_version`, `status`, `idempotency_hash`, `payload_hash`, `r2_key`, `sha256`, `byte_size`, `share_token`, `share_expires_at`, `logo_checksum`, `error_code`, timestamps |
-| `idempotency_keys` | `account_id`, `endpoint`, `key_hash`, `request_hash`, `response_body`, `expires_at` |
-| `webhooks` | `id`, `user_id`, `url`, `secret_hash`, `events[]`, `disabled_at`, `failure_streak_since` |
+| `user`, `session`, `account`, `verification` | better-auth core |
+| `organization`, `member`, `invitation` | better-auth organization plugin (teams off; invitation/member-add/remove/join/team ops disabled at app layer) — **`organization` is workspace identity; no duplicate `workspaces` table** |
+| `workspace_settings` | `organization_id` PK, tier enum (`trial`\|`starter`\|`pro`\|`business`), branding JSON, business identity |
+| `api_keys` | `id`, `workspace_id` FK → `organization.id`, `name`, `prefix`, `key_hash`, `scopes[]`, `expires_at`, `revoked_at` |
+| `renders` | `id`, `workspace_id` FK, `document_type`, `template`, `schema_version`, `status`, `idempotency_hash`, `payload_hash`, `r2_key`, `sha256`, `byte_size`, `share_token`, `share_expires_at`, `logo_checksum`, snapshot columns (`resolved_tier`, `show_watermark`, `branding_snapshot`), `error_code`, timestamps |
+| `idempotency_keys` | `workspace_id`, `endpoint`, `key_hash`, `request_hash`, `response_body`, `expires_at` |
+| `webhooks` | `id`, `workspace_id`, `url`, `secret_hash`, `events[]`, `disabled_at`, `failure_streak_since` (Epic 4) |
 | `webhook_deliveries` | `id`, `event_id`, `webhook_id`, `render_id`, `attempt`, `status`, `next_attempt_at`, `response_code` |
-| `audit_events` | append-only: `id`, `user_id`, `action`, `resource_type`, `resource_id`, `outcome`, `ip`, `metadata`, `created_at` |
-| `account_settings` | branding defaults, business identity, `tier` enum |
-| `usage_counters` | monthly render count per account |
+| `audit_events` | append-only: `id`, `workspace_id` (nullable only for signup/login/bootstrap), `user_id` actor, `action`, `resource_type`, `resource_id`, `outcome`, `ip`, `metadata`, `created_at` |
+| `usage_counters` | `workspace_id`, month, render_count |
 
 ### 7.2 Migration Strategy
 
@@ -580,7 +592,7 @@ Required fields on render path:
   "level": "info",
   "msg": "render.completed",
   "requestId": "req_...",
-  "accountId": "...",
+  "workspaceId": "...",
   "renderId": "rnd_...",
   "documentType": "invoice",
   "template": "modern",
@@ -641,6 +653,7 @@ MVP: export via structured logs + manual dashboards; alert when `render.process`
 - **Share page:** Next.js `app/share/[token]/page.tsx` calls `GET /v1/share/{token}` public endpoint
 - **Theme:** port `DESIGN.md` YAML tokens to `apps/web/theme/tokens.ts` → Mantine `createTheme`
 - **Playwright e2e:** `apps/web/e2e/uj1-invoice-export.spec.ts` per FR-29
+- **Headless primitives:** Mantine v8 first per AD-13; `@base-ui/react` only when a needed pattern is missing (install when first needed in Epic 6); no Radix/shadcn in `apps/web`
 
 ---
 
