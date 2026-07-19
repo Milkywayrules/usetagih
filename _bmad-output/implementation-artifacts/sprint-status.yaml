@@ -1,11 +1,183 @@
-generated: 2026-07-19
+# generated: 2026-07-20
+# last_updated: 2026-07-20
+# project: usetagih
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - Retrospective appends its action items to action_items; sprint-status surfaces open ones
+#
+# SEQUENCING (board-ratified, Epic 9 POST-MVP excluded):
+# Epic 0 → Epic 1 (PDF spike BLOCKING) → Epic 2 → Epic 3 → Epic 4
+# Epic 5 after Epic 1+3 (Story 5.0 first) | Epic 6 after Epic 3+5 | Epic 7 after Epic 3 | Epic 8 last
+
+generated: 2026-07-20
 last_updated: 2026-07-20
 project: usetagih
 project_key: NOKEY
 tracking_system: file-system
-story_location: "{project-root}/_bmad-output/implementation-artifacts"
+story_location: _bmad-output/implementation-artifacts
 
 development_status:
-  epic-0: done
-  0-1-e2e-probe: done
+  # --- Archived: disposable harness epic (pre-MVP loop-verify, NOT epics.md Epic 0) ---
+  epic-0-harness: done
+  0-1-e2e-probe: done  # harness story; distinct from 0-1-initialize-turborepo-monorepo-workspace
+  epic-0-harness-retrospective: optional
+
+  # Epic 0: Monorepo & CI Foundation
+  # Gates: Epic 1 (PDF spike). Sequencing: none → Epic 0 → Epic 1.
+  epic-0: in-progress
+  0-1-initialize-turborepo-monorepo-workspace: ready-for-dev
+  0-2-shared-typescript-and-biome-config-package: backlog
+  0-3-local-docker-compose-for-postgres-and-minio: backlog
+  0-4-github-actions-ci-workflow: backlog
+  0-5-ghcr-docker-build-and-push-workflow-skeleton: backlog
+  0-6-doppler-project-mapping-and-env-validation-scaffold: backlog
   epic-0-retrospective: optional
+
+  # Epic 1: PDF Pipeline Spike (BLOCKING GATE)
+  # BLOCKING GATE — failure halts Epics 2–8 and escalates to board. Gated by Epic 0.
+  epic-1: backlog
+  1-1-pin-typst-0-15-x-font-bundle-and-shared-preamble: backlog
+  1-2-invoice-modern-typst-template-and-basic-fixture: backlog
+  1-3-golden-harness-cli-golden-check: backlog
+  1-4-ci-docker-render-ci-image-and-pdf-golden-workflow: backlog
+  1-5-25-line-item-pagination-fixture-fr-8-blocking: backlog
+  1-6-logo-determinism-fixture-png-jpeg-svg-blocking: backlog
+  1-7-multi-page-svg-preview-with-pdf-page-count-parity-blocking: backlog
+  1-8-determinism-soak-100-consecutive-iterations-blocking: backlog
+  1-9-spike-gate-documentation-and-board-escalation-protocol: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Canonical Schema & Contract Package
+  # Gated by Epic 1 (spike PASS). Gates Epic 3.
+  epic-2: backlog
+  2-1-document-payload-zod-discriminated-union: backlog
+  2-2-business-rule-validators-for-arithmetic-integrity: backlog
+  2-3-error-codes-enum-and-api-error-envelope-types: backlog
+  2-4-schema-version-negotiation-helpers: backlog
+  2-5-openapi-3-1-component-generation-from-zod: backlog
+  2-6-shared-validation-fixture-test-suite: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: API Core — Auth, Keys, Idempotency, Sync Render, Share, Audit
+  # Gated by Epic 2. Gates Epics 4–7.
+  epic-3: backlog
+  3-1-drizzle-database-schema-and-migrations-for-core-tables: backlog
+  3-2-packages-core-ports-and-validate-use-case: backlog
+  3-3-better-auth-registration-login-and-session-middleware: backlog
+  3-4-post-v1-session-token-short-lived-audience-bound-csrf-protected-bearer: backlog
+  3-5-api-key-create-list-and-revoke-endpoints: backlog
+  3-6-auth-middleware-request-id-and-unified-error-envelope: backlog
+  3-7-idempotency-middleware-for-render-endpoints: backlog
+  3-8-get-v1-schemas-and-post-v1-documenttype-validate: backlog
+  3-9-logo-ingestion-ssrf-hardened-pipeline: backlog
+  3-10-post-v1-documenttype-preview-multi-page-svg-response: backlog
+  3-11-sync-render-path-post-v1-documenttype-render-100-items-10s: backlog
+  3-12-render-retrieval-list-and-authenticated-download: backlog
+  3-13-signed-share-urls-public-resolver-and-revoke: backlog
+  3-14-audit-log-capture-and-get-v1-audit: backlog
+  3-15-rate-limiting-and-monthly-quota-enforcement: backlog
+  3-16-account-settings-and-branding-endpoints-for-web: backlog
+  3-17-sync-embed-flow-integration-test-sm-4: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Async Render Path, Webhooks & Artifact Lifecycle
+  # Gated by Epic 3. Gates Epic 8.
+  epic-4: backlog
+  4-1-pg-boss-queue-setup-and-worker-container-entrypoint: backlog
+  4-2-async-render-path-202-processing-response: backlog
+  4-3-webhook-registration-crud-endpoints: backlog
+  4-4-webhook-delivery-with-hmac-signature-and-retry-schedule: backlog
+  4-5-webhook-endpoint-auto-disable-after-7-days-total-failure: backlog
+  4-6-artifact-cleanup-cron-and-retention-policy-documentation: backlog
+  4-7-async-embed-flow-integration-test-with-webhook-sm-4-complete: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Document Templates (6 Curated Styles)
+  # Gated by Epic 1 + Epic 3. Story 5.0 (CONTRIBUTING.md) gates 5.1–5.5.
+  epic-5: backlog
+  5-0-template-authoring-contributing-md-prerequisite-gate: backlog
+  5-1-invoice-classic-template-golden-fixture: backlog
+  5-2-quotation-modern-and-classic-templates-golden-fixtures: backlog
+  5-3-receipt-modern-and-classic-templates-golden-fixtures: backlog
+  5-4-multi-tax-and-discount-golden-fixture-corpus: backlog
+  5-5-template-quality-benchmark-checklist-sm-1: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Web Application (14 Screens)
+  # Gated by Epic 3 (session token) + Epic 5 (templates).
+  epic-6: backlog
+  6-1-next-js-app-router-scaffold-with-mantine-theme-tokens: backlog
+  6-2-auth-screens-scr-auth-signin-signup-reset: backlog
+  6-3-landing-page-scr-landing: backlog
+  6-4-app-shell-dashboard-scr-dashboard: backlog
+  6-5-document-creation-wizard-scr-doc-create: backlog
+  6-6-playwright-e2e-uj-1-happy-path-all-document-types: backlog
+  6-7-documents-history-and-detail-scr-doc-history-scr-doc-detail: backlog
+  6-8-template-gallery-scr-template-gallery: backlog
+  6-9-api-keys-screen-scr-api-keys: backlog
+  6-10-audit-log-screen-scr-audit-log: backlog
+  6-11-settings-scr-settings: backlog
+  6-12-public-share-page-scr-share-public: backlog
+  6-13-accessibility-wcag-2-1-aa-verification: backlog
+  epic-6-retrospective: optional
+
+  # Epic 7: TypeScript SDK & OpenAPI Publishing
+  # Gated by Epic 3.
+  epic-7: backlog
+  7-1-sdk-validatelocally-parity-with-server: backlog
+  7-2-sdk-render-client-with-auth-idempotency-and-429-retry: backlog
+  7-3-schema-version-drift-warning-in-sdk: backlog
+  7-4-publish-openapi-3-1-at-get-v1-openapi-json-with-spectral-ci: backlog
+  7-5-sdk-staging-integration-test-all-document-types: backlog
+  7-6-npm-publish-pipeline-and-package-versioning-aligned-to-schema: backlog
+  epic-7-retrospective: optional
+
+  # Epic 8: Launch Readiness & Production Deploy
+  # Gated by Epics 3–7. Last MVP epic before production traffic.
+  epic-8: backlog
+  8-1-coolify-production-deploy-pulling-ghcr-prebuilt-images: backlog
+  8-2-external-uptime-monitoring: backlog
+  8-3-container-restart-policies: backlog
+  8-4-postgres-backup-and-restore-drill-runbook: backlog
+  8-5-umami-self-hosted-analytics: backlog
+  8-6-structured-logging-and-render-webhook-metrics: backlog
+  8-7-hsts-and-https-enforcement: backlog
+  8-8-launch-checklist-and-success-metrics-validation-plan: backlog
+  epic-8-retrospective: optional
+
+# Epic 9 (MCP v1.1 POST-MVP) intentionally excluded from sprint — 5 stories deferred
