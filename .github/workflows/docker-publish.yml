@@ -1,0 +1,68 @@
+# GHCR image publish — SOLUTION-DESIGN §10.1 (docker-push), §11.2 Deploy Flow
+#
+# Production Coolify NEVER builds on the VPS. Coolify pulls prebuilt images from GHCR only.
+# See Epic 8 Story 8.1 for Coolify resource wiring.
+#
+# Images: ghcr.io/verasic-labs/usetagih-{api,web,render-ci}
+# Tags:   sha-<full-commit-sha> (immutable; no :latest in this story)
+
+name: Docker Publish
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build only — skip GHCR push (local/manual verification)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: docker-publish-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: publish-${{ matrix.image }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: api
+            dockerfile: docker/Dockerfile.api
+            ghcr_name: usetagih-api
+          - image: web
+            dockerfile: docker/Dockerfile.web
+            ghcr_name: usetagih-web
+          - image: render-ci
+            dockerfile: docker/Dockerfile.render-ci
+            ghcr_name: usetagih-render-ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.dry_run }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: ${{ github.event_name != 'workflow_dispatch' || !inputs.dry_run }}
+          tags: ghcr.io/verasic-labs/${{ matrix.ghcr_name }}:sha-${{ github.sha }}
+          provenance: false

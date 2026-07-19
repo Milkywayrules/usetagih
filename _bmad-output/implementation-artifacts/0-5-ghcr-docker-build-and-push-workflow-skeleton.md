@@ -4,7 +4,7 @@ baseline_commit: 7a872472202c89823b8ec31eaec5fbb23792932d
 
 # Story 0.5: GHCR Docker build-and-push workflow skeleton
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -29,26 +29,26 @@ so that Coolify can pull prebuilt images (SOLUTION-DESIGN §11.2, deploy constra
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Add `docker/Dockerfile.render-ci` alpine stub (AC: 1, prerequisite)
-  - [ ] Create minimal stub matching api/web pattern (`alpine:3.21`, idle CMD)
-  - [ ] Header comment: stub only — real debian+Typst image lands Epic 1 Story 1.4
-  - [ ] Do **not** install Typst, fonts, or Bun in this stub
-- [ ] Task 2 — Create `.github/workflows/docker-publish.yml` (AC: 1–5)
-  - [ ] Workflow header comment documenting Coolify pull-only deploy (§11.2)
-  - [ ] Triggers: `push` → `main`; `workflow_dispatch` input `dry_run` (boolean, default false)
-  - [ ] Top-level `permissions: packages: write, contents: read`
-  - [ ] Single job `publish` with matrix `image: [api, web, render-ci]` mapping to Dockerfiles and GHCR image names
-  - [ ] Steps: checkout → login to ghcr.io → setup docker buildx → build-push (push conditional on `dry_run != true`)
-  - [ ] Immutable tag expression: `sha-${{ github.sha }}` on all three images
-  - [ ] `runs-on: ubuntu-latest`; no Bun setup needed (docker-only workflow)
-- [ ] Task 3 — Verification gate (AC: 6–9)
-  - [ ] Static YAML parse + structural greps (always required)
-  - [ ] Local `docker build` for api, web, render-ci stubs (always required when daemon up)
-  - [ ] Post-build cleanup: `docker image rm` stub tags + `docker builder prune -f`
-  - [ ] Secret grep proof across repo / workflow
-  - [ ] Command-parity turbo run
-  - [ ] Mark GHCR push + GitHub runner environment-gated
-  - [ ] Record results in Dev Agent Record
+- [x] Task 1 — Add `docker/Dockerfile.render-ci` alpine stub (AC: 1, prerequisite)
+  - [x] Create minimal stub matching api/web pattern (`alpine:3.21`, idle CMD)
+  - [x] Header comment: stub only — real debian+Typst image lands Epic 1 Story 1.4
+  - [x] Do **not** install Typst, fonts, or Bun in this stub
+- [x] Task 2 — Create `.github/workflows/docker-publish.yml` (AC: 1–5)
+  - [x] Workflow header comment documenting Coolify pull-only deploy (§11.2)
+  - [x] Triggers: `push` → `main`; `workflow_dispatch` input `dry_run` (boolean, default false)
+  - [x] Top-level `permissions: packages: write, contents: read`
+  - [x] Single job `publish` with matrix `image: [api, web, render-ci]` mapping to Dockerfiles and GHCR image names
+  - [x] Steps: checkout → login to ghcr.io → setup docker buildx → build-push (push conditional on `dry_run != true`)
+  - [x] Immutable tag expression: `sha-${{ github.sha }}` on all three images
+  - [x] `runs-on: ubuntu-latest`; no Bun setup needed (docker-only workflow)
+- [x] Task 3 — Verification gate (AC: 6–9)
+  - [x] Static YAML parse + structural greps (always required)
+  - [x] Local `docker build` for api, web, render-ci stubs (always required when daemon up)
+  - [x] Post-build cleanup: `docker image rm` stub tags + `docker builder prune -f`
+  - [x] Secret grep proof across repo / workflow
+  - [x] Command-parity turbo run
+  - [x] Mark GHCR push + GitHub runner environment-gated
+  - [x] Record results in Dev Agent Record
 
 ## Dev Notes
 
@@ -380,19 +380,29 @@ No changes to `apps/`, `packages/`, or root toolchain files expected.
 
 ### Agent Model Used
 
-_(filled by dev agent)_
+Composer 2.5 (headless dev-story subagent)
 
 ### Debug Log References
 
-_(filled by dev agent)_
+- Static: YAML parse OK; all structural greps pass
+- Secret grep: no ghp_/GHCR_ tokens; GITHUB_TOKEN only
+- Docker: api/web/render-ci alpine stub builds OK; verify tags removed; builder prune reclaimed 21.21GB cache
+- Turbo: 36/36 tasks green (FULL TURBO)
+- ENVIRONMENT-GATED: no GitHub remote; GHCR push + GHA runner re-verify on first push to main
 
 ### Completion Notes List
 
-_(filled by dev agent)_
+- Added `docker/Dockerfile.render-ci` alpine:3.21 stub (Epic 1.4 replaces with debian+Typst)
+- Added `.github/workflows/docker-publish.yml` — matrix publish job for api/web/render-ci with immutable `sha-${{ github.sha }}` tags, GITHUB_TOKEN auth, dry_run build-only dispatch
+- Workflow header documents Coolify NEVER builds on VPS — pull-only from GHCR per SOLUTION-DESIGN §11.2
+- Local verification complete; GHCR push environment-gated (no git remote)
 
 ### File List
 
-_(filled by dev agent)_
+- `.github/workflows/docker-publish.yml` (new)
+- `docker/Dockerfile.render-ci` (new)
+- `_bmad-output/implementation-artifacts/0-5-ghcr-docker-build-and-push-workflow-skeleton.md` (updated)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (updated)
 
 ## Story Validation Record
 
@@ -413,3 +423,4 @@ _(filled by dev agent)_
 ## Change Log
 
 - 2026-07-20: story created and validated — ready for dev
+- 2026-07-20: implemented GHCR docker-publish workflow skeleton + render-ci alpine stub; local verification pass; status → review
