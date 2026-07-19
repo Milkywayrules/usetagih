@@ -1,15 +1,12 @@
-import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
-import { compileTypst } from "../src/typst-driver";
+import { mkdirSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { loadManifest } from "../src/golden";
+import {
+	PACKAGE_ROOT,
+	renderFixtureFromManifest,
+} from "../src/golden/render-fixture";
 
-const PACKAGE_ROOT = resolve(import.meta.dir, "..");
-const REPO_ROOT = resolve(PACKAGE_ROOT, "../..");
-const TEMPLATE_PATH = join(REPO_ROOT, "packages/templates/invoice/modern.typ");
-
-function sha256File(path: string): string {
-	return createHash("sha256").update(readFileSync(path)).digest("hex");
-}
+const MANIFEST_PATH = resolve(PACKAGE_ROOT, "manifest.json");
 
 function parseArgs(argv: string[]): {
 	fixture: string;
@@ -48,27 +45,39 @@ function parseArgs(argv: string[]): {
 	return { fixture, tier, out: outputPath };
 }
 
-const { fixture, tier, out } = parseArgs(process.argv.slice(2));
+function findManifestEntry(fixture: string, tier: string) {
+	const manifest = loadManifest(MANIFEST_PATH);
+	const byId = manifest.fixtures.find((entry) => entry.id === fixture);
+	if (byId) {
+		return {
+			...byId,
+			inputs: { ...byId.inputs, tier },
+		};
+	}
 
-const payloadPath = resolve(
-	PACKAGE_ROOT,
-	`__fixtures__/payloads/${fixture}.json`,
-);
-const payloadInput = relative(
-	join(REPO_ROOT, "packages/templates/invoice"),
-	payloadPath,
-);
+	if (fixture === "invoice-modern-basic") {
+		return {
+			id: fixture,
+			payload: `__fixtures__/payloads/${fixture}.json`,
+			template: "../templates/invoice/modern.typ",
+			sha256: "",
+			typstVersion: manifest.typstVersion,
+			schemaVersion: "2026-07-20",
+			inputs: { tier },
+		};
+	}
+
+	console.error(`Fixture not found in manifest: ${fixture}`);
+	process.exit(1);
+}
+
+const { fixture, tier, out } = parseArgs(process.argv.slice(2));
+const entry = findManifestEntry(fixture, tier);
 
 mkdirSync(dirname(out), { recursive: true });
 
-compileTypst({
-	inputPath: TEMPLATE_PATH,
-	outputPath: out,
-	extraArgs: ["--input", `json=${payloadInput}`, "--input", `tier=${tier}`],
-});
-
-const hash = sha256File(out);
+const { sha256 } = renderFixtureFromManifest(entry, { outputPath: out });
 
 console.log(`Rendered ${fixture} (tier=${tier})`);
 console.log(`Output: ${out}`);
-console.log(`SHA-256: ${hash}`);
+console.log(`SHA-256: ${sha256}`);

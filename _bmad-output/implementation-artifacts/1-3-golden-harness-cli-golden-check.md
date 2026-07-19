@@ -4,7 +4,7 @@ baseline_commit: 9557386
 
 # Story 1.3: Golden harness CLI (`golden:check`)
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -32,34 +32,34 @@ so that determinism regressions block merge (NFR-6, AD-3).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Pure golden library modules (AC: 1, 2)
-  - [ ] Create `packages/render/src/golden/manifest.ts` — `loadManifest()`, `parseFixtureEntry()`, Zod or hand-rolled validation with clear error messages
-  - [ ] Create `packages/render/src/golden/hash-compare.ts` — `compareSha256()`, `formatHexDiff(bytesA, bytesB, maxBytes=32)`, `buildMismatchReport()`
-  - [ ] Create `packages/render/src/golden/index.ts` re-exports
-  - [ ] Create `packages/render/src/golden/manifest.test.ts` — valid manifest, missing field, bad sha256 format
-  - [ ] Create `packages/render/src/golden/hash-compare.test.ts` — match, mismatch sizes, hex diff output
-- [ ] Task 2 — Shared manifest-driven render helper (AC: 3)
-  - [ ] Create `packages/render/src/golden/render-fixture.ts` — `renderFixtureFromManifest(entry, options?)` using `compileTypst()` from `typst-driver.ts`
-  - [ ] Refactor `packages/render/scripts/render-fixture.ts` to call shared helper (preserve CLI flags `--fixture`, `--tier`, `--out`; lookup manifest entry by id or fallback to invoice-modern defaults for backward compat)
-  - [ ] Resolve paths: `payload` and `template` relative to `packages/render/`; payload `--input json=` path relative to template dir (match Story 1.2 technique)
-  - [ ] Convert manifest `inputs` object to `--input key=value` args (e.g. `tier=free`)
-- [ ] Task 3 — `golden-check.ts` CLI (AC: 4, 5)
-  - [ ] Create `packages/render/scripts/golden-check.ts` with flags `--update` (optional)
-  - [ ] Check mode: iterate fixtures, render, triple-check (actual vs manifest vs `.sha256` file), aggregate exit code
-  - [ ] Update mode: re-render all, update manifest + `.sha256`, loud warning banner to stderr
-  - [ ] Ensure `.tmp/` created via `mkdirSync({ recursive: true })`; do not commit `.tmp/` outputs
-- [ ] Task 4 — `golden-render.ts` and `golden-soak.ts` CLIs (AC: 6, 7)
-  - [ ] Create `packages/render/scripts/golden-render.ts` — render all fixtures, print paths + hashes
-  - [ ] Create `packages/render/scripts/golden-soak.ts` — parse `--iterations N` (default 5), loop per fixture, fail fast on drift
-  - [ ] Log soak duration per fixture for Story 1.8 baseline tracking
-- [ ] Task 5 — package.json scripts (AC: 8)
-  - [ ] Add four golden scripts per Dev Notes §Scripts block
-  - [ ] Keep existing `render:fixture`, `render:smoke`, `install:typst` unchanged
-- [ ] Task 6 — Verification gate (AC: 9–12)
-  - [ ] Run `bun test packages/render`
-  - [ ] Run `golden:check` happy + corrupt-hash failure + restore
-  - [ ] Run `bunx turbo run lint typecheck test build --force`
-  - [ ] Record results in Dev Agent Record
+- [x] Task 1 — Pure golden library modules (AC: 1, 2)
+  - [x] Create `packages/render/src/golden/manifest.ts` — `loadManifest()`, `parseFixtureEntry()`, Zod or hand-rolled validation with clear error messages
+  - [x] Create `packages/render/src/golden/hash-compare.ts` — `compareSha256()`, `formatHexDiff(bytesA, bytesB, maxBytes=32)`, `buildMismatchReport()`
+  - [x] Create `packages/render/src/golden/index.ts` re-exports
+  - [x] Create `packages/render/src/golden/manifest.test.ts` — valid manifest, missing field, bad sha256 format
+  - [x] Create `packages/render/src/golden/hash-compare.test.ts` — match, mismatch sizes, hex diff output
+- [x] Task 2 — Shared manifest-driven render helper (AC: 3)
+  - [x] Create `packages/render/src/golden/render-fixture.ts` — `renderFixtureFromManifest(entry, options?)` using `compileTypst()` from `typst-driver.ts`
+  - [x] Refactor `packages/render/scripts/render-fixture.ts` to call shared helper (preserve CLI flags `--fixture`, `--tier`, `--out`; lookup manifest entry by id or fallback to invoice-modern defaults for backward compat)
+  - [x] Resolve paths: `payload` and `template` relative to `packages/render/`; payload `--input json=` path relative to template dir (match Story 1.2 technique)
+  - [x] Convert manifest `inputs` object to `--input key=value` args (e.g. `tier=free`)
+- [x] Task 3 — `golden-check.ts` CLI (AC: 4, 5)
+  - [x] Create `packages/render/scripts/golden-check.ts` with flags `--update` (optional)
+  - [x] Check mode: iterate fixtures, render, triple-check (actual vs manifest vs `.sha256` file), aggregate exit code
+  - [x] Update mode: re-render all, update manifest + `.sha256`, loud warning banner to stderr
+  - [x] Ensure `.tmp/` created via `mkdirSync({ recursive: true })`; do not commit `.tmp/` outputs
+- [x] Task 4 — `golden-render.ts` and `golden-soak.ts` CLIs (AC: 6, 7)
+  - [x] Create `packages/render/scripts/golden-render.ts` — render all fixtures, print paths + hashes
+  - [x] Create `packages/render/scripts/golden-soak.ts` — parse `--iterations N` (default 5), loop per fixture, fail fast on drift
+  - [x] Log soak duration per fixture for Story 1.8 baseline tracking
+- [x] Task 5 — package.json scripts (AC: 8)
+  - [x] Add four golden scripts per Dev Notes §Scripts block
+  - [x] Keep existing `render:fixture`, `render:smoke`, `install:typst` unchanged
+- [x] Task 6 — Verification gate (AC: 9–12)
+  - [x] Run `bun test packages/render`
+  - [x] Run `golden:check` happy + corrupt-hash failure + restore
+  - [x] Run `bunx turbo run lint typecheck test build --force`
+  - [x] Record results in Dev Agent Record
 
 ## Dev Notes
 
@@ -437,15 +437,39 @@ Export golden helpers from `src/index.ts` only if needed by other packages — *
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Composer 2.5 (implementation subagent)
 
 ### Debug Log References
 
+- Story 1.2 manifest `template` path (`../../templates/...`) resolves one level too high from `packages/render/`; `resolveTemplatePath()` normalizes to `../templates/...` when direct path missing.
+
 ### Completion Notes List
+
+- Added `src/golden/` library: manifest parsing with typed errors, SHA-256 compare + mismatch report (32-byte hex diff, flake detection via double render), shared `renderFixtureFromManifest()` reusing `compileTypst()`.
+- Added CLIs: `golden-check.ts` (triple hash check + `--update` with atomic writes + warning banner), `golden-render.ts`, `golden-soak.ts` (default 5 iterations).
+- Refactored `render-fixture.ts` to use shared manifest render helper; added four `golden:*` scripts to `package.json`.
+- Verification: `bun test packages/render` — 29 pass; `golden:check` exit 0 (`b11be453…105c`); corrupt `.sha256` exit 1 (MANIFEST/GOLDEN-FILE DRIFT); restore exit 0; `golden:soak` 5 iterations identical (~97ms); `bunx turbo run lint typecheck test build --force` — 36/36 tasks green.
 
 ### File List
 
+- `packages/render/src/golden/manifest.ts` (new)
+- `packages/render/src/golden/hash-compare.ts` (new)
+- `packages/render/src/golden/render-fixture.ts` (new)
+- `packages/render/src/golden/index.ts` (new)
+- `packages/render/src/golden/manifest.test.ts` (new)
+- `packages/render/src/golden/hash-compare.test.ts` (new)
+- `packages/render/scripts/golden-check.ts` (new)
+- `packages/render/scripts/golden-render.ts` (new)
+- `packages/render/scripts/golden-soak.ts` (new)
+- `packages/render/scripts/render-fixture.ts` (modified)
+- `packages/render/package.json` (modified)
+- `packages/render/__fixtures__/manifest-missing-fixtures.json` (new — test fixture)
+- `_bmad-output/implementation-artifacts/1-3-golden-harness-cli-golden-check.md` (modified)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (modified)
+
 ### Change Log
+
+- 2026-07-20: Story 1.3 — golden harness CLI (`golden:check`, `golden:update`, `golden:soak`, `golden:render`) with manifest-driven render helper and pure unit tests.
 
 ### Story Validation Record
 

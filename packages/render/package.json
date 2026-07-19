@@ -18,7 +18,11 @@
 		"build": "tsc --outDir dist",
 		"install:typst": "bash scripts/install-typst-local.sh",
 		"render:smoke": "bun scripts/render-smoke.ts",
-		"render:fixture": "bun scripts/render-fixture.ts"
+		"render:fixture": "bun scripts/render-fixture.ts",
+		"golden:render": "bun scripts/golden-render.ts",
+		"golden:check": "bun scripts/golden-check.ts",
+		"golden:soak": "bun scripts/golden-soak.ts",
+		"golden:update": "bun scripts/golden-check.ts --update"
 	},
 	"devDependencies": {
 		"@usetagih/config": "workspace:*",
