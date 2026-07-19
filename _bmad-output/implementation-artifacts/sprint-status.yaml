@@ -66,7 +66,7 @@ development_status:
   0-4-github-actions-ci-workflow: done
   0-5-ghcr-docker-build-and-push-workflow-skeleton: done
   0-6-doppler-project-mapping-and-env-validation-scaffold: done
-  epic-0-retrospective: optional
+  epic-0-retrospective: done
 
   # Epic 1: PDF Pipeline Spike (BLOCKING GATE)
   # BLOCKING GATE — failure halts Epics 2–8 and escalates to board. Gated by Epic 0.
@@ -181,3 +181,21 @@ development_status:
   epic-8-retrospective: optional
 
 # Epic 9 (MCP v1.1 POST-MVP) intentionally excluded from sprint — 5 stories deferred
+
+action_items:
+  - epic: 0
+    action: "wire commit-msg hook via scripts/setup-verasic-git-hooks.sh"
+    owner: "Charlie (Senior Dev)"
+    status: done
+  - epic: 0
+    action: "standardize --force on turbo verification commands in story templates"
+    owner: "Amelia (Developer)"
+    status: open
+  - epic: 0
+    action: "document environment-gated AC re-verification checklist for first push"
+    owner: "Dana (QA Engineer)"
+    status: open
+  - epic: 0
+    action: "run first-push environment re-verification when remote exists"
+    owner: "King (Project Lead)"
+    status: open
