@@ -77,6 +77,9 @@
     "packages/schema": {
       "name": "@usetagih/schema",
       "version": "0.0.0",
+      "dependencies": {
+        "zod": "^4.4.3",
+      },
       "devDependencies": {
         "@usetagih/config": "workspace:*",
         "typescript": "^5.8.0",

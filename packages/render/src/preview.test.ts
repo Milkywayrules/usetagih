@@ -1,11 +1,6 @@
-import { randomUUID } from "node:crypto";
 import { expect, test } from "bun:test";
-import {
-	existsSync,
-	mkdirSync,
-	rmSync,
-	writeFileSync,
-} from "node:fs";
+import { randomUUID } from "node:crypto";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { loadManifest } from "./golden/manifest";
 import { buildTypstInputArgs, PACKAGE_ROOT } from "./golden/render-fixture";

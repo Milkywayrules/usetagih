@@ -1,10 +1,10 @@
 ---
-baseline_commit: HEAD
+baseline_commit: aa3552e331c92f29c730a4e24117ee1e5bbcfe9b
 ---
 
 # Story 2.1: Document payload Zod discriminated union
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -28,25 +28,25 @@ so that all runtimes parse identical contract (FR-1, AD-1).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Package wiring (AC: 1)
-  - [ ] Add `"zod": "^4.4.3"` to `packages/schema/package.json` dependencies
-  - [ ] Remove `SCHEMA_STUB`; implement real exports in `src/index.ts`
-- [ ] Task 2 — Primitive + shared schemas (AC: 1, 4)
-  - [ ] Create `src/document/primitives.ts` with reusable string/number validators per Dev Notes §Field constraints
-  - [ ] Create `money.ts`, `address.ts`, `party.ts`, `line-item.ts`, `tax-line.ts`, `branding.ts`, `totals.ts`, `metadata.ts`, `base-document-payload.ts`
-- [ ] Task 3 — Document variants + union (AC: 1, 5)
-  - [ ] Create `invoice-payload.ts`, `quotation-payload.ts`, `receipt-payload.ts`
-  - [ ] Create `document-payload.ts` with `z.discriminatedUnion("documentType", [...])` exporting `DocumentPayloadSchema` + type
-  - [ ] Create `document-type.ts` with `DocumentType` const + schema
-- [ ] Task 4 — Path/body mismatch helper (AC: 6)
-  - [ ] Create `document-type-mismatch.ts` with `checkDocumentTypeMismatch()` + `DOCUMENT_TYPE_MISMATCH_CODE`
-- [ ] Task 5 — Fixtures + tests (AC: 2, 3, 4, 5, 7)
-  - [ ] Add `__fixtures__/valid/{invoice,quotation,receipt}-minimal.json`
-  - [ ] Add `__fixtures__/invalid/` cases per Dev Notes §Invalid fixtures
-  - [ ] Replace `src/index.test.ts` stub with `src/document/document-payload.test.ts` (+ keep index smoke if desired)
-- [ ] Task 6 — Verification gate (AC: 8)
-  - [ ] `bun test packages/schema`
-  - [ ] `bunx turbo run lint typecheck test build --force`
+- [x] Task 1 — Package wiring (AC: 1)
+  - [x] Add `"zod": "^4.4.3"` to `packages/schema/package.json` dependencies
+  - [x] Remove `SCHEMA_STUB`; implement real exports in `src/index.ts`
+- [x] Task 2 — Primitive + shared schemas (AC: 1, 4)
+  - [x] Create `src/document/primitives.ts` with reusable string/number validators per Dev Notes §Field constraints
+  - [x] Create `money.ts`, `address.ts`, `party.ts`, `line-item.ts`, `tax-line.ts`, `branding.ts`, `totals.ts`, `metadata.ts`, `base-document-payload.ts`
+- [x] Task 3 — Document variants + union (AC: 1, 5)
+  - [x] Create `invoice-payload.ts`, `quotation-payload.ts`, `receipt-payload.ts`
+  - [x] Create `document-payload.ts` with `z.discriminatedUnion("documentType", [...])` exporting `DocumentPayloadSchema` + type
+  - [x] Create `document-type.ts` with `DocumentType` const + schema
+- [x] Task 4 — Path/body mismatch helper (AC: 6)
+  - [x] Create `document-type-mismatch.ts` with `checkDocumentTypeMismatch()` + `DOCUMENT_TYPE_MISMATCH_CODE`
+- [x] Task 5 — Fixtures + tests (AC: 2, 3, 4, 5, 7)
+  - [x] Add `__fixtures__/valid/{invoice,quotation,receipt}-minimal.json`
+  - [x] Add `__fixtures__/invalid/` cases per Dev Notes §Invalid fixtures
+  - [x] Replace `src/index.test.ts` stub with `src/document/document-payload.test.ts` (+ keep index smoke if desired)
+- [x] Task 6 — Verification gate (AC: 8)
+  - [x] `bun test packages/schema`
+  - [x] `bunx turbo run lint typecheck test build --force`
 
 ## Dev Notes
 
@@ -443,10 +443,60 @@ Delete or replace stub test in `src/index.test.ts` — prefer consolidating into
 
 ### Agent Model Used
 
-(pending implementation)
+Composer 2.5
 
 ### Debug Log References
 
+- workspace turbo initially failed on stale `dist/index.test.js` in core/sdk after `SCHEMA_STUB` removal; rebuilt dist and wired stubs to `DocumentPayloadSchema`
+- render lint auto-fix (format/import order, non-null assertion) required for AC 8 green turbo
+
 ### Completion Notes List
 
+- Implemented canonical `DocumentPayloadSchema` discriminated union with strict object shapes under `packages/schema/src/document/`
+- Added minimal valid fixtures for invoice/quotation/receipt plus invalid fixtures proving `logoBytes` and cross-type field rejection
+- Added `checkDocumentTypeMismatch` helper exporting `DOCUMENT_TYPE_MISMATCH_CODE`
+- `bun test packages/schema`: 12 pass (6 unique tests × src + dist)
+- `bunx turbo run lint typecheck test build --force`: 36/36 tasks successful
+
 ### File List
+
+- `packages/schema/package.json`
+- `packages/schema/src/index.ts`
+- `packages/schema/src/document/primitives.ts`
+- `packages/schema/src/document/money.ts`
+- `packages/schema/src/document/address.ts`
+- `packages/schema/src/document/party.ts`
+- `packages/schema/src/document/line-item.ts`
+- `packages/schema/src/document/tax-line.ts`
+- `packages/schema/src/document/branding.ts`
+- `packages/schema/src/document/totals.ts`
+- `packages/schema/src/document/metadata.ts`
+- `packages/schema/src/document/base-document-payload.ts`
+- `packages/schema/src/document/document-type.ts`
+- `packages/schema/src/document/invoice-payload.ts`
+- `packages/schema/src/document/quotation-payload.ts`
+- `packages/schema/src/document/receipt-payload.ts`
+- `packages/schema/src/document/document-payload.ts`
+- `packages/schema/src/document/document-type-mismatch.ts`
+- `packages/schema/src/document/document-payload.test.ts`
+- `packages/schema/__fixtures__/valid/invoice-minimal.json`
+- `packages/schema/__fixtures__/valid/quotation-minimal.json`
+- `packages/schema/__fixtures__/valid/receipt-minimal.json`
+- `packages/schema/__fixtures__/invalid/invoice-with-logo-bytes.json`
+- `packages/schema/__fixtures__/invalid/receipt-with-due-at.json`
+- `packages/schema/__fixtures__/invalid/invoice-with-paid-at.json`
+- `packages/schema/src/index.test.ts` (deleted)
+- `packages/core/src/index.ts`
+- `packages/core/src/index.test.ts`
+- `packages/sdk/src/index.ts`
+- `packages/sdk/src/index.test.ts`
+- `packages/render/src/golden/soak-args.test.ts`
+- `packages/render/src/preview.test.ts`
+- `packages/render/src/preview.ts`
+- `bun.lock`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `_bmad-output/implementation-artifacts/2-1-document-payload-zod-discriminated-union.md`
+
+## Change Log
+
+- 2026-07-20: canonical document payload Zod discriminated union, fixtures, tests, and mismatch helper (Story 2.1)

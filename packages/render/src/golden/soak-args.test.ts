@@ -90,7 +90,10 @@ test("detectSoakHashDrift reports mismatch and formatSoakDriftReport matches con
 			"b11be4533d38f525326164b530a143bd71270440dc4b98f42cec426f2d3a105c",
 		actualHash: "deadbeef",
 	});
-	expect(formatSoakDriftReport(drift!)).toBe(
+	if (!drift) {
+		throw new Error("expected drift fixture");
+	}
+	expect(formatSoakDriftReport(drift)).toBe(
 		[
 			"FAIL invoice-modern-basic",
 			"  drift at iteration 42",

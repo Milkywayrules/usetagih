@@ -81,8 +81,13 @@ function parsePreviewPages(previewTempDir: string): PreviewPage[] {
 
 /** Compile same template+inputs as PDF; return sanitized multi-page SVG preview. */
 export function renderPreview(options: RenderPreviewOptions): PreviewResult {
-	const { templatePath, payloadPath, tier = "free", inputs, previewTempDir } =
-		options;
+	const {
+		templatePath,
+		payloadPath,
+		tier = "free",
+		inputs,
+		previewTempDir,
+	} = options;
 	const templateAbs = resolve(templatePath);
 	const payloadAbs = resolve(payloadPath);
 
