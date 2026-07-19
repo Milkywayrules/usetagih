@@ -15,9 +15,11 @@
 		"lint": "biome check .",
 		"typecheck": "tsc --noEmit",
 		"test": "bun test src",
-		"build": "tsc --project tsconfig.build.json --outDir dist"
+		"build": "tsc --project tsconfig.build.json --outDir dist && bun run src/openapi/generate.ts",
+		"generate:openapi": "bun run src/openapi/generate.ts"
 	},
 	"dependencies": {
+		"@asteasolutions/zod-to-openapi": "8.5.0",
 		"zod": "^4.4.3"
 	},
 	"devDependencies": {

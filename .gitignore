@@ -5,6 +5,8 @@
 packages/render/.bin/
 packages/render/.tmp/
 
+packages/schema/openapi/
+
 node_modules/
 dist/
 .next/

@@ -4,7 +4,7 @@ baseline_commit: 8fc36899085931fe9fede21452867e685d00e43f
 
 # Story 2.5: OpenAPI 3.1 component generation from Zod
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -32,20 +32,20 @@ so that spec cannot drift from validation (FR-1, FR-16 partial, AD-1).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Dependency + Zod extension bootstrap (AC: 1)
-  - [ ] Add `@asteasolutions/zod-to-openapi@8.5.0` to `packages/schema/package.json` `dependencies` (exact pin `8.5.0`, not `^8.5.0` — reproducible with workspace `zod@^4.4.3`)
-  - [ ] Create `src/openapi/extend-zod.ts` — call `extendZodWithOpenApi(z)` once (required for `.openapi()` / registry registration with named components)
-- [ ] Task 2 — Registry + generator (AC: 1, 2, 3, 4, 5, 6)
-  - [ ] Create `src/openapi/registry.ts` — `OpenAPIRegistry`, register schemas (see Dev Notes §Registry)
-  - [ ] Create `src/openapi/generate.ts` — export `generateOpenApiComponents()` using `OpenApiGeneratorV31`; CLI entry writes `openapi/components.json`
-- [ ] Task 3 — Build wiring + gitignore (AC: 1, 8)
-  - [ ] Update `packages/schema/package.json` `build` script to run generator after `tsc`
-  - [ ] Add `packages/schema/openapi/` to root `.gitignore` (generated artifact — drift caught by structural tests + CI build, not committed snapshots)
-- [ ] Task 4 — Structural tests (AC: 7)
-  - [ ] Create `src/openapi/components.test.ts` — assert component keys, Money pattern, template enums, envelope nesting
-- [ ] Task 5 — Verification gate (AC: 8)
-  - [ ] `bun test packages/schema`
-  - [ ] `bunx turbo run lint typecheck test build --force`
+- [x] Task 1 — Dependency + Zod extension bootstrap (AC: 1)
+  - [x] Add `@asteasolutions/zod-to-openapi@8.5.0` to `packages/schema/package.json` `dependencies` (exact pin `8.5.0`, not `^8.5.0` — reproducible with workspace `zod@^4.4.3`)
+  - [x] Create `src/openapi/extend-zod.ts` — call `extendZodWithOpenApi(z)` once (required for `.openapi()` / registry registration with named components)
+- [x] Task 2 — Registry + generator (AC: 1, 2, 3, 4, 5, 6)
+  - [x] Create `src/openapi/registry.ts` — `OpenAPIRegistry`, register schemas (see Dev Notes §Registry)
+  - [x] Create `src/openapi/generate.ts` — export `generateOpenApiComponents()` using `OpenApiGeneratorV31`; CLI entry writes `openapi/components.json`
+- [x] Task 3 — Build wiring + gitignore (AC: 1, 8)
+  - [x] Update `packages/schema/package.json` `build` script to run generator after `tsc`
+  - [x] Add `packages/schema/openapi/` to root `.gitignore` (generated artifact — drift caught by structural tests + CI build, not committed snapshots)
+- [x] Task 4 — Structural tests (AC: 7)
+  - [x] Create `src/openapi/components.test.ts` — assert component keys, Money pattern, template enums, envelope nesting
+- [x] Task 5 — Verification gate (AC: 8)
+  - [x] `bun test packages/schema`
+  - [x] `bunx turbo run lint typecheck test build --force`
 
 ## Dev Notes
 
@@ -332,13 +332,33 @@ packages/schema/package.json # ADD dependency + build script (UPDATE)
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Composer 2.5 Fast
 
 ### Debug Log References
 
+- `OpenApiGeneratorV31.generateComponents()` returns `{ components: { schemas } }`; structural tests unwrap `.components.schemas` accordingly.
+- Biome lint flagged generated `openapi/components.json`; excluded `!!**/openapi` in shared config (same pattern as `dist/`).
+
 ### Completion Notes List
 
+- Pinned `@asteasolutions/zod-to-openapi@8.5.0` (verified against workspace `zod@^4.4.3`).
+- Added isolated `src/openapi/` module: `extend-zod.ts`, `registry.ts`, `generate.ts`, `components.test.ts`.
+- Build emits gitignored `packages/schema/openapi/components.json` via `OpenApiGeneratorV31.generateComponents()`.
+- Structural tests assert DocumentPayload union, error envelope components, Money decimal pattern, and modern|classic template enums.
+- Verification: `bun test packages/schema` → 49 pass / 0 fail; `bunx turbo run lint typecheck test build --force` → 36/36 tasks green.
+
 ### File List
+
+- `.gitignore` (modified — add `packages/schema/openapi/`)
+- `bun.lock` (modified — `@asteasolutions/zod-to-openapi@8.5.0`)
+- `packages/config/biome.json` (modified — exclude generated `openapi/` from lint)
+- `packages/schema/package.json` (modified — dependency + build/generate scripts)
+- `packages/schema/src/openapi/extend-zod.ts` (added)
+- `packages/schema/src/openapi/registry.ts` (added)
+- `packages/schema/src/openapi/generate.ts` (added)
+- `packages/schema/src/openapi/components.test.ts` (added)
+- `_bmad-output/implementation-artifacts/2-5-openapi-3-1-component-generation-from-zod.md` (modified)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (modified)
 
 ## Story Validation
 
@@ -361,3 +381,4 @@ _Validated against create-story checklist (headless) on 2026-07-20._
 ## Change Log
 
 - 2026-07-20: story context created for OpenAPI 3.1 component generation from Zod (Story 2.5)
+- 2026-07-20: implemented OpenAPI 3.1 component generation from canonical Zod schemas (Story 2.5)
