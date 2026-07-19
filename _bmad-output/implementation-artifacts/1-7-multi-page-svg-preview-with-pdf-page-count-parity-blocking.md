@@ -4,7 +4,7 @@ baseline_commit: 63a0902
 
 # Story 1.7: Multi-page SVG preview with PDF page-count parity (blocking)
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -361,6 +361,14 @@ Composer 2.5
 ## Change Log
 
 - 2026-07-20: multi-page SVG preview module with PDF page-count parity, output sanitizer, and CI verification gates (AD-10 blocking #4)
+- 2026-07-20: code review — hardened output sanitizer against SMIL `<animate>`/`<set>`, `<style>@import`, and CDATA bypass vectors; added compile-failure temp cleanup test
+
+## Code Review Record
+
+- **Reviewed:** 2026-07-20 against commit `8d6f490` + review fixes
+- **Verdict:** APPROVED
+- **Findings fixed:** HIGH — `<animate>`/`<set>` and `<style>@import` passed through `sanitizeTypstOutputSvg()`; stripped with reject guards + Story 1.6 bypass matrix tests. CDATA blocks now removed (script payload inside CDATA stripped by existing regex; empty CDATA removed).
+- **Verified:** contract `{ pageCount, pages: [{ index, svg }] }` 1-indexed ascending; clean Typst output byte-identical post-sanitize; compile-failure `finally` cleanup; `golden:check` 5/5 host + container; turbo `--force` 36/36; `bun test packages/render` 136 pass
 
 ## Story Validation Record
 
