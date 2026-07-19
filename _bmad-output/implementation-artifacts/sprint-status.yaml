@@ -61,7 +61,7 @@ development_status:
   # Gates: Epic 1 (PDF spike). Sequencing: none → Epic 0 → Epic 1.
   epic-0: in-progress
   0-1-initialize-turborepo-monorepo-workspace: done
-  0-2-shared-typescript-and-biome-config-package: backlog
+  0-2-shared-typescript-and-biome-config-package: ready-for-dev
   0-3-local-docker-compose-for-postgres-and-minio: backlog
   0-4-github-actions-ci-workflow: backlog
   0-5-ghcr-docker-build-and-push-workflow-skeleton: backlog
