@@ -89,7 +89,7 @@ development_status:
   2-2-business-rule-validators-for-arithmetic-integrity: done
   2-3-error-codes-enum-and-api-error-envelope-types: done
   2-4-schema-version-negotiation-helpers: done
-  2-5-openapi-3-1-component-generation-from-zod: review
+  2-5-openapi-3-1-component-generation-from-zod: done
   2-6-shared-validation-fixture-test-suite: backlog
   epic-2-retrospective: optional
 
