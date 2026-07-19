@@ -1,5 +1,5 @@
 # generated: 2026-07-20
-# last_updated: 2026-07-20T06:50:00+07:00
+# last_updated: 2026-07-20T07:00:00+07:00
 # project: usetagih
 # project_key: NOKEY
 # tracking_system: file-system
@@ -45,7 +45,7 @@
 # Epic 5 after Epic 1+3 (Story 5.0 first) | Epic 6 after Epic 3+5 | Epic 7 after Epic 3 | Epic 8 last
 
 generated: 2026-07-20
-last_updated: 2026-07-20T06:50:00+07:00
+last_updated: 2026-07-20T07:00:00+07:00
 project: usetagih
 project_key: NOKEY
 tracking_system: file-system
@@ -95,8 +95,8 @@ development_status:
 
   # Epic 3: API Core — Auth, Keys, Idempotency, Sync Render, Share, Audit
   # Gated by Epic 2. Gates Epics 4–7.
-  epic-3: backlog
-  3-1-drizzle-database-schema-and-migrations-for-core-tables: backlog
+  epic-3: in-progress
+  3-1-drizzle-database-schema-and-migrations-for-core-tables: ready-for-dev
   3-2-packages-core-ports-and-validate-use-case: backlog
   3-3-better-auth-registration-login-and-session-middleware: backlog
   3-4-post-v1-session-token-short-lived-audience-bound-csrf-protected-bearer: backlog
