@@ -48,3 +48,21 @@ test("validateDocumentPayload defaults omitted schemaVersion before structural p
 		expect(result.data.schemaVersion).toBe("2026-07-20");
 	}
 });
+
+test("validateDocumentPayload fails at schemaVersion stage before business rules", () => {
+	const raw = loadJson(
+		"__fixtures__/invalid/arithmetic/subtotal-mismatch.json",
+	);
+	raw.schemaVersion = "2099-01-01";
+
+	const result = validateDocumentPayload(raw);
+	expect(result.ok).toBe(false);
+	if (result.ok) {
+		return;
+	}
+
+	expect(result.stage).toBe("schemaVersion");
+	if (result.stage === "schemaVersion") {
+		expect(result.rejection.code).toBe(UNSUPPORTED_SCHEMA_VERSION_CODE);
+	}
+});

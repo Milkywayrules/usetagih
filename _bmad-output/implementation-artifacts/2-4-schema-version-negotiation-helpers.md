@@ -4,7 +4,7 @@ baseline_commit: 955aff44131862623ed6a43f36150dc3d86f00ed
 
 # Story 2.4: Schema version negotiation helpers
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -452,3 +452,46 @@ _Validated against create-story checklist (headless) on 2026-07-20._
 - 2026-07-20: story context created for schema version negotiation helpers (Story 2.4)
 - 2026-07-20: validation pass — fixed baseline hash, Template type export task, non-object normalize behavior
 - 2026-07-20: implemented schema version negotiation helpers — default injection, unsupported rejection, metadata export, orchestrator stage
+- 2026-07-20: code review approved — silent-acceptance probes added; stage-ordering and two-layer consistency verified
+
+## Senior Developer Review (AI)
+
+_Reviewer: code-review subagent on 2026-07-20_
+
+### Outcome
+
+**APPROVED** — version negotiation rejects all adversarial `schemaVersion` inputs with `UNSUPPORTED_SCHEMA_VERSION`; two-layer defaulting is consistent; orchestrator fail-fast ordering verified; metadata contract matches PRD GET `/v1/schemas`.
+
+### Silent-acceptance probe results
+
+| Input | Path | Result |
+| --- | --- | --- |
+| `null` (assert + normalize) | both | `UNSUPPORTED_SCHEMA_VERSION`, `received: "null"` |
+| `""` | assert + normalize | reject |
+| `"2026-7-20"` (non-canonical) | assert + normalize | reject |
+| `20260720` (number) | assert + normalize | reject |
+| `"2099-12-31"` (future-dated) | assert + normalize | reject |
+| `" 2026-07-20"` / `"2026-07-20 "` (whitespace) | assert + normalize | reject |
+| `new String("2026-07-20")` (boxed) | assert | reject |
+| `{ toString: () => "2026-07-20" }` | assert | reject |
+| prototype-inherited bad version | normalize | reject at schemaVersion stage |
+| non-object raw (`null`, `[]`, primitive) | normalize | pass-through → structural stage |
+
+No silent defaulting on present-but-invalid values; `null` key does not receive MVP default.
+
+### Two-layer defaulting consistency
+
+Omitted `schemaVersion` on `invoice-minimal.json`: `DocumentPayloadSchema.parse(normalize(...).normalized)` deep-equals `DocumentPayloadSchema.parse(raw)` — both yield `schemaVersion: "2026-07-20"`. Zod `.default(CURRENT_SCHEMA_VERSION)` on `baseDocumentPayloadShape` does not conflict with `.strict()` or discriminated union.
+
+### Stage ordering
+
+Payload with `schemaVersion: "2099-01-01"` plus arithmetic mismatch fixture reports `stage: "schemaVersion"`, not `business` — fail-fast confirmed.
+
+### Single-source grep
+
+`2026-07-20` literal in `packages/schema/src` confined to `version/constants.ts` (via `CURRENT_SCHEMA_VERSION`); `primitives.ts` derives `schemaVersionSchema` from constant. Fixtures/tests and `packages/render` pin literals separately (acceptable). Template enums sourced from `TEMPLATE_OPTIONS_BY_DOCUMENT_TYPE` in constants — no stray `"modern"`/`"classic"` literals outside `constants.ts` and `primitives.ts` enum definition.
+
+### Review fixes applied
+
+- `packages/schema/src/version/assert-schema-version.test.ts` — silent-acceptance edge-case probes, null-key rejection, two-layer deep-equality test
+- `packages/schema/src/validation/validate-document-payload.test.ts` — fail-fast stage ordering test (bad version + bad arithmetic)

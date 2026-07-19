@@ -102,3 +102,54 @@ test("normalizePayloadSchemaVersion passes through non-object raw unchanged", ()
 		expect((result.normalized as unknown) === value).toBe(true);
 	}
 });
+
+test("assertSupportedSchemaVersion rejects silent-acceptance edge cases", () => {
+	const edgeCases: unknown[] = [
+		null,
+		"",
+		"2026-7-20",
+		20260720,
+		"2099-12-31",
+		" 2026-07-20",
+		"2026-07-20 ",
+		new String(CURRENT_SCHEMA_VERSION),
+		{ toString: () => CURRENT_SCHEMA_VERSION },
+	];
+
+	for (const value of edgeCases) {
+		const result = assertSupportedSchemaVersion(value);
+		expect(result.ok).toBe(false);
+		if (result.ok) {
+			continue;
+		}
+		expect(result.code).toBe(UNSUPPORTED_SCHEMA_VERSION_CODE);
+	}
+});
+
+test("normalizePayloadSchemaVersion rejects null schemaVersion key", () => {
+	const raw = loadJson("__fixtures__/valid/invoice-minimal.json");
+	raw.schemaVersion = null;
+
+	const result = normalizePayloadSchemaVersion(raw);
+	expect(result.ok).toBe(false);
+	if (result.ok) {
+		return;
+	}
+	expect(result.code).toBe(UNSUPPORTED_SCHEMA_VERSION_CODE);
+	expect(result.received).toBe("null");
+});
+
+test("normalize then parse matches direct DocumentPayloadSchema.parse for omitted schemaVersion", () => {
+	const raw = loadJson("__fixtures__/valid/invoice-minimal.json");
+	delete raw.schemaVersion;
+
+	const norm = normalizePayloadSchemaVersion(raw);
+	expect(norm.ok).toBe(true);
+	if (!norm.ok) {
+		return;
+	}
+
+	const viaNormalize = DocumentPayloadSchema.parse(norm.normalized);
+	const viaDirect = DocumentPayloadSchema.parse(raw);
+	expect(viaNormalize).toEqual(viaDirect);
+});
