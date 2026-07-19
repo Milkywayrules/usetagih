@@ -6,6 +6,7 @@
       "name": "usetagih",
       "devDependencies": {
         "@biomejs/biome": "^2.0.0",
+        "bun-types": "^1.2.0",
         "turbo": "^2.0.0",
         "typescript": "^5.8.0",
         "ultracite": "^7.0.0",
@@ -15,6 +16,7 @@
       "name": "@usetagih/api",
       "version": "0.0.0",
       "devDependencies": {
+        "@usetagih/config": "workspace:*",
         "typescript": "^5.8.0",
       },
     },
@@ -22,6 +24,7 @@
       "name": "@usetagih/mcp",
       "version": "0.0.0",
       "devDependencies": {
+        "@usetagih/config": "workspace:*",
         "typescript": "^5.8.0",
       },
     },
@@ -29,6 +32,15 @@
       "name": "@usetagih/web",
       "version": "0.0.0",
       "devDependencies": {
+        "@usetagih/config": "workspace:*",
+        "typescript": "^5.8.0",
+      },
+    },
+    "packages/config": {
+      "name": "@usetagih/config",
+      "version": "0.0.0",
+      "devDependencies": {
+        "bun-types": "^1.2.0",
         "typescript": "^5.8.0",
       },
     },
@@ -39,6 +51,7 @@
         "@usetagih/schema": "workspace:*",
       },
       "devDependencies": {
+        "@usetagih/config": "workspace:*",
         "typescript": "^5.8.0",
       },
     },
@@ -46,6 +59,7 @@
       "name": "@usetagih/db",
       "version": "0.0.0",
       "devDependencies": {
+        "@usetagih/config": "workspace:*",
         "typescript": "^5.8.0",
       },
     },
@@ -53,6 +67,7 @@
       "name": "@usetagih/render",
       "version": "0.0.0",
       "devDependencies": {
+        "@usetagih/config": "workspace:*",
         "typescript": "^5.8.0",
       },
     },
@@ -60,6 +75,7 @@
       "name": "@usetagih/schema",
       "version": "0.0.0",
       "devDependencies": {
+        "@usetagih/config": "workspace:*",
         "typescript": "^5.8.0",
       },
     },
@@ -70,6 +86,7 @@
         "@usetagih/schema": "workspace:*",
       },
       "devDependencies": {
+        "@usetagih/config": "workspace:*",
         "typescript": "^5.8.0",
       },
     },
@@ -139,6 +156,8 @@
 
     "@types/json-schema": ["@types/json-schema@7.0.15", "", {}, "sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA=="],
 
+    "@types/node": ["@types/node@26.1.1", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-nxAkRSVkN1Y0JC1W8ky/fTfkGsMmcrRsbx+3XoZE+rMOX71kLYTV7fLXpqud1GpbpP5TuffXFqfX7fH2GgZREw=="],
+
     "@typescript-eslint/project-service": ["@typescript-eslint/project-service@8.64.0", "", { "dependencies": { "@typescript-eslint/tsconfig-utils": "^8.64.0", "@typescript-eslint/types": "^8.64.0", "debug": "^4.4.3" }, "peerDependencies": { "typescript": ">=4.8.4 <6.1.0" } }, "sha512-tk4WpOJ6IEbGrVHaNmM0YRrwAD3exZlIK3iadQNAxh4YKk6jvUQ4ecq18n+v7+meh+cJ3j+D8nbk8sRKhlwLQg=="],
 
     "@typescript-eslint/scope-manager": ["@typescript-eslint/scope-manager@8.64.0", "", { "dependencies": { "@typescript-eslint/types": "8.64.0", "@typescript-eslint/visitor-keys": "8.64.0" } }, "sha512-CXEaFdYXjSTgKhisNkwCcJwTP8Pl+fmRrEQrri4nm3vU743bALrxzLmq7fHG/7e6a5xO0lDYeURpZmBuhHk54w=="],
@@ -154,6 +173,8 @@
     "@typescript-eslint/visitor-keys": ["@typescript-eslint/visitor-keys@8.64.0", "", { "dependencies": { "@typescript-eslint/types": "8.64.0", "eslint-visitor-keys": "^5.0.0" } }, "sha512-mrtuL8Nsn6gi2H4mo5KMTp823M+3Q19Ew/i+Zlikq20tIMm99C3Ez0dCmkWWnxut20esQvTg8aUSEhMcAOXhEw=="],
 
     "@usetagih/api": ["@usetagih/api@workspace:apps/api"],
+
+    "@usetagih/config": ["@usetagih/config@workspace:packages/config"],
 
     "@usetagih/core": ["@usetagih/core@workspace:packages/core"],
 
@@ -178,6 +199,8 @@
     "balanced-match": ["balanced-match@4.0.4", "", {}, "sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA=="],
 
     "brace-expansion": ["brace-expansion@5.0.7", "", { "dependencies": { "balanced-match": "^4.0.2" } }, "sha512-7oFy703dxfY3/NLxC1fh2SUCQ0H9rmAY+5EpDVfXjUTTs+HEwR2nYaqLv+GWcTsumwxPfiz6CzCNkwXwBUwqCA=="],
+
+    "bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
 
     "citty": ["citty@0.2.2", "", {}, "sha512-+6vJA3L98yv+IdfKGZHBNiGW5KHn22e/JwID0Strsz8h4S/csAu/OuICwxrg44k5MRiZHWIo8XXuJgQTriRP4w=="],
 
@@ -312,6 +335,8 @@
     "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
     "ultracite": ["ultracite@7.9.4", "", { "dependencies": { "@clack/prompts": "^1.5.1", "@typescript-eslint/utils": "^8.62.1", "commander": "^15.0.0", "cross-spawn": "^7.0.6", "deepmerge": "^4.3.1", "glob": "^13.0.6", "jsonc-parser": "^3.3.1", "nypm": "^0.6.6", "yaml": "^2.9.0", "zod": "^4.4.3" }, "peerDependencies": { "oxfmt": ">=0.1.0", "oxlint": "^1.0.0" }, "optionalPeers": ["oxfmt", "oxlint"], "bin": { "ultracite": "dist/index.js" } }, "sha512-efAEbQJoii3wH0aZ+jwbcGXQYBwC1E6TvC4//EIV3ei84RDGHDo9fSB6h/TBTNk/+/psQVGm56trVvA+2VwRbg=="],
+
+    "undici-types": ["undici-types@8.3.0", "", {}, "sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ=="],
 
     "uri-js": ["uri-js@4.4.1", "", { "dependencies": { "punycode": "^2.1.0" } }, "sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg=="],
 

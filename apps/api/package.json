@@ -1,15 +1,16 @@
 {
-  "name": "@usetagih/api",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "lint": "biome check .",
-    "typecheck": "tsc --noEmit",
-    "test": "bun test",
-    "build": "tsc --outDir dist"
-  },
-  "devDependencies": {
-    "typescript": "^5.8.0"
-  }
+	"name": "@usetagih/api",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"lint": "biome check .",
+		"typecheck": "tsc --noEmit",
+		"test": "bun test",
+		"build": "tsc --outDir dist"
+	},
+	"devDependencies": {
+		"@usetagih/config": "workspace:*",
+		"typescript": "^5.8.0"
+	}
 }

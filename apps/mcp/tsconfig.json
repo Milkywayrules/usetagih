@@ -1,8 +1,6 @@
 {
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "noEmit": true
-  },
-  "include": ["src/**/*"],
-  "exclude": ["src/**/*.test.ts"]
+	"extends": "@usetagih/config/tsconfig/app.json",
+	"compilerOptions": {
+		"noEmit": true
+	}
 }

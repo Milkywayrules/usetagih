@@ -1,15 +1,16 @@
 {
-  "name": "@usetagih/mcp",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "lint": "biome check .",
-    "typecheck": "tsc --noEmit",
-    "test": "bun test",
-    "build": "mkdir -p dist && echo stub > dist/.gitkeep"
-  },
-  "devDependencies": {
-    "typescript": "^5.8.0"
-  }
+	"name": "@usetagih/mcp",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"lint": "biome check .",
+		"typecheck": "tsc --noEmit",
+		"test": "bun test",
+		"build": "mkdir -p dist && echo stub > dist/.gitkeep"
+	},
+	"devDependencies": {
+		"@usetagih/config": "workspace:*",
+		"typescript": "^5.8.0"
+	}
 }

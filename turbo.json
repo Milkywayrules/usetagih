@@ -1,13 +1,13 @@
 {
-  "$schema": "https://turbo.build/schema.json",
-  "tasks": {
-    "lint": {},
-    "typecheck": { "dependsOn": ["^build"] },
-    "test": { "dependsOn": ["^build"] },
-    "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**"]
-    },
-    "dev": { "cache": false, "persistent": true }
-  }
+	"$schema": "https://turbo.build/schema.json",
+	"tasks": {
+		"lint": {},
+		"typecheck": { "dependsOn": ["^build"] },
+		"test": { "dependsOn": ["^build"] },
+		"build": {
+			"dependsOn": ["^build"],
+			"outputs": ["dist/**", ".next/**"]
+		},
+		"dev": { "cache": false, "persistent": true }
+	}
 }

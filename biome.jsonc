@@ -1,22 +1,4 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
-  "extends": ["ultracite/biome/core"],
-  "files": {
-    "includes": [
-      "apps/**",
-      "packages/**",
-      "package.json",
-      "turbo.json",
-      "biome.jsonc",
-      "tsconfig.json",
-      "!!**/.agents",
-      "!!**/_bmad",
-      "!!**/_bmad-output",
-      "!!**/.cursor",
-      "!!**/.bmad-loop",
-      "!!**/design-artifacts",
-      "!!**/docs",
-      "!!**/knowledge-base-of-king-the-user"
-    ]
-  }
+	"$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
+	"extends": ["./packages/config/biome.json"]
 }

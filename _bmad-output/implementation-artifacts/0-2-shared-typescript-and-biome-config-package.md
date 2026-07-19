@@ -4,7 +4,7 @@ baseline_commit: 238e52d1f3f8bf5be019ad063f03cb577df3c6fd
 
 # Story 0.2: shared TypeScript and Biome config package
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -31,31 +31,31 @@ so that all packages use consistent lint and compile settings (NFR quality basel
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Create `@usetagih/config` package skeleton (AC: 1, 8)
-  - [ ] Replace `packages/config/.gitkeep` with `package.json` (`name: @usetagih/config`, exports map, turbo scripts)
-  - [ ] Add `devDependencies`: `bun-types`, `typescript` `^5.8.0` (and `@biomejs/biome` if local lint needs it)
-  - [ ] Add `packages/config/tsconfig.json` extending `./tsconfig/library.json` (config package typechecks its own stub)
-  - [ ] Add `src/index.ts` exporting `CONFIG_STUB` constant + `src/index.test.ts` smoke test
-  - [ ] `build` script: no-op acceptable (`node -e "process.exit(0)"`) — config package emits no `dist/`
-- [ ] Task 2 — Shared TypeScript presets (AC: 2–4, 7)
-  - [ ] Create `packages/config/tsconfig/base.json` with shared compiler options + `"types": ["bun-types"]`
-  - [ ] Create `packages/config/tsconfig/library.json` extending `./base.json` with library emit defaults
-  - [ ] Create `packages/config/tsconfig/app.json` extending `./base.json` with app defaults (no emit flags — apps override)
-  - [ ] Update root `tsconfig.json` to extend `./packages/config/tsconfig/base.json`
-- [ ] Task 3 — Shared Biome preset (AC: 5)
-  - [ ] Create `packages/config/biome.json` extending `ultracite/biome/core` with current root `files.includes` / `!!` exclusion list
-  - [ ] Slim root `biome.jsonc` to extend `./packages/config/biome.json` only (keep `$schema` at root)
-  - [ ] Verify `bunx biome check .` from root still exits 0
-- [ ] Task 4 — Rewire workspace member tsconfigs (AC: 4, 6, 9)
-  - [ ] Add `@usetagih/config` workspace devDependency to all eight existing members
-  - [ ] **Libraries** (`packages/schema`, `core`, `render`, `sdk`, `db`): extend `@usetagih/config/tsconfig/library.json`; remove test excludes
-  - [ ] **Apps** (`apps/api`, `web`, `mcp`): extend `@usetagih/config/tsconfig/app.json`
-    - [ ] `apps/api`: keep `outDir`/`rootDir`/`declaration` overrides for `tsc --outDir dist`
-    - [ ] `apps/web`, `apps/mcp`: keep `"noEmit": true` override for stub typecheck
-  - [ ] Delete `"extends": "../../tsconfig.json"` pattern everywhere — no member should extend root tsconfig directly
-- [ ] Task 5 — Verification gate (AC: 9–11)
-  - [ ] Run verification commands in Testing Requirements; all must pass before marking story done
-  - [ ] Confirm `grep -r 'exclude.*test' apps/*/tsconfig.json packages/*/tsconfig.json` returns no matches (except `@usetagih/config` presets if intentionally absent)
+- [x] Task 1 — Create `@usetagih/config` package skeleton (AC: 1, 8)
+  - [x] Replace `packages/config/.gitkeep` with `package.json` (`name: @usetagih/config`, exports map, turbo scripts)
+  - [x] Add `devDependencies`: `bun-types`, `typescript` `^5.8.0` (and `@biomejs/biome` if local lint needs it)
+  - [x] Add `packages/config/tsconfig.json` extending `./tsconfig/library.json` (config package typechecks its own stub)
+  - [x] Add `src/index.ts` exporting `CONFIG_STUB` constant + `src/index.test.ts` smoke test
+  - [x] `build` script: no-op acceptable (`node -e "process.exit(0)"`) — config package emits no `dist/`
+- [x] Task 2 — Shared TypeScript presets (AC: 2–4, 7)
+  - [x] Create `packages/config/tsconfig/base.json` with shared compiler options + `"types": ["bun-types"]`
+  - [x] Create `packages/config/tsconfig/library.json` extending `./base.json` with library emit defaults
+  - [x] Create `packages/config/tsconfig/app.json` extending `./base.json` with app defaults (no emit flags — apps override)
+  - [x] Update root `tsconfig.json` to extend `./packages/config/tsconfig/base.json`
+- [x] Task 3 — Shared Biome preset (AC: 5)
+  - [x] Create `packages/config/biome.json` extending `ultracite/biome/core` with current root `files.includes` / `!!` exclusion list
+  - [x] Slim root `biome.jsonc` to extend `./packages/config/biome.json` only (keep `$schema` at root)
+  - [x] Verify `bunx biome check .` from root still exits 0
+- [x] Task 4 — Rewire workspace member tsconfigs (AC: 4, 6, 9)
+  - [x] Add `@usetagih/config` workspace devDependency to all eight existing members
+  - [x] **Libraries** (`packages/schema`, `core`, `render`, `sdk`, `db`): extend `@usetagih/config/tsconfig/library.json`; remove test excludes
+  - [x] **Apps** (`apps/api`, `web`, `mcp`): extend `@usetagih/config/tsconfig/app.json`
+    - [x] `apps/api`: keep `outDir`/`rootDir`/`declaration` overrides for `tsc --outDir dist`
+    - [x] `apps/web`, `apps/mcp`: keep `"noEmit": true` override for stub typecheck
+  - [x] Delete `"extends": "../../tsconfig.json"` pattern everywhere — no member should extend root tsconfig directly
+- [x] Task 5 — Verification gate (AC: 9–11)
+  - [x] Run verification commands in Testing Requirements; all must pass before marking story done
+  - [x] Confirm `grep -r 'exclude.*test' apps/*/tsconfig.json packages/*/tsconfig.json` returns no matches (except `@usetagih/config` presets if intentionally absent)
 
 ## Dev Notes
 
@@ -359,6 +359,12 @@ Composer 2.5 (headless subagent)
 
 ### Completion Notes List
 
+- implemented `@usetagih/config` with tsconfig presets (`base`, `library`, `app`), shared biome preset, and stub src/tests
+- rewired all eight workspace members to extend shared presets; removed Story 0.1 `exclude` of `src/**/*.test.ts` stopgap
+- used `${configDir}` in shared preset paths so `include`/`outDir`/`rootDir` resolve per package under TypeScript 5.8 extends
+- added `root: false` on `packages/config/biome.json` to avoid Biome v2 nested-root conflict; added `!!**/dist` exclusion after tests began emitting to `dist/`
+- hoisted `bun-types` to root `devDependencies` so `types: ["bun-types"]` resolves from every member (config package still declares it)
+- verification: `bun install`, `bunx biome check .`, `bunx turbo run lint typecheck test build` — all exit 0 (36/36 tasks)
 ### File List
 
 - `packages/config/package.json` (new)
@@ -388,8 +394,12 @@ Composer 2.5 (headless subagent)
 - `packages/sdk/package.json` (modified)
 - `packages/db/tsconfig.json` (modified)
 - `packages/db/package.json` (modified)
+- `package.json` (modified — add hoisted `bun-types` for workspace type resolution)
+- `_bmad-output/implementation-artifacts/0-2-shared-typescript-and-biome-config-package.md` (modified — dev record, tasks, status)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (modified — story state → review)
 - `bun.lock` (modified — after `bun install`)
 
 ## Change Log
 
 - 2026-07-20: story created and validated — ready for dev
+- 2026-07-20: implemented shared `@usetagih/config` package; rewired workspace tsconfigs/biome; verification green — ready for review
