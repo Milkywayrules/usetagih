@@ -2,11 +2,9 @@ import { expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, unlinkSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
-import {
-	compileTypst,
-	evalTypst,
-	resolveTypstBinaryPath,
-} from "./typst-driver";
+import { loadManifest } from "./golden/manifest";
+import { renderFixtureFromManifest } from "./golden/render-fixture";
+import { evalTypst, resolveTypstBinaryPath } from "./typst-driver";
 
 const PACKAGE_ROOT = resolve(import.meta.dir, "..");
 const REPO_ROOT = resolve(PACKAGE_ROOT, "../..");
@@ -21,7 +19,17 @@ const MANIFEST_PATH = join(PACKAGE_ROOT, "manifest.json");
 const BASIC_FIXTURE = "invoice-modern-basic";
 const PAGINATION_FIXTURE = "invoice-modern-pagination-25";
 const WRONG_TOTAL_FIXTURE = "invoice-modern-wrong-total";
+const LOGO_FIXTURES = [
+	"invoice-modern-logo-png",
+	"invoice-modern-logo-jpeg",
+	"invoice-modern-logo-svg",
+] as const;
 const FOOTER_TEXT = "Rendered with usetagih · usetagih.com";
+
+const STABLE_BASIC =
+	"b11be4533d38f525326164b530a143bd71270440dc4b98f42cec426f2d3a105c";
+const STABLE_PAGINATION =
+	"d19dd496ed850cea10f8f50146812c4541fc811f075553222b432e6e691cc584";
 
 const typstAvailable = existsSync(resolveTypstBinaryPath());
 const renderTest = typstAvailable ? test : test.skip;
@@ -48,20 +56,28 @@ function sha256File(path: string): string {
 	return sha256Buffer(readFileSync(path));
 }
 
+function manifestEntry(fixture: string, tier: string) {
+	const manifest = loadManifest(MANIFEST_PATH);
+	const entry = manifest.fixtures.find((f) => f.id === fixture);
+	if (!entry) {
+		throw new Error(`fixture not in manifest: ${fixture}`);
+	}
+	return {
+		...entry,
+		inputs: { ...entry.inputs, tier },
+	};
+}
+
 function renderFixture(
 	fixture: string,
 	tier: string,
 	outputPath: string,
 ): Buffer {
 	mkdirSync(TMP_DIR, { recursive: true });
-
-	compileTypst({
-		inputPath: TEMPLATE_PATH,
+	const { pdfBytes } = renderFixtureFromManifest(manifestEntry(fixture, tier), {
 		outputPath,
-		extraArgs: typstInputs(fixture, tier),
 	});
-
-	return readFileSync(outputPath);
+	return pdfBytes;
 }
 
 function queryMetadata(fixture: string, tier: string, label: string): unknown {
@@ -270,3 +286,54 @@ renderTest("free and pro PDF hashes differ when footer toggles", () => {
 		}
 	}
 });
+
+renderTest("basic fixture golden unchanged after logo template work", () => {
+	const out = join(TMP_DIR, "stability-basic.pdf");
+	try {
+		renderFixture(BASIC_FIXTURE, "free", out);
+		expect(sha256File(out)).toBe(STABLE_BASIC);
+	} finally {
+		try {
+			unlinkSync(out);
+		} catch {
+			// ignore cleanup errors
+		}
+	}
+});
+
+renderTest(
+	"pagination fixture golden unchanged after logo template work",
+	() => {
+		const out = join(TMP_DIR, "stability-pagination.pdf");
+		try {
+			renderFixture(PAGINATION_FIXTURE, "free", out);
+			expect(sha256File(out)).toBe(STABLE_PAGINATION);
+		} finally {
+			try {
+				unlinkSync(out);
+			} catch {
+				// ignore cleanup errors
+			}
+		}
+	},
+);
+
+for (const id of LOGO_FIXTURES) {
+	renderTest(`consecutive renders of ${id} are byte-identical`, () => {
+		const out1 = join(TMP_DIR, `${id}-det-1.pdf`);
+		const out2 = join(TMP_DIR, `${id}-det-2.pdf`);
+		try {
+			renderFixture(id, "free", out1);
+			renderFixture(id, "free", out2);
+			expect(sha256File(out1)).toBe(sha256File(out2));
+		} finally {
+			for (const file of [out1, out2]) {
+				try {
+					unlinkSync(file);
+				} catch {
+					// ignore cleanup errors
+				}
+			}
+		}
+	});
+}

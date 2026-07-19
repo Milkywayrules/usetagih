@@ -2,6 +2,7 @@
 
 #let payload = json(sys.inputs.at("json"))
 #let tier = sys.inputs.at("tier", default: "pro")
+#let logo-path = sys.inputs.at("logo", default: none)
 #let show-footer = tier == "free"
 #let footer-copy = "Rendered with usetagih · usetagih.com"
 
@@ -59,6 +60,10 @@
   columns: (1fr, 1fr),
   gutter: 12pt,
   align(left)[
+    #if logo-path != none [
+      #image(logo-path, width: 48pt, height: 48pt, fit: "contain")
+      #v(6pt)
+    ]
     #text(font: font-semibold, fill: text-primary, size: 14pt)[#payload.seller.name]
   ],
   align(right)[

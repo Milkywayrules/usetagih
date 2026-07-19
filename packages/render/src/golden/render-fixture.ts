@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { prepareLogoForTypst } from "../logo-prep";
 import { compileTypst } from "../typst-driver";
 import type { GoldenFixtureEntry } from "./manifest";
 
@@ -53,10 +54,16 @@ export function renderFixtureFromManifest(
 		`${key}=${value}`,
 	]);
 
+	const logoPrep = prepareLogoForTypst(payloadAbs, templateDir);
+	const logoArgs =
+		logoPrep.logoInputArg !== undefined
+			? ["--input", logoPrep.logoInputArg]
+			: [];
+
 	compileTypst({
 		inputPath: templateAbs,
 		outputPath,
-		extraArgs: ["--input", `json=${payloadInput}`, ...inputArgs],
+		extraArgs: ["--input", `json=${payloadInput}`, ...inputArgs, ...logoArgs],
 	});
 
 	const pdfBytes = readFileSync(outputPath);

@@ -1,0 +1,75 @@
+{
+	"schemaVersion": "2026-07-20",
+	"documentType": "invoice",
+	"template": "modern",
+	"documentNumber": "INV-2026-LOGO-SVG",
+	"issuedAt": "2026-07-15",
+	"dueAt": "2026-08-15",
+	"currency": "USD",
+	"seller": {
+		"name": "Acme Widgets LLC",
+		"email": "billing@acmewidgets.example",
+		"taxId": "US-12-3456789",
+		"address": {
+			"line1": "100 Market Street",
+			"city": "San Francisco",
+			"region": "CA",
+			"postalCode": "94105",
+			"country": "US"
+		}
+	},
+	"buyer": {
+		"name": "Beta Industries Inc",
+		"email": "accounts@betaind.example",
+		"address": {
+			"line1": "200 Commerce Blvd",
+			"city": "Austin",
+			"region": "TX",
+			"postalCode": "78701",
+			"country": "US"
+		}
+	},
+	"lineItems": [
+		{
+			"description": "Widget Pro License (annual)",
+			"quantity": 2,
+			"unit": "license",
+			"unitPrice": { "amount": "149.00" },
+			"lineTotal": { "amount": "298.00" }
+		},
+		{
+			"description": "Priority Support Add-on",
+			"quantity": 1,
+			"unit": "year",
+			"unitPrice": { "amount": "99.00" },
+			"lineTotal": { "amount": "99.00" }
+		},
+		{
+			"description": "Onboarding Session (3 hours)",
+			"quantity": 3,
+			"unit": "hour",
+			"unitPrice": { "amount": "75.00" },
+			"lineTotal": { "amount": "225.00" }
+		}
+	],
+	"taxLines": [
+		{
+			"name": "Sales Tax",
+			"rate": 0.0825,
+			"amount": { "amount": "51.56" }
+		}
+	],
+	"pricesIncludeTax": false,
+	"totals": {
+		"subtotal": { "amount": "622.00" },
+		"taxTotal": { "amount": "51.56" },
+		"grandTotal": { "amount": "673.56" }
+	},
+	"notes": "Logo determinism spike fixture — SVG variant.",
+	"branding": {
+		"logoBytes": {
+			"contentType": "image/svg+xml",
+			"bytesBase64": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCI+PHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMEQ5NDg4Ii8+PC9zdmc+"
+		}
+	}
+}

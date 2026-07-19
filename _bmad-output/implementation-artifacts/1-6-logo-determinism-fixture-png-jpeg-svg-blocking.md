@@ -4,7 +4,7 @@ baseline_commit: 23a1e75
 
 # Story 1.6: Logo determinism fixture — PNG, JPEG, SVG (blocking)
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -28,34 +28,34 @@ so that logo fetch does not break determinism (AD-7, AD-10 blocking #3, FR-7).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Persisted-logo fixture JSON (AC: 1)
-  - [ ] Create `packages/render/__fixtures__/payloads/invoice-modern-logo-png.json` (copy basic + `branding.logoBytes` PNG bytes per Dev Notes)
-  - [ ] Create `packages/render/__fixtures__/payloads/invoice-modern-logo-jpeg.json` (JPEG bytes)
-  - [ ] Create `packages/render/__fixtures__/payloads/invoice-modern-logo-svg.json` (clean SVG bytes)
-  - [ ] Distinct `documentNumber` per fixture: `INV-2026-LOGO-PNG`, `INV-2026-LOGO-JPEG`, `INV-2026-LOGO-SVG`
-- [ ] Task 2 — Logo prep + render-record stub (AC: 2, 6)
-  - [ ] Create `packages/render/src/render-record.ts` with `computeLogoChecksum()` + JSDoc for `renders.logo_checksum`
-  - [ ] Create `packages/render/src/logo-prep.ts` with `prepareLogoForTypst(payloadPath, templateDir)` → `{ logoInputArg?: string; logoChecksum?: string }`
-  - [ ] Extend `packages/render/src/golden/render-fixture.ts` to call `prepareLogoForTypst()` before `compileTypst()`
-  - [ ] Extend `packages/render/scripts/render-fixture.ts` (if present) to use same prep path
-- [ ] Task 3 — SVG sanitizer (AC: 7)
-  - [ ] Create `packages/render/src/svg-sanitize.ts` per Dev Notes §SVG sanitizer spec
-  - [ ] Create `packages/render/src/svg-sanitize.test.ts` with clean + malicious inline fixtures
-- [ ] Task 4 — Template conditional logo block (AC: 3, 4)
-  - [ ] Add `#let logo-path = sys.inputs.at("logo", default: none)` to `modern.typ`
-  - [ ] Add conditional logo `image(logo-path, …)` in header — **only when** `logo-path != none`
-  - [ ] Run `golden:check` on **basic + pagination** immediately after template edit — hashes must remain unchanged (AC: 3)
-- [ ] Task 5 — Manifest + golden hashes (AC: 4, 5)
-  - [ ] Append three manifest entries for logo fixtures
-  - [ ] Render each logo fixture inside CI Docker; run `golden:update`; commit three `.sha256` files
-  - [ ] Do **not** regenerate basic/pagination goldens unless AC: 3 stability gate fails (then justify + PR label `golden-update`)
-- [ ] Task 6 — Determinism + stability tests (AC: 3, 4, 5)
-  - [ ] Extend `packages/render/src/invoice-modern.test.ts` or add `logo-determinism.test.ts`: double-render identity per logo fixture; golden-stability assertions for basic + pagination hashes
-  - [ ] Extend `packages/render/src/golden/manifest.test.ts` for three new entries
-  - [ ] In-container `golden:check` exit 0 for all fixtures
-- [ ] Task 7 — Verification gate (AC: 8)
-  - [ ] `bunx turbo run lint typecheck test build --force`
-  - [ ] Record logo byte checksums, golden hashes, stability proof in Dev Agent Record
+- [x] Task 1 — Persisted-logo fixture JSON (AC: 1)
+  - [x] Create `packages/render/__fixtures__/payloads/invoice-modern-logo-png.json` (copy basic + `branding.logoBytes` PNG bytes per Dev Notes)
+  - [x] Create `packages/render/__fixtures__/payloads/invoice-modern-logo-jpeg.json` (JPEG bytes)
+  - [x] Create `packages/render/__fixtures__/payloads/invoice-modern-logo-svg.json` (clean SVG bytes)
+  - [x] Distinct `documentNumber` per fixture: `INV-2026-LOGO-PNG`, `INV-2026-LOGO-JPEG`, `INV-2026-LOGO-SVG`
+- [x] Task 2 — Logo prep + render-record stub (AC: 2, 6)
+  - [x] Create `packages/render/src/render-record.ts` with `computeLogoChecksum()` + JSDoc for `renders.logo_checksum`
+  - [x] Create `packages/render/src/logo-prep.ts` with `prepareLogoForTypst(payloadPath, templateDir)` → `{ logoInputArg?: string; logoChecksum?: string }`
+  - [x] Extend `packages/render/src/golden/render-fixture.ts` to call `prepareLogoForTypst()` before `compileTypst()`
+  - [x] Extend `packages/render/scripts/render-fixture.ts` (if present) to use same prep path
+- [x] Task 3 — SVG sanitizer (AC: 7)
+  - [x] Create `packages/render/src/svg-sanitize.ts` per Dev Notes §SVG sanitizer spec
+  - [x] Create `packages/render/src/svg-sanitize.test.ts` with clean + malicious inline fixtures
+- [x] Task 4 — Template conditional logo block (AC: 3, 4)
+  - [x] Add `#let logo-path = sys.inputs.at("logo", default: none)` to `modern.typ`
+  - [x] Add conditional logo `image(logo-path, …)` in header — **only when** `logo-path != none`
+  - [x] Run `golden:check` on **basic + pagination** immediately after template edit — hashes must remain unchanged (AC: 3)
+- [x] Task 5 — Manifest + golden hashes (AC: 4, 5)
+  - [x] Append three manifest entries for logo fixtures
+  - [x] Render each logo fixture inside CI Docker; run `golden:update`; commit three `.sha256` files
+  - [x] Do **not** regenerate basic/pagination goldens unless AC: 3 stability gate fails (then justify + PR label `golden-update`)
+- [x] Task 6 — Determinism + stability tests (AC: 3, 4, 5)
+  - [x] Extend `packages/render/src/invoice-modern.test.ts` or add `logo-determinism.test.ts`: double-render identity per logo fixture; golden-stability assertions for basic + pagination hashes
+  - [x] Extend `packages/render/src/golden/manifest.test.ts` for three new entries
+  - [x] In-container `golden:check` exit 0 for all fixtures
+- [x] Task 7 — Verification gate (AC: 8)
+  - [x] `bunx turbo run lint typecheck test build --force`
+  - [x] Record logo byte checksums, golden hashes, stability proof in Dev Agent Record
 
 ## Dev Notes
 
@@ -448,13 +448,45 @@ packages/templates/invoice/
 
 ### Agent Model Used
 
-_(filled by dev agent)_
+Composer 2.5 Fast (headless subagent)
 
 ### Debug Log References
 
+- story Dev Notes PNG/JPEG base64 had invalid image structure (PNG IDAT CRC mismatch; JPEG SOF zero components) — replaced with Typst-decodable 1×1 bytes; SVG bytes unchanged (`eadd6356…`)
+- `render-fixture.ts` script already routes through `renderFixtureFromManifest()` — no script change required
+
 ### Completion Notes List
 
+- logo byte checksums (persisted): PNG `5e3d382db4dd83d59aa5742793ad6b7903409e865c83bcbc54835049f043bc15`, JPEG `7c60b3084f2b187549233aeb6d4dfc173fa796357b83c0b44d000da5bd06ed37`, SVG `eadd635626436423706e82e13d72f302804806e2c34c75616fc662e27328a2c3`
+- golden PDF hashes (CI Docker, `SOURCE_DATE_EPOCH=1700000000`): PNG `17d03365c73abe453099420cd495602383d7d008cb332d6c87e8d3d972517646`, JPEG `c1ce18db9dfaf69056aa8a52765b4c812072314030b44afa90cc22fb0702ff56`, SVG `8df87133dcd46622ca4ca0dd3b196a39f6e0ebe7ff1f28ff92657b873a1248d4`
+- stability gate preserved: basic `b11be4533d38f525326164b530a143bd71270440dc4b98f42cec426f2d3a105c`, pagination `d19dd496ed850cea10f8f50146812c4541fc811f075553222b432e6e691cc584`
+- double-render in-container: all three logo fixtures IDENTICAL consecutive hashes
+- sanitizer tests: clean SVG passes; script tag stripped; self-closing script rejected; onload stripped; foreignObject stripped; external xlink:href stripped/rejected
+- `bunx turbo run lint typecheck test build --force`: 36/36 tasks exit 0
+
 ### File List
+
+- `packages/render/src/svg-sanitize.ts` (new)
+- `packages/render/src/svg-sanitize.test.ts` (new)
+- `packages/render/src/render-record.ts` (new)
+- `packages/render/src/logo-prep.ts` (new)
+- `packages/render/src/golden/render-fixture.ts` (modified)
+- `packages/render/src/invoice-modern.test.ts` (modified)
+- `packages/render/src/golden/manifest.test.ts` (modified)
+- `packages/templates/invoice/modern.typ` (modified)
+- `packages/render/__fixtures__/payloads/invoice-modern-logo-png.json` (new)
+- `packages/render/__fixtures__/payloads/invoice-modern-logo-jpeg.json` (new)
+- `packages/render/__fixtures__/payloads/invoice-modern-logo-svg.json` (new)
+- `packages/render/__fixtures__/golden/invoice-modern-logo-png.sha256` (new)
+- `packages/render/__fixtures__/golden/invoice-modern-logo-jpeg.sha256` (new)
+- `packages/render/__fixtures__/golden/invoice-modern-logo-svg.sha256` (new)
+- `packages/render/manifest.json` (modified)
+- `_bmad-output/implementation-artifacts/1-6-logo-determinism-fixture-png-jpeg-svg-blocking.md` (modified)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (modified)
+
+## Change Log
+
+- 2026-07-20: logo determinism fixtures (PNG/JPEG/SVG), SVG sanitizer, conditional template logo block, manifest + goldens, stability + double-render tests
 
 ## Story Validation Record
 

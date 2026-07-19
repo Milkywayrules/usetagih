@@ -33,6 +33,39 @@
 			"inputs": {
 				"tier": "free"
 			}
+		},
+		{
+			"id": "invoice-modern-logo-png",
+			"payload": "__fixtures__/payloads/invoice-modern-logo-png.json",
+			"template": "../templates/invoice/modern.typ",
+			"sha256": "17d03365c73abe453099420cd495602383d7d008cb332d6c87e8d3d972517646",
+			"typstVersion": "0.15.1",
+			"schemaVersion": "2026-07-20",
+			"inputs": {
+				"tier": "free"
+			}
+		},
+		{
+			"id": "invoice-modern-logo-jpeg",
+			"payload": "__fixtures__/payloads/invoice-modern-logo-jpeg.json",
+			"template": "../templates/invoice/modern.typ",
+			"sha256": "c1ce18db9dfaf69056aa8a52765b4c812072314030b44afa90cc22fb0702ff56",
+			"typstVersion": "0.15.1",
+			"schemaVersion": "2026-07-20",
+			"inputs": {
+				"tier": "free"
+			}
+		},
+		{
+			"id": "invoice-modern-logo-svg",
+			"payload": "__fixtures__/payloads/invoice-modern-logo-svg.json",
+			"template": "../templates/invoice/modern.typ",
+			"sha256": "8df87133dcd46622ca4ca0dd3b196a39f6e0ebe7ff1f28ff92657b873a1248d4",
+			"typstVersion": "0.15.1",
+			"schemaVersion": "2026-07-20",
+			"inputs": {
+				"tier": "free"
+			}
 		}
 	]
 }
