@@ -4,7 +4,7 @@ baseline_commit: f21d459
 
 # Story 1.4: CI Docker render-ci image and pdf-golden workflow
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -29,26 +29,26 @@ so that golden checks run only in the authoritative linux/amd64 container (AD-3,
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Replace `docker/Dockerfile.render-ci` (AC: 1, 2)
-  - [ ] Remove alpine stub; implement exact Dockerfile spec in Dev Notes §Dockerfile.render-ci
-  - [ ] Pin Typst tar.xz URL + dual sha256 from `manifest.json` `typstBinary`
-  - [ ] COPY fonts + monorepo slices; `bun install --frozen-lockfile`
-  - [ ] COPY Bun from `oven/bun:1.2.18`
-- [ ] Task 2 — Add `.github/workflows/pdf-golden.yml` (AC: 4, 5, 9)
-  - [ ] Path filters on PR + push main
-  - [ ] Job: checkout → `docker build` → `docker run golden:check`
-  - [ ] Header comment referencing AD-3 / §3.5; note GitHub runner environment-gated when no remote
-- [ ] Task 3 — Document advisory-only local golden (AC: 6)
-  - [ ] Create or extend `packages/render/README.md` with §Local vs CI golden authority
-- [ ] Task 4 — Confirm docker-publish compatibility (AC: 7)
-  - [ ] Verify `docker/Dockerfile.render-ci` path unchanged in matrix; no tag scheme edits required
-  - [ ] Optional: update `manifest.json` `renderCiImage.plannedDigest` after first local build (lowercase hex or `sha256:…` digest string)
-- [ ] Task 5 — Verification gate (AC: 2, 3, 8, 9)
-  - [ ] `docker build` + in-container `golden:check` exit 0
-  - [ ] `docker builder prune -f`
-  - [ ] `bunx turbo run lint typecheck test build --force`
-  - [ ] YAML parse + structural greps (no secrets)
-  - [ ] Record results in Dev Agent Record
+- [x] Task 1 — Replace `docker/Dockerfile.render-ci` (AC: 1, 2)
+  - [x] Remove alpine stub; implement exact Dockerfile spec in Dev Notes §Dockerfile.render-ci
+  - [x] Pin Typst tar.xz URL + dual sha256 from `manifest.json` `typstBinary`
+  - [x] COPY fonts + monorepo slices; `bun install --frozen-lockfile`
+  - [x] COPY Bun from `oven/bun:1.2.18`
+- [x] Task 2 — Add `.github/workflows/pdf-golden.yml` (AC: 4, 5, 9)
+  - [x] Path filters on PR + push main
+  - [x] Job: checkout → `docker build` → `docker run golden:check`
+  - [x] Header comment referencing AD-3 / §3.5; note GitHub runner environment-gated when no remote
+- [x] Task 3 — Document advisory-only local golden (AC: 6)
+  - [x] Create or extend `packages/render/README.md` with §Local vs CI golden authority
+- [x] Task 4 — Confirm docker-publish compatibility (AC: 7)
+  - [x] Verify `docker/Dockerfile.render-ci` path unchanged in matrix; no tag scheme edits required
+  - [x] Optional: update `manifest.json` `renderCiImage.plannedDigest` after first local build (lowercase hex or `sha256:…` digest string)
+- [x] Task 5 — Verification gate (AC: 2, 3, 8, 9)
+  - [x] `docker build` + in-container `golden:check` exit 0
+  - [x] `docker builder prune -f`
+  - [x] `bunx turbo run lint typecheck test build --force`
+  - [x] YAML parse + structural greps (no secrets)
+  - [x] Record results in Dev Agent Record
 
 ## Dev Notes
 
@@ -349,13 +349,34 @@ packages/render/
 
 ### Agent Model Used
 
-_(filled by dev agent)_
+Composer 2.5 (headless subagent)
 
 ### Debug Log References
 
+- initial `bun install --frozen-lockfile` failed with partial workspace COPY; added `package.json` stubs for remaining `bun.lock` workspace members (core/db/schema/sdk + apps api/web/mcp)
+
 ### Completion Notes List
 
+- replaced alpine stub with debian:bookworm-slim + Typst 0.15.1 (musl tar.xz, dual sha256) + Bun 1.2.18 COPY + monorepo slices
+- added `.github/workflows/pdf-golden.yml` (build-in-job `usetagih-render-ci:ci`, path filters PR + push main)
+- added `packages/render/README.md` advisory-only local golden section
+- verified docker-publish.yml matrix unchanged (`sha-${{ github.sha }}` only)
+- docker build `usetagih-render-ci:local` succeeded; in-container `golden:check` exit 0 with hash `b11be4533d38f525326164b530a143bd71270440dc4b98f42cec426f2d3a105c`
+- typst 0.15.1 inside container; YAML parse OK; turbo `--force` 36/36 tasks green
+- updated `manifest.json` `renderCiImage.plannedDigest` to local image manifest digest
+
 ### File List
+
+- docker/Dockerfile.render-ci (modified)
+- .github/workflows/pdf-golden.yml (new)
+- packages/render/README.md (new)
+- packages/render/manifest.json (modified — plannedDigest)
+- _bmad-output/implementation-artifacts/1-4-ci-docker-render-ci-image-and-pdf-golden-workflow.md (modified)
+- _bmad-output/implementation-artifacts/sprint-status.yaml (modified)
+
+### Change Log
+
+- 2026-07-20: Story 1.4 — authoritative render-ci Docker image + pdf-golden CI workflow (AD-3)
 
 ### Story Validation Record
 

@@ -1,0 +1,42 @@
+# PDF golden determinism gate — AD-3, SOLUTION-DESIGN §3.5
+# Authoritative SHA-256 checks run ONLY inside Dockerfile.render-ci (linux/amd64).
+# GitHub runner execution environment-gated until remote exists (Story 0.4 pattern).
+
+name: PDF Golden
+
+on:
+  pull_request:
+    paths:
+      - "packages/render/**"
+      - "packages/templates/**"
+      - "docker/Dockerfile.render-ci"
+      - ".github/workflows/pdf-golden.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/render/**"
+      - "packages/templates/**"
+      - "docker/Dockerfile.render-ci"
+      - ".github/workflows/pdf-golden.yml"
+
+concurrency:
+  group: pdf-golden-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pdf-golden:
+    name: pdf-golden
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build render-ci image
+        run: docker build -f docker/Dockerfile.render-ci -t usetagih-render-ci:ci .
+
+      - name: Golden check in render-ci container
+        run: |
+          docker run --rm \
+            -e SOURCE_DATE_EPOCH=1700000000 \
+            usetagih-render-ci:ci \
+            bun run --filter @usetagih/render golden:check

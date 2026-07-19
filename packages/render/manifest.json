@@ -9,7 +9,7 @@
 	},
 	"renderCiImage": {
 		"plannedTag": "ghcr.io/verasic-labs/usetagih-render-ci:2026-07-20",
-		"plannedDigest": null
+		"plannedDigest": "sha256:30c6f288ef2234f48056faf227b5bb80c39eccac677fee22624f3773955b0a1d"
 	},
 	"fixtures": [
 		{
