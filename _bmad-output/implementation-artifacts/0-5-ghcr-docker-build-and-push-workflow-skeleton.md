@@ -4,7 +4,7 @@ baseline_commit: 7a872472202c89823b8ec31eaec5fbb23792932d
 
 # Story 0.5: GHCR Docker build-and-push workflow skeleton
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -424,3 +424,4 @@ Composer 2.5 (headless dev-story subagent)
 
 - 2026-07-20: story created and validated — ready for dev
 - 2026-07-20: implemented GHCR docker-publish workflow skeleton + render-ci alpine stub; local verification pass; status → review
+- 2026-07-20: code review approved; status → done

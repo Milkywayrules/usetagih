@@ -64,7 +64,7 @@ development_status:
   0-2-shared-typescript-and-biome-config-package: done
   0-3-local-docker-compose-for-postgres-and-minio: done
   0-4-github-actions-ci-workflow: done
-  0-5-ghcr-docker-build-and-push-workflow-skeleton: review
+  0-5-ghcr-docker-build-and-push-workflow-skeleton: done
   0-6-doppler-project-mapping-and-env-validation-scaffold: backlog
   epic-0-retrospective: optional
 
