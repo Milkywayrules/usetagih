@@ -70,7 +70,7 @@ development_status:
 
   # Epic 1: PDF Pipeline Spike (BLOCKING GATE)
   # BLOCKING GATE — failure halts Epics 2–8 and escalates to board. Gated by Epic 0.
-  epic-1: in-progress
+  epic-1: done
   1-1-pin-typst-0-15-x-font-bundle-and-shared-preamble: done
   1-2-invoice-modern-typst-template-and-basic-fixture: done
   1-3-golden-harness-cli-golden-check: done
@@ -79,7 +79,7 @@ development_status:
   1-6-logo-determinism-fixture-png-jpeg-svg-blocking: done
   1-7-multi-page-svg-preview-with-pdf-page-count-parity-blocking: done
   1-8-determinism-soak-100-consecutive-iterations-blocking: done
-  1-9-spike-gate-documentation-and-board-escalation-protocol: review
+  1-9-spike-gate-documentation-and-board-escalation-protocol: done
   epic-1-retrospective: optional
 
   # Epic 2: Canonical Schema & Contract Package
