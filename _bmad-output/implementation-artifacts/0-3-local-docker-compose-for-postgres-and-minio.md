@@ -4,7 +4,7 @@ baseline_commit: c6f738df6780cfb74c4925f0a6157ebd4c1b888a
 
 # Story 0.3: local Docker Compose for Postgres and MinIO
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -28,22 +28,22 @@ so that API development can run against local DB and R2-compatible storage (SOLU
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Create `docker/compose.yml` (AC: 1, 4, 6)
-  - [ ] Add header comment documenting local `DATABASE_URL` + R2 emulation env vars (§8.3)
-  - [ ] Service `postgres`: image `postgres:16-alpine`, port `5432:5432`, env + volume + healthcheck per Dev Notes
-  - [ ] Service `minio`: image `minio/minio`, command `server /data --console-address ":9001"`, ports `9000:9000` and `9001:9001`, env + volume + healthcheck per Dev Notes
-  - [ ] Service `createbuckets`: image `minio/mc`, `depends_on` minio, one-shot entrypoint creating bucket `usetagih-artifacts`, `restart: "no"`
-  - [ ] Services `api` / `web`: `build` from `docker/Dockerfile.api` / `docker/Dockerfile.web` with `context: ..`, ports `3001:3001` / `3000:3000`, `depends_on` postgres (healthy) — may use compose `profiles: [apps]` so default `up` targets infra only
-  - [ ] Named volumes `postgres_data`, `minio_data`
-- [ ] Task 2 — Stub Dockerfiles for placeholder services (AC: 5)
-  - [ ] Create `docker/Dockerfile.api` — `alpine:3.21`, `EXPOSE 3001`, idle CMD (e.g. `sleep infinity`)
-  - [ ] Create `docker/Dockerfile.web` — `alpine:3.21`, `EXPOSE 3000`, idle CMD
-  - [ ] Do **not** add `docker/Dockerfile.render-ci` (Story 1.4 / 0.5 scope)
-- [ ] Task 3 — Verification gate (AC: 2–4, 7–8)
-  - [ ] Run static compose config parse (always required)
-  - [ ] If daemon reachable: `up -d postgres minio createbuckets`, verify ports + bucket
-  - [ ] Confirm `bunx turbo run lint typecheck test build` still green
-  - [ ] Document environment-gated results in Dev Agent Record if runtime checks skipped
+- [x] Task 1 — Create `docker/compose.yml` (AC: 1, 4, 6)
+  - [x] Add header comment documenting local `DATABASE_URL` + R2 emulation env vars (§8.3)
+  - [x] Service `postgres`: image `postgres:16-alpine`, port `5432:5432`, env + volume + healthcheck per Dev Notes
+  - [x] Service `minio`: image `minio/minio`, command `server /data --console-address ":9001"`, ports `9000:9000` and `9001:9001`, env + volume + healthcheck per Dev Notes
+  - [x] Service `createbuckets`: image `minio/mc`, `depends_on` minio, one-shot entrypoint creating bucket `usetagih-artifacts`, `restart: "no"`
+  - [x] Services `api` / `web`: `build` from `docker/Dockerfile.api` / `docker/Dockerfile.web` with `context: ..`, ports `3001:3001` / `3000:3000`, `depends_on` postgres (healthy) — may use compose `profiles: [apps]` so default `up` targets infra only
+  - [x] Named volumes `postgres_data`, `minio_data`
+- [x] Task 2 — Stub Dockerfiles for placeholder services (AC: 5)
+  - [x] Create `docker/Dockerfile.api` — `alpine:3.21`, `EXPOSE 3001`, idle CMD (e.g. `sleep infinity`)
+  - [x] Create `docker/Dockerfile.web` — `alpine:3.21`, `EXPOSE 3000`, idle CMD
+  - [x] Do **not** add `docker/Dockerfile.render-ci` (Story 1.4 / 0.5 scope)
+- [x] Task 3 — Verification gate (AC: 2–4, 7–8)
+  - [x] Run static compose config parse (always required)
+  - [x] If daemon reachable: `up -d postgres minio createbuckets`, verify ports + bucket
+  - [x] Confirm `bunx turbo run lint typecheck test build` still green
+  - [x] Document environment-gated results in Dev Agent Record if runtime checks skipped
 
 ## Dev Notes
 
@@ -362,9 +362,23 @@ Composer 2.5 (headless subagent)
 
 ### Debug Log References
 
+- `minio/mc:RELEASE.2024-12-18T13-15-44Z` not published on Docker Hub; resolved to `RELEASE.2024-11-21T17-21-54Z` (nearest prior mc release)
+
 ### Completion Notes List
 
+- Added `docker/compose.yml` with postgres 16-alpine, minio, createbuckets one-shot, and api/web stubs behind `apps` profile
+- Header documents `DATABASE_URL` and all R2 emulation vars per SOLUTION-DESIGN §8.3
+- Static `docker compose config --quiet` passed; runtime: postgres healthy on 5432, minio on 9000, bucket `usetagih-artifacts` created (createbuckets exit 0)
+- `bunx turbo run lint typecheck test build` — 36/36 tasks green
+- Stack torn down after verification; named volumes retained
+
 ### File List
+
+- docker/compose.yml (new)
+- docker/Dockerfile.api (new)
+- docker/Dockerfile.web (new)
+- _bmad-output/implementation-artifacts/0-3-local-docker-compose-for-postgres-and-minio.md (updated)
+- _bmad-output/implementation-artifacts/sprint-status.yaml (updated)
 
 ## Story Validation Record
 
@@ -382,3 +396,4 @@ Composer 2.5 (headless subagent)
 ## Change Log
 
 - 2026-07-20: story created and validated — ready for dev
+- 2026-07-20: implemented local docker compose stack — postgres, minio, bucket bootstrap, stub app services

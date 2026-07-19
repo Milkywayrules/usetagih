@@ -1,0 +1,4 @@
+# Stub placeholder — real Bun/Elysia image in Story 0.5 GHCR workflow / Epic 3
+FROM alpine:3.21
+EXPOSE 3001
+CMD ["sleep", "infinity"]
