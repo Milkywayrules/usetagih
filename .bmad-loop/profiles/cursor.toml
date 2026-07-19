@@ -1,0 +1,19 @@
+# Cursor Agent CLI (`agent` / `cursor-agent`). Skills live in .agents/skills/
+# (same tree as codex/gemini in this project). Hooks use Cursor's native
+# .cursor/hooks.json format (version + hooks table); dialect matches copilot's
+# flat handler entries. Live-verified hook payload uses conversation_id.
+name = "cursor"
+binary = "agent"
+prompt_template = "Use the {skill} skill now: {args}"
+launch_args = []
+bypass_args = ["--force", "--trust"]
+model_flag = "--model"
+usage_parser = "none"
+first_run_note = "run `agent login` once if headless sessions fail auth; use --trust --force for automation"
+skill_tree = ".agents/skills"
+seed_files = [".cursor/hooks.json"]
+
+[hooks]
+dialect = "copilot-settings-json"
+config_path = ".cursor/hooks.json"
+events = { stop = "Stop", sessionStart = "SessionStart", sessionEnd = "SessionEnd" }
