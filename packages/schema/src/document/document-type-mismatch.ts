@@ -1,7 +1,8 @@
+import { DOCUMENT_TYPE_MISMATCH_CODE } from "../errors/codes";
 import type { DocumentType } from "./document-type";
 import { DocumentTypeSchema } from "./document-type";
 
-export const DOCUMENT_TYPE_MISMATCH_CODE = "DOCUMENT_TYPE_MISMATCH" as const;
+export { DOCUMENT_TYPE_MISMATCH_CODE };
 
 export type DocumentTypeMismatchResult =
 	| { match: true }

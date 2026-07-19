@@ -74,9 +74,9 @@ test("skips tax total check when taxLines is absent or empty", () => {
 	const findingsWithout = validateDocumentPayloadArithmetic(
 		DocumentPayloadSchema.parse(withoutTaxLines),
 	);
-	expect(
-		findingsWithout.filter((f) => f.path === "/totals/taxTotal"),
-	).toEqual([]);
+	expect(findingsWithout.filter((f) => f.path === "/totals/taxTotal")).toEqual(
+		[],
+	);
 
 	const withEmptyTaxLines = {
 		...base,

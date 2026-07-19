@@ -4,7 +4,7 @@ baseline_commit: f71cd845f5475b557f2c556cc0845652f50d6129
 
 # Story 2.3: Error codes enum and API error envelope types
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -28,24 +28,24 @@ so that clients handle failures consistently (FR-2, NFR-7, AD-11).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Canonical error codes module (AC: 1, 4, 6)
-  - [ ] Create `errors/codes.ts` with full PRD §10.3 closed set + exports
-  - [ ] Create `errors/http-status.ts` with `getHttpStatusForErrorCode` + inverse guard in tests
-  - [ ] Migrate `validation/codes.ts` to re-export from `errors/codes.ts` (remove duplicated literals)
-  - [ ] Migrate `document/document-type-mismatch.ts` to import `DOCUMENT_TYPE_MISMATCH_CODE` from `errors/codes.ts`
-- [ ] Task 2 — Envelope + detail types (AC: 2, 3, 5)
-  - [ ] Create `errors/detail.ts` — `ApiErrorDetailSchema` (`.strict()`), type, `businessFindingToDetail()`
-  - [ ] Create `errors/envelope.ts` — `ApiErrorEnvelopeSchema` (`.strict()`), type, `buildApiErrorEnvelope()`
-  - [ ] Update `validation/finding.ts` — `code: ErrorCode`
-- [ ] Task 3 — Public exports (AC: 4)
-  - [ ] Update `src/index.ts` — export errors module surface without breaking existing validation/document exports
-- [ ] Task 4 — Tests (AC: 7)
-  - [ ] `errors/codes.test.ts` — completeness, HTTP mapping, exclusivity
-  - [ ] `errors/envelope.test.ts` — builder defaults, PRD example fixture, Zod round-trip
-  - [ ] `errors/bare-string-guard.test.ts` — static export audit (see Dev Notes)
-- [ ] Task 5 — Verification gate (AC: 8)
-  - [ ] `bun test packages/schema`
-  - [ ] `bunx turbo run lint typecheck test build --force`
+- [x] Task 1 — Canonical error codes module (AC: 1, 4, 6)
+  - [x] Create `errors/codes.ts` with full PRD §10.3 closed set + exports
+  - [x] Create `errors/http-status.ts` with `getHttpStatusForErrorCode` + inverse guard in tests
+  - [x] Migrate `validation/codes.ts` to re-export from `errors/codes.ts` (remove duplicated literals)
+  - [x] Migrate `document/document-type-mismatch.ts` to import `DOCUMENT_TYPE_MISMATCH_CODE` from `errors/codes.ts`
+- [x] Task 2 — Envelope + detail types (AC: 2, 3, 5)
+  - [x] Create `errors/detail.ts` — `ApiErrorDetailSchema` (`.strict()`), type, `businessFindingToDetail()`
+  - [x] Create `errors/envelope.ts` — `ApiErrorEnvelopeSchema` (`.strict()`), type, `buildApiErrorEnvelope()`
+  - [x] Update `validation/finding.ts` — `code: ErrorCode`
+- [x] Task 3 — Public exports (AC: 4)
+  - [x] Update `src/index.ts` — export errors module surface without breaking existing validation/document exports
+- [x] Task 4 — Tests (AC: 7)
+  - [x] `errors/codes.test.ts` — completeness, HTTP mapping, exclusivity
+  - [x] `errors/envelope.test.ts` — builder defaults, PRD example fixture, Zod round-trip
+  - [x] `errors/bare-string-guard.test.ts` — static export audit (see Dev Notes)
+- [x] Task 5 — Verification gate (AC: 8)
+  - [x] `bun test packages/schema`
+  - [x] `bunx turbo run lint typecheck test build --force`
 
 ## Dev Notes
 
@@ -386,14 +386,37 @@ Keep existing validation/document exports unchanged.
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Composer 2.5 Fast
 
 ### Debug Log References
 
+- biome organizeImports reshuffled `index.ts`; duplicate `*_CODE` re-exports removed so build passes while legacy export paths stay intact
+
 ### Completion Notes List
 
+- added `packages/schema/src/errors/` with 13-code PRD closed set, 1:1 HTTP status map, strict Zod envelope/detail schemas, and builder helpers
+- migrated `validation/codes.ts` and `document/document-type-mismatch.ts` to thin re-exports from canonical `errors/codes.ts`
+- narrowed `BusinessRuleFinding.code` to `ErrorCode`; added codes, envelope, and bare-string guard tests
+- `bun test packages/schema`: 32 pass, 0 fail
+- `bunx turbo run lint typecheck test build --force`: 36/36 tasks green (uncached)
+
 ### File List
+
+- `packages/schema/src/errors/codes.ts` (new)
+- `packages/schema/src/errors/http-status.ts` (new)
+- `packages/schema/src/errors/detail.ts` (new)
+- `packages/schema/src/errors/envelope.ts` (new)
+- `packages/schema/src/errors/codes.test.ts` (new)
+- `packages/schema/src/errors/envelope.test.ts` (new)
+- `packages/schema/src/errors/bare-string-guard.test.ts` (new)
+- `packages/schema/src/validation/codes.ts` (modified)
+- `packages/schema/src/validation/finding.ts` (modified)
+- `packages/schema/src/document/document-type-mismatch.ts` (modified)
+- `packages/schema/src/index.ts` (modified)
+- `_bmad-output/implementation-artifacts/2-3-error-codes-enum-and-api-error-envelope-types.md` (modified)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (modified)
 
 ## Change Log
 
 - 2026-07-20: story context created for error codes enum and API error envelope types (Story 2.3)
+- 2026-07-20: implemented canonical error codes enum, HTTP status map, API error envelope types, migration, and tests (Story 2.3)

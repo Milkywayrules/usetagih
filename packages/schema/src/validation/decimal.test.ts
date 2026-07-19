@@ -49,11 +49,7 @@ test("normalizeMoneyAmount canonicalizes decimal strings", () => {
 });
 
 test("multiplyQuantityByMoney matches bigint reference across scale combos", () => {
-	function refMultiply(
-		qty: number,
-		price: string,
-		minorUnits: number,
-	): string {
+	function refMultiply(qty: number, price: string, minorUnits: number): string {
 		const qtyScaled = BigInt(Math.round(qty * 1000));
 		const [, fracP = ""] = price.split(".");
 		const priceScale = fracP.length;
@@ -65,8 +61,7 @@ test("multiplyQuantityByMoney matches bigint reference across scale combos", () 
 		const productScale = 3 + priceScale;
 
 		if (productScale <= minorUnits) {
-			const scaled =
-				productScaled * 10n ** BigInt(minorUnits - productScale);
+			const scaled = productScaled * 10n ** BigInt(minorUnits - productScale);
 			return formatRef(scaled, minorUnits);
 		}
 
@@ -103,9 +98,9 @@ test("multiplyQuantityByMoney matches bigint reference across scale combos", () 
 							? String(pi)
 							: `${pi}.${String(pi % 10 ** priceDec).padStart(priceDec, "0")}`;
 					for (const minorUnits of [0, 2] as const) {
-						expect(
-							multiplyQuantityByMoney(qty, price, minorUnits),
-						).toBe(refMultiply(qty, price, minorUnits));
+						expect(multiplyQuantityByMoney(qty, price, minorUnits)).toBe(
+							refMultiply(qty, price, minorUnits),
+						);
 					}
 				}
 			}
@@ -117,7 +112,10 @@ test("addMoneyAmounts handles large values and many items without drift", () => 
 	expect(addMoneyAmounts(["9999999999999.99", "0.01"], 2)).toBe(
 		"10000000000000.00",
 	);
-	expect(addMoneyAmounts(Array.from({ length: 25 }, () => "100.00"), 2)).toBe(
-		"2500.00",
-	);
+	expect(
+		addMoneyAmounts(
+			Array.from({ length: 25 }, () => "100.00"),
+			2,
+		),
+	).toBe("2500.00");
 });

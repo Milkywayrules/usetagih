@@ -51,6 +51,31 @@ export { TaxLineSchema } from "./document/tax-line";
 export type { Totals } from "./document/totals";
 export { TotalsSchema } from "./document/totals";
 export {
+	ERROR_CODES,
+	type ErrorCode,
+	FORBIDDEN_CODE,
+	IDEMPOTENCY_CONFLICT_CODE,
+	INTERNAL_ERROR_CODE,
+	INVALID_REQUEST_CODE,
+	NOT_FOUND_CODE,
+	QUOTA_EXCEEDED_CODE,
+	RATE_LIMITED_CODE,
+	UNAUTHORIZED_CODE,
+	UNSUPPORTED_SCHEMA_VERSION_CODE,
+} from "./errors/codes";
+export {
+	type ApiErrorDetail,
+	ApiErrorDetailSchema,
+	businessFindingToDetail,
+} from "./errors/detail";
+export {
+	type ApiErrorEnvelope,
+	ApiErrorEnvelopeSchema,
+	type BuildApiErrorEnvelopeInput,
+	buildApiErrorEnvelope,
+} from "./errors/envelope";
+export { getHttpStatusForErrorCode } from "./errors/http-status";
+export {
 	LINE_TOTAL_MISMATCH_CODE,
 	TAX_TOTAL_MISMATCH_CODE,
 	VALIDATION_FAILED_CODE,
