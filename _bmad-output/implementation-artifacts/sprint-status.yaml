@@ -45,7 +45,7 @@
 # Epic 5 after Epic 1+3 (Story 5.0 first) | Epic 6 after Epic 3+5 | Epic 7 after Epic 3 | Epic 8 last
 
 generated: 2026-07-20
-last_updated: 2026-07-20T06:30:00+07:00
+last_updated: 2026-07-20T04:30:00+07:00
 project: usetagih
 project_key: NOKEY
 tracking_system: file-system
@@ -78,7 +78,7 @@ development_status:
   1-5-25-line-item-pagination-fixture-fr-8-blocking: done
   1-6-logo-determinism-fixture-png-jpeg-svg-blocking: done
   1-7-multi-page-svg-preview-with-pdf-page-count-parity-blocking: done
-  1-8-determinism-soak-100-consecutive-iterations-blocking: ready-for-dev
+  1-8-determinism-soak-100-consecutive-iterations-blocking: review
   1-9-spike-gate-documentation-and-board-escalation-protocol: backlog
   epic-1-retrospective: optional
 

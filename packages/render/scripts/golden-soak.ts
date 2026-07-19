@@ -5,38 +5,48 @@ import {
 	PACKAGE_ROOT,
 	renderFixtureFromManifest,
 } from "../src/golden/render-fixture";
+import {
+	GOLDEN_SOAK_USAGE,
+	parseGoldenSoakArgs,
+	resolveSoakEntries,
+	UnknownFixtureError,
+} from "../src/golden/soak-args";
 
 const MANIFEST_PATH = resolve(PACKAGE_ROOT, "manifest.json");
 
-function parseArgs(argv: string[]): { iterations: number } {
-	let iterations = 5;
-
-	for (let i = 0; i < argv.length; i++) {
-		const arg = argv[i];
-		if (arg === "--iterations" && argv[i + 1]) {
-			iterations = Number.parseInt(argv[++i] ?? "5", 10);
-		}
-	}
-
-	if (!Number.isFinite(iterations) || iterations < 1) {
-		console.error("Usage: bun scripts/golden-soak.ts [--iterations N]");
+function main(): number {
+	let args: ReturnType<typeof parseGoldenSoakArgs>;
+	try {
+		args = parseGoldenSoakArgs(process.argv.slice(2));
+	} catch {
+		console.error(GOLDEN_SOAK_USAGE);
 		process.exit(1);
 	}
 
-	return { iterations };
-}
-
-function main(): number {
-	const { iterations } = parseArgs(process.argv.slice(2));
 	const manifest = loadManifest(MANIFEST_PATH);
+	let entries: ReturnType<typeof resolveSoakEntries>;
+	try {
+		entries = resolveSoakEntries(manifest, args.fixtureIds);
+	} catch (error) {
+		if (error instanceof UnknownFixtureError) {
+			console.error(`unknown fixture: ${error.unknownId}`);
+			console.error(`valid fixture ids: ${error.validIds.join(", ")}`);
+			return 1;
+		}
+		throw error;
+	}
 
-	for (const entry of manifest.fixtures) {
+	const soakStarted = performance.now();
+	let fixtureCount = 0;
+
+	for (const entry of entries) {
+		fixtureCount += 1;
 		const started = performance.now();
 		let firstHash: string | null = null;
 		const tempPaths: string[] = [];
 
 		try {
-			for (let i = 1; i <= iterations; i++) {
+			for (let i = 1; i <= args.iterations; i++) {
 				const outputPath = resolve(
 					PACKAGE_ROOT,
 					".tmp",
@@ -65,7 +75,7 @@ function main(): number {
 
 			const durationMs = Math.round(performance.now() - started);
 			console.log(
-				`SOAK PASS ${entry.id}: ${iterations} iterations, hash ${firstHash}, ${durationMs}ms`,
+				`SOAK PASS ${entry.id}: ${args.iterations} iterations, hash ${firstHash}, ${durationMs}ms`,
 			);
 		} finally {
 			for (const path of tempPaths) {
@@ -77,6 +87,11 @@ function main(): number {
 			}
 		}
 	}
+
+	const totalDurationMs = Math.round(performance.now() - soakStarted);
+	console.log(
+		`SOAK SUMMARY: ${fixtureCount} fixture(s), ${args.iterations} iteration(s) each, ${totalDurationMs}ms total`,
+	);
 
 	return 0;
 }

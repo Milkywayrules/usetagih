@@ -4,7 +4,7 @@ baseline_commit: 234a911
 
 # Story 1.8: Determinism soak ≥100 consecutive iterations (blocking)
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -37,22 +37,22 @@ so that flake and float instability is caught (AD-10 blocking #5, NFR-6).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Extend `golden-soak.ts` CLI (AC: 1, 2, 3)
-  - [ ] Parse `--iterations N` (default **5**, unchanged) and repeatable `--fixture <id>`
-  - [ ] Filter manifest entries when `--fixture` provided; validate ids exist
-  - [ ] Emit final `SOAK SUMMARY: …` line after all fixtures pass
-  - [ ] Update usage string on invalid args
-- [ ] Task 2 — Unit tests for soak arg/filter logic (AC: 7)
-  - [ ] Export `parseGoldenSoakArgs()` (or test via small pure module) from soak script pattern used elsewhere
-  - [ ] Cases: default all fixtures, single `--fixture`, multiple `--fixture`, unknown id error
-- [ ] Task 3 — Wire CI soak step (AC: 4, 5, 9)
-  - [ ] Add step to `.github/workflows/pdf-golden.yml` after Golden check; reuse `usetagih-render-ci:ci`
-  - [ ] Append `golden:soak wall_ms=…` to `$GITHUB_STEP_SUMMARY`
-- [ ] Task 4 — Verification gate (AC: 6, 7, 8)
-  - [ ] Rebuild `usetagih-render-ci:local`; run CI-equivalent soak command with `--iterations 100`
-  - [ ] Confirm `golden:check` still passes all 5 fixtures (no golden drift)
-  - [ ] `bunx turbo run lint typecheck test build --force`
-  - [ ] Record durations + hashes in Dev Agent Record
+- [x] Task 1 — Extend `golden-soak.ts` CLI (AC: 1, 2, 3)
+  - [x] Parse `--iterations N` (default **5**, unchanged) and repeatable `--fixture <id>`
+  - [x] Filter manifest entries when `--fixture` provided; validate ids exist
+  - [x] Emit final `SOAK SUMMARY: …` line after all fixtures pass
+  - [x] Update usage string on invalid args
+- [x] Task 2 — Unit tests for soak arg/filter logic (AC: 7)
+  - [x] Export `parseGoldenSoakArgs()` (or test via small pure module) from soak script pattern used elsewhere
+  - [x] Cases: default all fixtures, single `--fixture`, multiple `--fixture`, unknown id error
+- [x] Task 3 — Wire CI soak step (AC: 4, 5, 9)
+  - [x] Add step to `.github/workflows/pdf-golden.yml` after Golden check; reuse `usetagih-render-ci:ci`
+  - [x] Append `golden:soak wall_ms=…` to `$GITHUB_STEP_SUMMARY`
+- [x] Task 4 — Verification gate (AC: 6, 7, 8)
+  - [x] Rebuild `usetagih-render-ci:local`; run CI-equivalent soak command with `--iterations 100`
+  - [x] Confirm `golden:check` still passes all 5 fixtures (no golden drift)
+  - [x] `bunx turbo run lint typecheck test build --force`
+  - [x] Record durations + hashes in Dev Agent Record
 
 ## Dev Notes
 
@@ -314,19 +314,33 @@ packages/render/
 
 ### Agent Model Used
 
-_(filled by dev agent)_
+Composer 2.5 Fast (headless subagent)
 
 ### Debug Log References
 
-_(filled by dev agent)_
+- container 100× soak: basic hash `b11be4533d38f525326164b530a143bd71270440dc4b98f42cec426f2d3a105c` (9936ms), pagination hash `d19dd496ed850cea10f8f50146812c4541fc811f075553222b432e6e691cc584` (15051ms), `SOAK SUMMARY: 2 fixture(s), 100 iteration(s) each, 24995ms total`, host wall_s=27.65
+- default all-fixtures probe (2 iter): 5 fixtures, `SOAK SUMMARY: 5 fixture(s), 2 iteration(s) each, 1630ms total`
+- `golden:check` in container: 5/5 PASS, no golden drift
+- `bunx turbo run lint typecheck test build --force`: 36/36 tasks exit 0
 
 ### Completion Notes List
 
-_(filled by dev agent)_
+- added `soak-args.ts` with `parseGoldenSoakArgs`, `resolveSoakEntries`, and `UnknownFixtureError`; seven unit tests cover default/all/single/multi/unknown-id paths
+- extended `golden-soak.ts` with repeatable `--fixture`, final `SOAK SUMMARY` line, and unknown-id stderr listing valid ids
+- wired Determinism soak step in `pdf-golden.yml` after golden:check, reusing `usetagih-render-ci:ci`, logging `golden:soak wall_ms=<N>` to step summary
 
 ### File List
 
-_(filled by dev agent)_
+- `.github/workflows/pdf-golden.yml` (modified)
+- `packages/render/scripts/golden-soak.ts` (modified)
+- `packages/render/src/golden/soak-args.ts` (new)
+- `packages/render/src/golden/soak-args.test.ts` (new)
+- `_bmad-output/implementation-artifacts/1-8-determinism-soak-100-consecutive-iterations-blocking.md` (modified)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (modified)
+
+## Change Log
+
+- 2026-07-20: CI determinism soak — `--fixture` filter, SOAK SUMMARY, pdf-golden workflow step (Story 1.8)
 
 ## Story Validation Record
 

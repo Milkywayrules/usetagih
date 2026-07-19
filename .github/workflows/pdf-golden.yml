@@ -40,3 +40,19 @@ jobs:
             -e SOURCE_DATE_EPOCH=1700000000 \
             usetagih-render-ci:ci \
             bun run --filter @usetagih/render golden:check
+
+      - name: Determinism soak in render-ci container
+        run: |
+          set -o pipefail
+          SOAK_START=$(date +%s%3N)
+          docker run --rm \
+            -e SOURCE_DATE_EPOCH=1700000000 \
+            usetagih-render-ci:ci \
+            bun run --filter @usetagih/render golden:soak --iterations 100 \
+              --fixture invoice-modern-basic \
+              --fixture invoice-modern-pagination-25
+          SOAK_EXIT=$?
+          SOAK_END=$(date +%s%3N)
+          SOAK_WALL_MS=$((SOAK_END - SOAK_START))
+          echo "golden:soak wall_ms=${SOAK_WALL_MS}" | tee -a "${GITHUB_STEP_SUMMARY:-/dev/stdout}"
+          exit "${SOAK_EXIT}"
