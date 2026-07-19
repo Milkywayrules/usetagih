@@ -7,13 +7,17 @@
     "./tsconfig/base.json": "./tsconfig/base.json",
     "./tsconfig/library.json": "./tsconfig/library.json",
     "./tsconfig/app.json": "./tsconfig/app.json",
-    "./biome.json": "./biome.json"
+    "./biome.json": "./biome.json",
+    "./env": "./src/env/index.ts"
   },
   "scripts": {
     "lint": "biome check .",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "build": "node -e \"process.exit(0)\""
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "bun-types": "^1.2.0",

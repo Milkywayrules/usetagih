@@ -1,0 +1,22 @@
+# Doppler project mapping — SOLUTION-DESIGN §9 (Environment Variables)
+#
+# Project: usetagih
+# Configs: dev | staging | prod
+#
+# Operator setup (environment-gated — requires Doppler dashboard access):
+#   1. Create Doppler project "usetagih"
+#   2. Create configs: dev, staging, prod
+#   3. Populate secrets per SOLUTION-DESIGN §9 variable table (no values in git — NFR-4)
+#   4. doppler login && doppler setup --no-interactive
+#
+# Usage:
+#   doppler run --config dev -- docker compose -f docker/compose.yml up -d postgres minio
+#   doppler run --config dev -- bun run dev
+#   doppler run --config staging -- <cmd>
+#   doppler run --config prod -- <cmd>
+#
+# Verification in CI/local dev does NOT require doppler login — YAML parse + greps only.
+
+setup:
+  project: usetagih
+  config: dev

@@ -4,7 +4,7 @@ baseline_commit: a6c9103233a45b5936d90751849e6bf6117f4047
 
 # Story 0.6: Doppler project mapping and env validation scaffold
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -28,27 +28,27 @@ so that secrets are injected at runtime never committed (NFR-4, AD consistency).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Add root `doppler.yaml` (AC: 1–2)
-  - [ ] Create `doppler.yaml` at repo root with header comment listing configs `dev|staging|prod` and operator setup steps (environment-gated)
-  - [ ] Use Doppler simple `setup:` format: `project: usetagih`, `config: dev` (default local config)
-  - [ ] Document `doppler run --config dev|staging|prod -- <cmd>` usage matching SOLUTION-DESIGN §8.2
-  - [ ] No secret values, tokens, or placeholder passwords in file
-- [ ] Task 2 — Add Zod env schema stub to `@usetagih/config` (AC: 3–6)
-  - [ ] Add `"zod": "^4.4.3"` to `packages/config/package.json` `dependencies`
-  - [ ] Add export `"./env": "./src/env/index.ts"` to `exports` map
-  - [ ] Create `packages/config/src/env/schema.ts` — `createEnvSchema`, `parseEnv`, types
-  - [ ] Create `packages/config/src/env/index.ts` — re-export public API
-  - [ ] Keep existing `src/index.ts` CONFIG_STUB unchanged (Story 0.2 smoke test preserved)
-- [ ] Task 3 — Add bun tests (AC: 7)
-  - [ ] Create `packages/config/src/env/env.test.ts` with prod rejection + dev default cases
-  - [ ] Use `import { expect, test } from "bun:test"` and `ZodError` from `zod`
-- [ ] Task 4 — Verification gate (AC: 8)
-  - [ ] Run doppler.yaml static verification (always required — no Doppler login)
-  - [ ] Run secret grep proof (always required)
-  - [ ] Run `bun test` in `packages/config` (always required)
-  - [ ] Run `bunx turbo run lint typecheck test build` (always required)
-  - [ ] Mark Doppler dashboard project setup environment-gated
-  - [ ] Record results in Dev Agent Record
+- [x] Task 1 — Add root `doppler.yaml` (AC: 1–2)
+  - [x] Create `doppler.yaml` at repo root with header comment listing configs `dev|staging|prod` and operator setup steps (environment-gated)
+  - [x] Use Doppler simple `setup:` format: `project: usetagih`, `config: dev` (default local config)
+  - [x] Document `doppler run --config dev|staging|prod -- <cmd>` usage matching SOLUTION-DESIGN §8.2
+  - [x] No secret values, tokens, or placeholder passwords in file
+- [x] Task 2 — Add Zod env schema stub to `@usetagih/config` (AC: 3–6)
+  - [x] Add `"zod": "^4.4.3"` to `packages/config/package.json` `dependencies`
+  - [x] Add export `"./env": "./src/env/index.ts"` to `exports` map
+  - [x] Create `packages/config/src/env/schema.ts` — `createEnvSchema`, `parseEnv`, types
+  - [x] Create `packages/config/src/env/index.ts` — re-export public API
+  - [x] Keep existing `src/index.ts` CONFIG_STUB unchanged (Story 0.2 smoke test preserved)
+- [x] Task 3 — Add bun tests (AC: 7)
+  - [x] Create `packages/config/src/env/env.test.ts` with prod rejection + dev default cases
+  - [x] Use `import { expect, test } from "bun:test"` and `ZodError` from `zod`
+- [x] Task 4 — Verification gate (AC: 8)
+  - [x] Run doppler.yaml static verification (always required — no Doppler login)
+  - [x] Run secret grep proof (always required)
+  - [x] Run `bun test` in `packages/config` (always required)
+  - [x] Run `bunx turbo run lint typecheck test build` (always required)
+  - [x] Mark Doppler dashboard project setup environment-gated
+  - [x] Record results in Dev Agent Record
 
 ## Dev Notes
 
@@ -412,19 +412,33 @@ No changes to `apps/`, `docker/`, or `.github/workflows/` expected.
 
 ### Agent Model Used
 
-_(filled by dev agent)_
+Composer 2.5 (headless subagent)
 
 ### Debug Log References
 
-_(filled by dev agent)_
+- biome `noBarrelFile` on `src/env/index.ts` — suppressed with inline ignore; subpath export boundary required by story spec
+- biome `useConsistentTypeDefinitions` — `EnvStub` changed from `type` to `interface`
 
 ### Completion Notes List
 
-_(filled by dev agent)_
+- Added root `doppler.yaml` mapping project `usetagih` with default config `dev`; operator setup documented as environment-gated
+- Added `@usetagih/config/env` subpath with Zod 4.x schema stub validating `DATABASE_URL` + `USETAGIH_API_PUBLIC_URL`
+- Dev defaults sourced from `docker/compose.yml` and Dockerfile.api EXPOSE 3001
+- 6 env unit tests pass (prod/staging rejection + dev defaults/overrides)
+- Static verification: YAML parse OK, all greps pass, secret grep OK
+- Turbo parity: 36/36 tasks green (`lint typecheck test build`)
+- Doppler dashboard project creation remains environment-gated for operator
 
 ### File List
 
-_(filled by dev agent)_
+- `doppler.yaml` (new)
+- `packages/config/package.json` (modified — zod dep + ./env export)
+- `packages/config/src/env/schema.ts` (new)
+- `packages/config/src/env/index.ts` (new)
+- `packages/config/src/env/env.test.ts` (new)
+- `bun.lock` (modified)
+- `_bmad-output/implementation-artifacts/0-6-doppler-project-mapping-and-env-validation-scaffold.md` (modified)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (modified)
 
 ## Story Validation Record
 
@@ -444,3 +458,4 @@ _(filled by dev agent)_
 ## Change Log
 
 - 2026-07-20: story created and validated — ready for dev
+- 2026-07-20: implementation complete — doppler.yaml + Zod env scaffold; sprint status → review
