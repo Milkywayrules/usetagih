@@ -4,7 +4,7 @@ baseline_commit: df6a5117fb1095bc51cd683b8a49d141bb22d8b9
 
 # Story 2.2: Business-rule validators for arithmetic integrity
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -33,23 +33,23 @@ so that financial values are never silently corrected (FR-2, FR-9, AD-5, §10.1 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Validation module scaffold (AC: 1, 14)
-  - [ ] Create `packages/schema/src/validation/` per Dev Notes §File layout
-  - [ ] Add `finding.ts`, `codes.ts`, export surface in `src/index.ts`
-- [ ] Task 2 — Dependency-free decimal math (AC: 2, 3, 4, 5, 6, 7)
-  - [ ] Implement `decimal.ts` helpers (multiply, add, subtract, sum, compare, normalize, half-up round) using **bigint** scaled integers — **no** `parseFloat` / `Number()` on money strings
-  - [ ] Unit-test half-up edge cases in `decimal.test.ts` (see Dev Notes §Half-up test vectors)
-- [ ] Task 3 — Currency minor units (AC: 8, 9)
-  - [ ] Implement `currency-minor-units.ts` with `getCurrencyMinorUnits(code)` and `assertMoneyMinorUnits(amount, currency)` 
-  - [ ] Wire minor-unit scan across all money fields in payload walk
-- [ ] Task 4 — Arithmetic validator (AC: 2–7, 12)
-  - [ ] Implement `validate-arithmetic.ts` with `validateDocumentPayloadArithmetic(payload: DocumentPayload): BusinessRuleFinding[]`
-  - [ ] Implement `validate-arithmetic.test.ts` matrix
-- [ ] Task 5 — Failure fixtures (AC: 11)
-  - [ ] Add ≥10 JSON files under `__fixtures__/invalid/arithmetic/` per Dev Notes §Failure fixtures
-- [ ] Task 6 — Verification gate (AC: 13)
-  - [ ] `bun test packages/schema`
-  - [ ] `bunx turbo run lint typecheck test build --force`
+- [x] Task 1 — Validation module scaffold (AC: 1, 14)
+  - [x] Create `packages/schema/src/validation/` per Dev Notes §File layout
+  - [x] Add `finding.ts`, `codes.ts`, export surface in `src/index.ts`
+- [x] Task 2 — Dependency-free decimal math (AC: 2, 3, 4, 5, 6, 7)
+  - [x] Implement `decimal.ts` helpers (multiply, add, subtract, sum, compare, normalize, half-up round) using **bigint** scaled integers — **no** `parseFloat` / `Number()` on money strings
+  - [x] Unit-test half-up edge cases in `decimal.test.ts` (see Dev Notes §Half-up test vectors)
+- [x] Task 3 — Currency minor units (AC: 8, 9)
+  - [x] Implement `currency-minor-units.ts` with `getCurrencyMinorUnits(code)` and `assertMoneyMinorUnits(amount, currency)` 
+  - [x] Wire minor-unit scan across all money fields in payload walk
+- [x] Task 4 — Arithmetic validator (AC: 2–7, 12)
+  - [x] Implement `validate-arithmetic.ts` with `validateDocumentPayloadArithmetic(payload: DocumentPayload): BusinessRuleFinding[]`
+  - [x] Implement `validate-arithmetic.test.ts` matrix
+- [x] Task 5 — Failure fixtures (AC: 11)
+  - [x] Add ≥10 JSON files under `__fixtures__/invalid/arithmetic/` per Dev Notes §Failure fixtures
+- [x] Task 6 — Verification gate (AC: 13)
+  - [x] `bun test packages/schema`
+  - [x] `bunx turbo run lint typecheck test build --force`
 
 ## Dev Notes
 
@@ -398,8 +398,36 @@ Composer 2.5
 
 ### Completion Notes List
 
+- added `validateDocumentPayloadArithmetic` with bigint scaled-integer decimal math (no float on money strings)
+- implemented PRD §10.1 rules: line total half-up, subtotal sum, tax total (when taxLines present), grand total tax-inclusive/exclusive, discount cap, FR-4 minor-unit checks
+- seeded 10 arithmetic failure fixtures plus bridge test against render wrong-total fixture
+- `bun test packages/schema`: 16 pass, 0 fail
+- `bunx turbo run lint typecheck test build --force`: 36 tasks successful
+
 ### File List
+
+- packages/schema/src/index.ts
+- packages/schema/src/validation/finding.ts
+- packages/schema/src/validation/codes.ts
+- packages/schema/src/validation/currency-minor-units.ts
+- packages/schema/src/validation/decimal.ts
+- packages/schema/src/validation/decimal.test.ts
+- packages/schema/src/validation/validate-arithmetic.ts
+- packages/schema/src/validation/validate-arithmetic.test.ts
+- packages/schema/src/validation/validate-document-payload.ts
+- packages/schema/__fixtures__/invalid/arithmetic/line-total-mismatch-usd.json
+- packages/schema/__fixtures__/invalid/arithmetic/line-total-half-up-edge.json
+- packages/schema/__fixtures__/invalid/arithmetic/tax-total-mismatch.json
+- packages/schema/__fixtures__/invalid/arithmetic/subtotal-mismatch.json
+- packages/schema/__fixtures__/invalid/arithmetic/grand-total-mismatch-tax-exclusive.json
+- packages/schema/__fixtures__/invalid/arithmetic/grand-total-mismatch-tax-inclusive.json
+- packages/schema/__fixtures__/invalid/arithmetic/discount-exceeds-subtotal.json
+- packages/schema/__fixtures__/invalid/arithmetic/jpy-fractional-line-total.json
+- packages/schema/__fixtures__/invalid/arithmetic/usd-three-decimal-unit-price.json
+- packages/schema/__fixtures__/invalid/arithmetic/multi-line-second-item-mismatch.json
+- _bmad-output/implementation-artifacts/sprint-status.yaml
 
 ## Change Log
 
 - 2026-07-20: story context created for business-rule arithmetic validators (Story 2.2)
+- 2026-07-20: implemented arithmetic integrity validators with bigint decimal math, 10 failure fixtures, and full test coverage

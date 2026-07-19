@@ -1,0 +1,24 @@
+{
+	"schemaVersion": "2026-07-20",
+	"documentType": "invoice",
+	"template": "modern",
+	"documentNumber": "INV-HALF-001",
+	"issuedAt": "2026-07-20",
+	"dueAt": "2026-08-20",
+	"currency": "USD",
+	"seller": { "name": "Seller Co" },
+	"buyer": { "name": "Buyer Co" },
+	"lineItems": [
+		{
+			"description": "Half-up edge",
+			"quantity": 3,
+			"unitPrice": { "amount": "0.335" },
+			"lineTotal": { "amount": "1.00" }
+		}
+	],
+	"totals": {
+		"subtotal": { "amount": "1.00" },
+		"taxTotal": { "amount": "0.00" },
+		"grandTotal": { "amount": "1.00" }
+	}
+}

@@ -1,0 +1,3 @@
+export const LINE_TOTAL_MISMATCH_CODE = "LINE_TOTAL_MISMATCH" as const;
+export const TAX_TOTAL_MISMATCH_CODE = "TAX_TOTAL_MISMATCH" as const;
+export const VALIDATION_FAILED_CODE = "VALIDATION_FAILED" as const;

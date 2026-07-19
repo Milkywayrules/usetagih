@@ -1,0 +1,24 @@
+{
+	"schemaVersion": "2026-07-20",
+	"documentType": "invoice",
+	"template": "modern",
+	"documentNumber": "INV-JPY-001",
+	"issuedAt": "2026-07-20",
+	"dueAt": "2026-08-20",
+	"currency": "JPY",
+	"seller": { "name": "Seller Co" },
+	"buyer": { "name": "Buyer Co" },
+	"lineItems": [
+		{
+			"description": "JPY fractional line",
+			"quantity": 1,
+			"unitPrice": { "amount": "1000" },
+			"lineTotal": { "amount": "1000.5" }
+		}
+	],
+	"totals": {
+		"subtotal": { "amount": "1000" },
+		"taxTotal": { "amount": "0" },
+		"grandTotal": { "amount": "1000" }
+	}
+}

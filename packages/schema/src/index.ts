@@ -50,3 +50,14 @@ export type { TaxLine } from "./document/tax-line";
 export { TaxLineSchema } from "./document/tax-line";
 export type { Totals } from "./document/totals";
 export { TotalsSchema } from "./document/totals";
+export {
+	LINE_TOTAL_MISMATCH_CODE,
+	TAX_TOTAL_MISMATCH_CODE,
+	VALIDATION_FAILED_CODE,
+} from "./validation/codes";
+export type { BusinessRuleFinding } from "./validation/finding";
+export { validateDocumentPayloadArithmetic } from "./validation/validate-arithmetic";
+export {
+	type ValidateDocumentPayloadResult,
+	validateDocumentPayload,
+} from "./validation/validate-document-payload";

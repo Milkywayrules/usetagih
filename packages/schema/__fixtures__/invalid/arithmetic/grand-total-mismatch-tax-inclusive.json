@@ -1,0 +1,44 @@
+{
+	"schemaVersion": "2026-07-20",
+	"documentType": "invoice",
+	"template": "modern",
+	"documentNumber": "INV-2026-0042",
+	"issuedAt": "2026-07-15",
+	"dueAt": "2026-08-15",
+	"currency": "USD",
+	"seller": { "name": "Acme Widgets LLC" },
+	"buyer": { "name": "Beta Industries Inc" },
+	"lineItems": [
+		{
+			"description": "Widget Pro License (annual)",
+			"quantity": 2,
+			"unitPrice": { "amount": "149.00" },
+			"lineTotal": { "amount": "298.00" }
+		},
+		{
+			"description": "Priority Support Add-on",
+			"quantity": 1,
+			"unitPrice": { "amount": "99.00" },
+			"lineTotal": { "amount": "99.00" }
+		},
+		{
+			"description": "Onboarding Session (3 hours)",
+			"quantity": 3,
+			"unitPrice": { "amount": "75.00" },
+			"lineTotal": { "amount": "225.00" }
+		}
+	],
+	"taxLines": [
+		{
+			"name": "Sales Tax",
+			"rate": 0.0825,
+			"amount": { "amount": "51.56" }
+		}
+	],
+	"pricesIncludeTax": true,
+	"totals": {
+		"subtotal": { "amount": "622.00" },
+		"taxTotal": { "amount": "51.56" },
+		"grandTotal": { "amount": "700.00" }
+	}
+}
