@@ -4,7 +4,7 @@ baseline_commit: 018ac6a
 
 # Story 1.2: Invoice modern Typst template and basic fixture
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -438,6 +438,15 @@ Composer 2.5 Fast
 ### Change Log
 
 - 2026-07-20: Story 1.2 — invoice modern template, fixtures, golden hash, render harness, and tests
+- 2026-07-20: Code review approved — footer copy deduped; metadata probes retained for CID-encoded PDF text
+
+### Code Review Record
+
+- **Reviewed:** 2026-07-20 against commit `51342f7` (+ fix `5fe155a`)
+- **Verdict:** APPROVED
+- **Findings fixed:** footer literal duplicated between `#set page(footer:)` and `#metadata()` — consolidated to `footer-copy` constant
+- **Findings noted (accepted for spike):** PDF UTF-8 byte probes fail on CID-encoded text; tests use `typst eval` metadata + free/pro hash diff instead
+- **Verification:** double-render `b11be453…105c` matches golden and manifest; `bun test packages/render` 20 pass; turbo 36/36
 
 ### Story Validation Record
 
