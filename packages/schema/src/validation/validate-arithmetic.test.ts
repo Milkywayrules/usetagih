@@ -47,6 +47,54 @@ test("invoice-modern-basic passes arithmetic validation", () => {
 	expect(validateDocumentPayloadArithmetic(payload)).toEqual([]);
 });
 
+test("invoice-modern-pagination-25 passes arithmetic validation", () => {
+	const payload = DocumentPayloadSchema.parse(
+		loadRepoJson(
+			"packages/render/__fixtures__/payloads/invoice-modern-pagination-25.json",
+		),
+	);
+	expect(validateDocumentPayloadArithmetic(payload)).toEqual([]);
+});
+
+test("skips tax total check when taxLines is absent or empty", () => {
+	const base = DocumentPayloadSchema.parse(
+		loadJson("__fixtures__/valid/invoice-minimal.json"),
+	);
+	const wrongTaxTotal = "999.99";
+	const adjustedGrandTotal = "1099.89";
+	const withoutTaxLines = {
+		...base,
+		taxLines: undefined,
+		totals: {
+			...base.totals,
+			taxTotal: { amount: wrongTaxTotal },
+			grandTotal: { amount: adjustedGrandTotal },
+		},
+	};
+	const findingsWithout = validateDocumentPayloadArithmetic(
+		DocumentPayloadSchema.parse(withoutTaxLines),
+	);
+	expect(
+		findingsWithout.filter((f) => f.path === "/totals/taxTotal"),
+	).toEqual([]);
+
+	const withEmptyTaxLines = {
+		...base,
+		taxLines: [],
+		totals: {
+			...base.totals,
+			taxTotal: { amount: wrongTaxTotal },
+			grandTotal: { amount: adjustedGrandTotal },
+		},
+	};
+	const findingsEmpty = validateDocumentPayloadArithmetic(
+		DocumentPayloadSchema.parse(withEmptyTaxLines),
+	);
+	expect(findingsEmpty.filter((f) => f.path === "/totals/taxTotal")).toEqual(
+		[],
+	);
+});
+
 test("invoice-modern-wrong-total fails grand total check", () => {
 	const payload = DocumentPayloadSchema.parse(
 		loadRepoJson(
