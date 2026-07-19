@@ -4,7 +4,7 @@ baseline_commit: 6e78bab2061ccf96b216d1c719b10c66b589a142
 
 # Story 1.1: Pin Typst 0.15.x, font bundle, and shared preamble
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -433,3 +433,12 @@ Composer 2.5 Fast
 ### Change Log
 
 - 2026-07-20: Story 1.1 — pin Typst 0.15.1 toolchain, vendored fonts, shared preamble, typst driver, smoke harness
+- 2026-07-20: Code review APPROVED — determinism probes (mtime touch, no-env SOURCE_DATE_EPOCH), manifest checksums, turbo 36/36 green
+
+### Code Review Record
+
+- **Verdict:** APPROVED
+- **Reviewed commit:** `600dd8c`
+- **Determinism:** smoke double-render, post-touch third render, and driver-without-shell-SOURCE_DATE_EPOCH all produce SHA-256 `1fb48bb3c1606e06378955b310c7c93bf4b9ffa486283fcaee9fd396068da93b`
+- **Manifest:** binary SHA-256 and tarball SHA-256 match recomputed values; `typst --version` = `0.15.1`
+- **Findings:** none blocking; optional future hardening — install script could verify tarball against manifest before extract
