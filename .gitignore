@@ -2,6 +2,8 @@
 .bmad-loop/cache/
 .bmad-loop/policy.toml
 
+packages/render/.bin/
+
 node_modules/
 dist/
 .next/

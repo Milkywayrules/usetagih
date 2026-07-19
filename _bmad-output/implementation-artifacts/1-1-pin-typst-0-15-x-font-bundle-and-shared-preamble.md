@@ -4,7 +4,7 @@ baseline_commit: 6e78bab2061ccf96b216d1c719b10c66b589a142
 
 # Story 1.1: Pin Typst 0.15.x, font bundle, and shared preamble
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -29,37 +29,37 @@ so that PDF output is byte-stable across environments (AD-3, FR-7).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Pin Typst 0.15.1 and local binary bootstrap (AC: 1, 6)
-  - [ ] Create `packages/render/typst-version.txt` with content `0.15.1`
-  - [ ] Add `packages/render/.bin/` to root `.gitignore`
-  - [ ] Add `packages/render/scripts/install-typst-local.sh` (or `.ts`) that downloads `typst-x86_64-unknown-linux-musl.tar.xz` from `https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz`, extracts `typst` to `packages/render/.bin/typst`, marks executable — **script is committed; binary is not**
-  - [ ] Document one-liner install in Dev Notes; run once for local smoke
-- [ ] Task 2 — Vendor OFL font bundle (AC: 2)
-  - [ ] Download Inter 4.1 from `https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip`; copy from `extras/ttf/`: `Inter-Regular.ttf`, `Inter-Medium.ttf`, `Inter-SemiBold.ttf`, `Inter-Bold.ttf` → `packages/render/fonts/inter/`
-  - [ ] Copy `LICENSE.txt` from Inter zip → `packages/render/fonts/inter/LICENSE.txt`
-  - [ ] Download JetBrains Mono 2.304 from `https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip`; copy from `fonts/ttf/`: `JetBrainsMono-Regular.ttf`, `JetBrainsMono-Bold.ttf` → `packages/render/fonts/jetbrains-mono/`
-  - [ ] Copy `OFL.txt` from JetBrains zip → `packages/render/fonts/jetbrains-mono/OFL.txt`
-  - [ ] Add `packages/render/fonts/README.md` documenting exact source URLs, versions, and vendored file list
-- [ ] Task 3 — Shared preamble (AC: 3)
-  - [ ] Create `packages/templates/_shared/preamble.typ` per exact specification in Dev Notes
-  - [ ] Update `packages/templates/README.md` to reference `_shared/preamble.typ` import pattern for Epic 1 templates
-- [ ] Task 4 — Manifest + typst driver (AC: 4, 5)
-  - [ ] Create `packages/render/manifest.json` per schema in Dev Notes; compute and record SHA-256 of tarball + extracted binary after local install
-  - [ ] Create `packages/render/src/typst-driver.ts` exporting `compileTypst`, `resolveTypstBinaryPath`, `DEFAULT_SOURCE_DATE_EPOCH`
-  - [ ] Re-export driver from `packages/render/src/index.ts` (replace or augment `RENDER_STUB` — stub may remain as deprecated alias if tests depend on it, but driver is primary export)
-  - [ ] Add `TYPST_BINARY_PATH` resolution: env var → default local `.bin/typst` → fallback `/usr/local/bin/typst`
-  - [ ] Update `packages/render/package.json` scripts: add `"render:smoke": "bun scripts/render-smoke.ts"` and `"install:typst": "bash scripts/install-typst-local.sh"` (names exact)
-- [ ] Task 5 — Bun tests (AC: 7)
-  - [ ] Create `packages/render/src/preamble.test.ts` reading preamble file from repo-relative path
-  - [ ] Keep/update `packages/render/src/index.test.ts` if stub export changes
-- [ ] Task 6 — Smoke fixture for local determinism (AC: 8)
-  - [ ] Create `packages/render/__fixtures__/smoke/hello.typ` importing preamble and rendering minimal "Hello usetagih" text
-  - [ ] Create `packages/render/scripts/render-smoke.ts` (or document shell commands) invoking driver twice, comparing SHA-256
-- [ ] Task 7 — Verification gate (AC: 9)
-  - [ ] Run local Typst install + render smoke (environment-gated if binary download blocked — document)
-  - [ ] Run `bun test` in `packages/render`
-  - [ ] Run `bunx turbo run lint typecheck test build --force` from repo root
-  - [ ] Record results in Dev Agent Record
+- [x] Task 1 — Pin Typst 0.15.1 and local binary bootstrap (AC: 1, 6)
+  - [x] Create `packages/render/typst-version.txt` with content `0.15.1`
+  - [x] Add `packages/render/.bin/` to root `.gitignore`
+  - [x] Add `packages/render/scripts/install-typst-local.sh` (or `.ts`) that downloads `typst-x86_64-unknown-linux-musl.tar.xz` from `https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz`, extracts `typst` to `packages/render/.bin/typst`, marks executable — **script is committed; binary is not**
+  - [x] Document one-liner install in Dev Notes; run once for local smoke
+- [x] Task 2 — Vendor OFL font bundle (AC: 2)
+  - [x] Download Inter 4.1 from `https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip`; copy from `extras/ttf/`: `Inter-Regular.ttf`, `Inter-Medium.ttf`, `Inter-SemiBold.ttf`, `Inter-Bold.ttf` → `packages/render/fonts/inter/`
+  - [x] Copy `LICENSE.txt` from Inter zip → `packages/render/fonts/inter/LICENSE.txt`
+  - [x] Download JetBrains Mono 2.304 from `https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip`; copy from `fonts/ttf/`: `JetBrainsMono-Regular.ttf`, `JetBrainsMono-Bold.ttf` → `packages/render/fonts/jetbrains-mono/`
+  - [x] Copy `OFL.txt` from JetBrains zip → `packages/render/fonts/jetbrains-mono/OFL.txt`
+  - [x] Add `packages/render/fonts/README.md` documenting exact source URLs, versions, and vendored file list
+- [x] Task 3 — Shared preamble (AC: 3)
+  - [x] Create `packages/templates/_shared/preamble.typ` per exact specification in Dev Notes
+  - [x] Update `packages/templates/README.md` to reference `_shared/preamble.typ` import pattern for Epic 1 templates
+- [x] Task 4 — Manifest + typst driver (AC: 4, 5)
+  - [x] Create `packages/render/manifest.json` per schema in Dev Notes; compute and record SHA-256 of tarball + extracted binary after local install
+  - [x] Create `packages/render/src/typst-driver.ts` exporting `compileTypst`, `resolveTypstBinaryPath`, `DEFAULT_SOURCE_DATE_EPOCH`
+  - [x] Re-export driver from `packages/render/src/index.ts` (replace or augment `RENDER_STUB` — stub may remain as deprecated alias if tests depend on it, but driver is primary export)
+  - [x] Add `TYPST_BINARY_PATH` resolution: env var → default local `.bin/typst` → fallback `/usr/local/bin/typst`
+  - [x] Update `packages/render/package.json` scripts: add `"render:smoke": "bun scripts/render-smoke.ts"` and `"install:typst": "bash scripts/install-typst-local.sh"` (names exact)
+- [x] Task 5 — Bun tests (AC: 7)
+  - [x] Create `packages/render/src/preamble.test.ts` reading preamble file from repo-relative path
+  - [x] Keep/update `packages/render/src/index.test.ts` if stub export changes
+- [x] Task 6 — Smoke fixture for local determinism (AC: 8)
+  - [x] Create `packages/render/__fixtures__/smoke/hello.typ` importing preamble and rendering minimal "Hello usetagih" text
+  - [x] Create `packages/render/scripts/render-smoke.ts` (or document shell commands) invoking driver twice, comparing SHA-256
+- [x] Task 7 — Verification gate (AC: 9)
+  - [x] Run local Typst install + render smoke (environment-gated if binary download blocked — document)
+  - [x] Run `bun test` in `packages/render`
+  - [x] Run `bunx turbo run lint typecheck test build --force` from repo root
+  - [x] Record results in Dev Agent Record
 
 ## Dev Notes
 
@@ -386,10 +386,50 @@ bun run --filter @usetagih/render render:smoke
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Composer 2.5 Fast
 
 ### Debug Log References
 
+- Typst 0.15.1 tarball extracts to `typst-x86_64-unknown-linux-musl/typst` (not version-prefixed path)
+- Typst 0.15 sandbox requires `--root` set to repo root for cross-package imports
+- `#set text(leading: ...)` removed in Typst 0.15; preamble uses `#set par(leading: 0.65em)` instead
+- Smoke fixture import path: `../../../templates/_shared/preamble.typ` (relative from fixture dir)
+
 ### Completion Notes List
 
+- Pinned Typst 0.15.1 with install script, manifest checksums, and gitignored local binary
+- Vendored Inter 4.1 (4 weights) + JetBrains Mono 2.304 (2 weights) with OFL licenses (~2.2M total)
+- Added deterministic preamble, typst driver with `--ignore-system-fonts`, `--font-path`, `SOURCE_DATE_EPOCH=1700000000`
+- Render smoke: consecutive compiles produce identical SHA-256 `1fb48bb3c1606e06378955b310c7c93bf4b9ffa486283fcaee9fd396068da93b`
+- `bun test packages/render`: 3 pass, 0 fail
+- `bunx turbo run lint typecheck test build --force`: 36/36 tasks successful
+
 ### File List
+
+- `.gitignore` (modified — add `packages/render/.bin/`)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (modified — story → review)
+- `_bmad-output/implementation-artifacts/1-1-pin-typst-0-15-x-font-bundle-and-shared-preamble.md` (modified)
+- `packages/render/typst-version.txt` (new)
+- `packages/render/manifest.json` (new)
+- `packages/render/package.json` (modified — install:typst, render:smoke scripts)
+- `packages/render/scripts/install-typst-local.sh` (new)
+- `packages/render/scripts/render-smoke.ts` (new)
+- `packages/render/src/typst-driver.ts` (new)
+- `packages/render/src/index.ts` (modified — driver exports)
+- `packages/render/src/preamble.test.ts` (new)
+- `packages/render/__fixtures__/smoke/hello.typ` (new)
+- `packages/render/fonts/README.md` (new)
+- `packages/render/fonts/inter/Inter-Regular.ttf` (new)
+- `packages/render/fonts/inter/Inter-Medium.ttf` (new)
+- `packages/render/fonts/inter/Inter-SemiBold.ttf` (new)
+- `packages/render/fonts/inter/Inter-Bold.ttf` (new)
+- `packages/render/fonts/inter/LICENSE.txt` (new)
+- `packages/render/fonts/jetbrains-mono/JetBrainsMono-Regular.ttf` (new)
+- `packages/render/fonts/jetbrains-mono/JetBrainsMono-Bold.ttf` (new)
+- `packages/render/fonts/jetbrains-mono/OFL.txt` (new)
+- `packages/templates/_shared/preamble.typ` (new)
+- `packages/templates/README.md` (modified)
+
+### Change Log
+
+- 2026-07-20: Story 1.1 — pin Typst 0.15.1 toolchain, vendored fonts, shared preamble, typst driver, smoke harness

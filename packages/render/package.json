@@ -15,7 +15,9 @@
 		"lint": "biome check .",
 		"typecheck": "tsc --noEmit",
 		"test": "bun test",
-		"build": "tsc --outDir dist"
+		"build": "tsc --outDir dist",
+		"install:typst": "bash scripts/install-typst-local.sh",
+		"render:smoke": "bun scripts/render-smoke.ts"
 	},
 	"devDependencies": {
 		"@usetagih/config": "workspace:*",

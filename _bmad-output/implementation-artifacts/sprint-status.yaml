@@ -71,7 +71,7 @@ development_status:
   # Epic 1: PDF Pipeline Spike (BLOCKING GATE)
   # BLOCKING GATE — failure halts Epics 2–8 and escalates to board. Gated by Epic 0.
   epic-1: in-progress
-  1-1-pin-typst-0-15-x-font-bundle-and-shared-preamble: ready-for-dev
+  1-1-pin-typst-0-15-x-font-bundle-and-shared-preamble: review
   1-2-invoice-modern-typst-template-and-basic-fixture: backlog
   1-3-golden-harness-cli-golden-check: backlog
   1-4-ci-docker-render-ci-image-and-pdf-golden-workflow: backlog

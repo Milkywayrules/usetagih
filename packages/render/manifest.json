@@ -1,0 +1,15 @@
+{
+	"typstVersion": "0.15.1",
+	"schemaVersion": "0.0.0",
+	"typstBinary": {
+		"asset": "typst-x86_64-unknown-linux-musl.tar.xz",
+		"downloadUrl": "https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz",
+		"tarballSha256": "a6d077d0a95eed5a2eba715b2dae06be954f624ccbf85758a03f389ded33118c",
+		"binarySha256": "29273eaa04f6d00edd0c2bec578f565fc9c65be856bfbffc894567c68ed0b237"
+	},
+	"renderCiImage": {
+		"plannedTag": "ghcr.io/verasic-labs/usetagih-render-ci:2026-07-20",
+		"plannedDigest": null
+	},
+	"fixtures": []
+}
