@@ -4,7 +4,7 @@ baseline_commit: 6d1ef7624938fb8d008aa6cbe8249ec6b5619c5e
 
 # Story 0.4: GitHub Actions CI workflow
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -356,3 +356,17 @@ Composer 2.5 (headless dev subagent)
 
 - 2026-07-20: story created and validated — ready for dev
 - 2026-07-20: implemented CI workflow; local verification green; status → review
+- 2026-07-20: code review approved; forced turbo 36/36 green; status → done
+
+## Code Review Record
+
+| Check | Result |
+| --- | --- |
+| AC 1–8 workflow structure, triggers, jobs, pins, cache, placeholder | PASS |
+| AC 9 local YAML + turbo verification; GitHub runner environment-gated | PASS |
+| AC 10 command-parity `bunx turbo run lint typecheck test build --force` | PASS — 36/36, 0 cached |
+| AC 11 out-of-scope fence (GHCR, Doppler, e2e, real Spectral) | PASS |
+| Dev cached turbo report suspicion | cleared — `--force` re-run uncached |
+| actionlint | SKIP — not installed (optional) |
+
+**Verdict:** APPROVED
