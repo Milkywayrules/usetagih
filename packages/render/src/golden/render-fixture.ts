@@ -25,21 +25,13 @@ function sha256Buffer(buffer: Buffer): string {
 }
 
 function resolveTemplatePath(entry: GoldenFixtureEntry): string {
-	const direct = resolve(PACKAGE_ROOT, entry.template);
-	if (existsSync(direct)) {
-		return direct;
+	const templateAbs = resolve(PACKAGE_ROOT, entry.template);
+	if (!existsSync(templateAbs)) {
+		throw new Error(
+			`template not found for fixture "${entry.id}": ${templateAbs} (manifest template: ${entry.template})`,
+		);
 	}
-
-	// Story 1.2 manifest entry uses ../../templates; one level resolves under packages/
-	const normalized = resolve(
-		PACKAGE_ROOT,
-		entry.template.replace(/^\.\.\/\.\.\//, "../"),
-	);
-	if (existsSync(normalized)) {
-		return normalized;
-	}
-
-	return direct;
+	return templateAbs;
 }
 
 export function renderFixtureFromManifest(
