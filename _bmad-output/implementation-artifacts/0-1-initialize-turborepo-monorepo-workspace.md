@@ -4,7 +4,7 @@ baseline_commit: 858d640bddf24e613741e6a1fcb6440f10384326
 
 # Story 0.1: initialize turborepo monorepo workspace
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -332,6 +332,12 @@ Composer 2.5 (headless subagent)
 - `_bmad-output/implementation-artifacts/0-1-initialize-turborepo-monorepo-workspace.md` (modified)
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` (modified)
 
+### Review Findings
+
+- [x] [Review][Defer] local bun runtime 1.3.14 vs `packageManager`/`engines` 1.2.x band — review environment only; pin matches ARCHITECTURE-SPINE; lockfile installs cleanly
+- [x] [Review][Defer] `bun test` may double-run stub tests from `dist/` after build locally — `dist/` is gitignored; turbo pipeline still exits 0
+
 ## Change Log
 
+- 2026-07-20: code review approved — story marked done
 - 2026-07-20: initialized turborepo monorepo workspace with Bun, Biome+ultracite, and stub apps/packages per ARCHITECTURE-SPINE structural seed

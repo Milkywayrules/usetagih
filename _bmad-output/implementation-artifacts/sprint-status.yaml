@@ -60,7 +60,7 @@ development_status:
   # Epic 0: Monorepo & CI Foundation
   # Gates: Epic 1 (PDF spike). Sequencing: none → Epic 0 → Epic 1.
   epic-0: in-progress
-  0-1-initialize-turborepo-monorepo-workspace: review
+  0-1-initialize-turborepo-monorepo-workspace: done
   0-2-shared-typescript-and-biome-config-package: backlog
   0-3-local-docker-compose-for-postgres-and-minio: backlog
   0-4-github-actions-ci-workflow: backlog
