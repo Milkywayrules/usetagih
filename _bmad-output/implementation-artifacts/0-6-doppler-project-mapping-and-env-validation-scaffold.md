@@ -4,7 +4,7 @@ baseline_commit: a6c9103233a45b5936d90751849e6bf6117f4047
 
 # Story 0.6: Doppler project mapping and env validation scaffold
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -459,3 +459,4 @@ Composer 2.5 (headless subagent)
 
 - 2026-07-20: story created and validated — ready for dev
 - 2026-07-20: implementation complete — doppler.yaml + Zod env scaffold; sprint status → review
+- 2026-07-20: code review approved; epic 0 closed; status → done

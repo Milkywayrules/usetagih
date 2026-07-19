@@ -59,13 +59,13 @@ development_status:
 
   # Epic 0: Monorepo & CI Foundation
   # Gates: Epic 1 (PDF spike). Sequencing: none → Epic 0 → Epic 1.
-  epic-0: in-progress
+  epic-0: done
   0-1-initialize-turborepo-monorepo-workspace: done
   0-2-shared-typescript-and-biome-config-package: done
   0-3-local-docker-compose-for-postgres-and-minio: done
   0-4-github-actions-ci-workflow: done
   0-5-ghcr-docker-build-and-push-workflow-skeleton: done
-  0-6-doppler-project-mapping-and-env-validation-scaffold: review
+  0-6-doppler-project-mapping-and-env-validation-scaffold: done
   epic-0-retrospective: optional
 
   # Epic 1: PDF Pipeline Spike (BLOCKING GATE)
