@@ -4,7 +4,7 @@ baseline_commit: f21d459
 
 # Story 1.4: CI Docker render-ci image and pdf-golden workflow
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -377,6 +377,15 @@ Composer 2.5 (headless subagent)
 ### Change Log
 
 - 2026-07-20: Story 1.4 — authoritative render-ci Docker image + pdf-golden CI workflow (AD-3)
+- 2026-07-20: Code review approved — workspace package.json COPY pattern accepted; no code fixes required
+
+### Code Review Record
+
+- **Reviewed:** 2026-07-20 against commit `48a0902`
+- **Verdict:** APPROVED
+- **Workspace-stub adjudication:** dev added `COPY packages/*/package.json` and `COPY apps/*/package.json` lines (real files at build time, not hand-maintained Dockerfile duplicates). accepted — zero drift hazard vs inline stubs; simpler than generating stubs
+- **Findings noted (low, accepted):** new workspace members require an additional Dockerfile `COPY …/package.json` line; `renderCiImage.plannedDigest` matches dev `:local` build (`sha256:30c6f288…`) but varies across rebuilds (expected for non-reproducible Docker layers)
+- **Verification:** `docker build` exit 0; in-container `golden:check` exit 0 hash `b11be453…105c`; `typst --version` 0.15.1; bad tarball sha256 aborts build (exit 1); turbo 36/36 `--force` uncached; YAML parse OK; no GHCR pull in pdf-golden; docker-publish tags unchanged
 
 ### Story Validation Record
 

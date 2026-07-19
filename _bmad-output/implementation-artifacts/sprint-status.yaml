@@ -45,7 +45,7 @@
 # Epic 5 after Epic 1+3 (Story 5.0 first) | Epic 6 after Epic 3+5 | Epic 7 after Epic 3 | Epic 8 last
 
 generated: 2026-07-20
-last_updated: 2026-07-20T06:00:00+07:00
+last_updated: 2026-07-20T03:45:00+07:00
 project: usetagih
 project_key: NOKEY
 tracking_system: file-system
@@ -74,7 +74,7 @@ development_status:
   1-1-pin-typst-0-15-x-font-bundle-and-shared-preamble: done
   1-2-invoice-modern-typst-template-and-basic-fixture: done
   1-3-golden-harness-cli-golden-check: done
-  1-4-ci-docker-render-ci-image-and-pdf-golden-workflow: review
+  1-4-ci-docker-render-ci-image-and-pdf-golden-workflow: done
   1-5-25-line-item-pagination-fixture-fr-8-blocking: backlog
   1-6-logo-determinism-fixture-png-jpeg-svg-blocking: backlog
   1-7-multi-page-svg-preview-with-pdf-page-count-parity-blocking: backlog
