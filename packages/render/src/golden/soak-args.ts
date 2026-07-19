@@ -18,21 +18,69 @@ export class UnknownFixtureError extends Error {
 	}
 }
 
+function parsePositiveInteger(value: string | undefined): number {
+	if (!value || !/^\d+$/.test(value)) {
+		throw new Error("invalid iterations");
+	}
+
+	const iterations = Number.parseInt(value, 10);
+	if (!Number.isFinite(iterations) || iterations < 1) {
+		throw new Error("invalid iterations");
+	}
+
+	return iterations;
+}
+
+function parseFixtureValue(value: string | undefined): string {
+	if (!value || value.startsWith("--")) {
+		throw new Error("invalid fixture");
+	}
+
+	return value;
+}
+
+export type SoakDriftReport = {
+	fixtureId: string;
+	iteration: number;
+	firstHash: string;
+	actualHash: string;
+};
+
+export function detectSoakHashDrift(
+	fixtureId: string,
+	iteration: number,
+	firstHash: string | null,
+	currentHash: string,
+): SoakDriftReport | null {
+	if (firstHash === null || currentHash === firstHash) {
+		return null;
+	}
+
+	return { fixtureId, iteration, firstHash, actualHash: currentHash };
+}
+
+export function formatSoakDriftReport(drift: SoakDriftReport): string {
+	return [
+		`FAIL ${drift.fixtureId}`,
+		`  drift at iteration ${drift.iteration}`,
+		`  first hash: ${drift.firstHash}`,
+		`  actual: ${drift.actualHash}`,
+	].join("\n");
+}
+
 export function parseGoldenSoakArgs(argv: string[]): GoldenSoakArgs {
 	let iterations = 5;
 	const fixtureIds: string[] = [];
 
 	for (let i = 0; i < argv.length; i++) {
 		const arg = argv[i];
-		if (arg === "--iterations" && argv[i + 1]) {
-			iterations = Number.parseInt(argv[++i] ?? "5", 10);
-		} else if (arg === "--fixture" && argv[i + 1]) {
-			fixtureIds.push(argv[++i] ?? "");
+		if (arg === "--iterations") {
+			iterations = parsePositiveInteger(argv[i + 1]);
+			i += 1;
+		} else if (arg === "--fixture") {
+			fixtureIds.push(parseFixtureValue(argv[i + 1]));
+			i += 1;
 		}
-	}
-
-	if (!Number.isFinite(iterations) || iterations < 1) {
-		throw new Error("invalid iterations");
 	}
 
 	return { iterations, fixtureIds };

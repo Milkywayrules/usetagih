@@ -6,6 +6,8 @@ import {
 	renderFixtureFromManifest,
 } from "../src/golden/render-fixture";
 import {
+	detectSoakHashDrift,
+	formatSoakDriftReport,
 	GOLDEN_SOAK_USAGE,
 	parseGoldenSoakArgs,
 	resolveSoakEntries,
@@ -58,18 +60,13 @@ function main(): number {
 					outputPath,
 				});
 
+				const drift = detectSoakHashDrift(entry.id, i, firstHash, sha256);
+				if (drift) {
+					console.error(formatSoakDriftReport(drift));
+					return 1;
+				}
 				if (firstHash === null) {
 					firstHash = sha256;
-				} else if (sha256 !== firstHash) {
-					console.error(
-						[
-							`FAIL ${entry.id}`,
-							`  drift at iteration ${i}`,
-							`  first hash: ${firstHash}`,
-							`  actual: ${sha256}`,
-						].join("\n"),
-					);
-					return 1;
 				}
 			}
 

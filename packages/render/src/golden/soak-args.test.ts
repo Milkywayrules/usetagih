@@ -2,6 +2,8 @@ import { expect, test } from "bun:test";
 import { resolve } from "node:path";
 import { loadManifest } from "./manifest";
 import {
+	detectSoakHashDrift,
+	formatSoakDriftReport,
 	parseGoldenSoakArgs,
 	resolveSoakEntries,
 	UnknownFixtureError,
@@ -46,8 +48,55 @@ test("parseGoldenSoakArgs rejects invalid iterations", () => {
 	expect(() => parseGoldenSoakArgs(["--iterations", "0"])).toThrow(
 		"invalid iterations",
 	);
+	expect(() => parseGoldenSoakArgs(["--iterations", "-1"])).toThrow(
+		"invalid iterations",
+	);
 	expect(() => parseGoldenSoakArgs(["--iterations", "abc"])).toThrow(
 		"invalid iterations",
+	);
+	expect(() => parseGoldenSoakArgs(["--iterations", "1.5"])).toThrow(
+		"invalid iterations",
+	);
+	expect(() => parseGoldenSoakArgs(["--iterations"])).toThrow(
+		"invalid iterations",
+	);
+});
+
+test("parseGoldenSoakArgs rejects --fixture without value or flag-as-value", () => {
+	expect(() => parseGoldenSoakArgs(["--fixture"])).toThrow("invalid fixture");
+	expect(() => parseGoldenSoakArgs(["--fixture", "--iterations"])).toThrow(
+		"invalid fixture",
+	);
+});
+
+test("detectSoakHashDrift reports mismatch and formatSoakDriftReport matches contract", () => {
+	expect(
+		detectSoakHashDrift("invoice-modern-basic", 1, null, "abc"),
+	).toBeNull();
+	expect(
+		detectSoakHashDrift("invoice-modern-basic", 2, "abc", "abc"),
+	).toBeNull();
+
+	const drift = detectSoakHashDrift(
+		"invoice-modern-basic",
+		42,
+		"b11be4533d38f525326164b530a143bd71270440dc4b98f42cec426f2d3a105c",
+		"deadbeef",
+	);
+	expect(drift).toEqual({
+		fixtureId: "invoice-modern-basic",
+		iteration: 42,
+		firstHash:
+			"b11be4533d38f525326164b530a143bd71270440dc4b98f42cec426f2d3a105c",
+		actualHash: "deadbeef",
+	});
+	expect(formatSoakDriftReport(drift!)).toBe(
+		[
+			"FAIL invoice-modern-basic",
+			"  drift at iteration 42",
+			"  first hash: b11be4533d38f525326164b530a143bd71270440dc4b98f42cec426f2d3a105c",
+			"  actual: deadbeef",
+		].join("\n"),
 	);
 });
 
