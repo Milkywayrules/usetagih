@@ -1,19 +1,20 @@
-# Cursor Agent CLI (`agent` / `cursor-agent`). Skills live in .agents/skills/
-# (same tree as codex/gemini in this project). Hooks use Cursor's native
-# .cursor/hooks.json format (version + hooks table); dialect matches copilot's
-# flat handler entries. Live-verified hook payload uses conversation_id.
+# Cursor Agent CLI (cursor-agent). Skills live in .agents/skills/ (same tree as
+# Codex/Gemini and the BMAD Cursor IDE installer). Slash-command expansion on the
+# initial prompt is unverified, so the profile loads SKILL.md explicitly (copilot
+# pattern). Token usage is not exposed by cursor-agent yet — usage_parser = "none"
+# and the orchestrator falls back to window-death detection.
 name = "cursor"
-binary = "agent"
-prompt_template = "Use the {skill} skill now: {args}"
-launch_args = []
-bypass_args = ["--force", "--trust"]
+binary = "cursor-agent"
+prompt_template = "LOAD the FULL .agents/skills/{skill}/SKILL.md, read its entire contents and follow its directions exactly, using subagents as needed: {args}"
+bypass_args = ["-f"]
 model_flag = "--model"
 usage_parser = "none"
-first_run_note = "run `agent login` once if headless sessions fail auth; use --trust --force for automation"
+# stop fires per response turn in interactive mode; allow multi-turn dev/review passes.
+stop_without_result_nudges = 5
+first_run_note = "run `cursor-agent login` if needed; run `cursor-agent` once in the project and accept workspace trust + hook approval (hooks in .cursor/hooks.json); use --model composer-2.5-fast for Composer 2.5 Fast"
 skill_tree = ".agents/skills"
-seed_files = [".cursor/hooks.json"]
 
 [hooks]
-dialect = "copilot-settings-json"
+dialect = "cursor-hooks-json"
 config_path = ".cursor/hooks.json"
-events = { stop = "Stop", sessionStart = "SessionStart", sessionEnd = "SessionEnd" }
+events = { sessionStart = "SessionStart", stop = "Stop", sessionEnd = "SessionEnd" }
