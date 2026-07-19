@@ -1,9 +1,11 @@
 import { expect, test } from "bun:test";
 import { resolve } from "node:path";
 import {
+	goldenHashFilePath,
 	loadManifest,
 	ManifestParseError,
 	parseFixtureEntry,
+	readGoldenHashFile,
 } from "./manifest";
 
 const PACKAGE_ROOT = resolve(import.meta.dir, "../..");
@@ -11,11 +13,25 @@ const MANIFEST_PATH = resolve(PACKAGE_ROOT, "manifest.json");
 
 test("loadManifest parses real manifest.json", () => {
 	const manifest = loadManifest(MANIFEST_PATH);
-	expect(manifest.fixtures.length).toBeGreaterThan(0);
-	expect(manifest.fixtures[0]?.id).toBe("invoice-modern-basic");
-	expect(manifest.fixtures[0]?.sha256).toBe(
-		"b11be4533d38f525326164b530a143bd71270440dc4b98f42cec426f2d3a105c",
+	expect(manifest.fixtures.length).toBeGreaterThanOrEqual(2);
+
+	const basic = manifest.fixtures.find((f) => f.id === "invoice-modern-basic");
+	const pagination = manifest.fixtures.find(
+		(f) => f.id === "invoice-modern-pagination-25",
 	);
+
+	expect(basic).toBeDefined();
+	expect(pagination).toBeDefined();
+
+	const basicGolden = readGoldenHashFile(
+		goldenHashFilePath(PACKAGE_ROOT, "invoice-modern-basic"),
+	);
+	const paginationGolden = readGoldenHashFile(
+		goldenHashFilePath(PACKAGE_ROOT, "invoice-modern-pagination-25"),
+	);
+
+	expect(basic?.sha256).toBe(basicGolden);
+	expect(pagination?.sha256).toBe(paginationGolden);
 });
 
 test("loadManifest rejects missing fixtures array", () => {

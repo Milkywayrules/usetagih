@@ -1,0 +1,331 @@
+{
+	"schemaVersion": "2026-07-20",
+	"documentType": "invoice",
+	"template": "modern",
+	"documentNumber": "INV-2026-PAG25",
+	"issuedAt": "2026-07-15",
+	"dueAt": "2026-08-15",
+	"currency": "USD",
+	"seller": {
+		"name": "Acme Widgets LLC",
+		"email": "billing@acmewidgets.example",
+		"taxId": "US-12-3456789",
+		"address": {
+			"line1": "100 Market Street",
+			"city": "San Francisco",
+			"region": "CA",
+			"postalCode": "94105",
+			"country": "US"
+		}
+	},
+	"buyer": {
+		"name": "Beta Industries Inc",
+		"email": "accounts@betaind.example",
+		"address": {
+			"line1": "200 Commerce Blvd",
+			"city": "Austin",
+			"region": "TX",
+			"postalCode": "78701",
+			"country": "US"
+		}
+	},
+	"lineItems": [
+		{
+			"description": "Deliverable #01 — milestone component",
+			"quantity": 1,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "24.00"
+			},
+			"lineTotal": {
+				"amount": "24.00"
+			}
+		},
+		{
+			"description": "Deliverable #02 — milestone component",
+			"quantity": 2,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "28.00"
+			},
+			"lineTotal": {
+				"amount": "56.00"
+			}
+		},
+		{
+			"description": "Deliverable #03 — milestone component",
+			"quantity": 3,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "32.00"
+			},
+			"lineTotal": {
+				"amount": "96.00"
+			}
+		},
+		{
+			"description": "Deliverable #04 — milestone component",
+			"quantity": 1,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "36.00"
+			},
+			"lineTotal": {
+				"amount": "36.00"
+			}
+		},
+		{
+			"description": "Deliverable #05 — milestone component",
+			"quantity": 2,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "40.00"
+			},
+			"lineTotal": {
+				"amount": "80.00"
+			}
+		},
+		{
+			"description": "Deliverable #06 — milestone component",
+			"quantity": 3,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "44.00"
+			},
+			"lineTotal": {
+				"amount": "132.00"
+			}
+		},
+		{
+			"description": "Deliverable #07 — milestone component",
+			"quantity": 1,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "48.00"
+			},
+			"lineTotal": {
+				"amount": "48.00"
+			}
+		},
+		{
+			"description": "Deliverable #08 — milestone component",
+			"quantity": 2,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "52.00"
+			},
+			"lineTotal": {
+				"amount": "104.00"
+			}
+		},
+		{
+			"description": "Deliverable #09 — milestone component",
+			"quantity": 3,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "56.00"
+			},
+			"lineTotal": {
+				"amount": "168.00"
+			}
+		},
+		{
+			"description": "Deliverable #10 — milestone component",
+			"quantity": 1,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "60.00"
+			},
+			"lineTotal": {
+				"amount": "60.00"
+			}
+		},
+		{
+			"description": "Deliverable #11 — milestone component",
+			"quantity": 2,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "64.00"
+			},
+			"lineTotal": {
+				"amount": "128.00"
+			}
+		},
+		{
+			"description": "Deliverable #12 — milestone component",
+			"quantity": 3,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "68.00"
+			},
+			"lineTotal": {
+				"amount": "204.00"
+			}
+		},
+		{
+			"description": "Deliverable #13 — milestone component",
+			"quantity": 1,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "72.00"
+			},
+			"lineTotal": {
+				"amount": "72.00"
+			}
+		},
+		{
+			"description": "Deliverable #14 — milestone component",
+			"quantity": 2,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "76.00"
+			},
+			"lineTotal": {
+				"amount": "152.00"
+			}
+		},
+		{
+			"description": "Deliverable #15 — milestone component",
+			"quantity": 3,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "80.00"
+			},
+			"lineTotal": {
+				"amount": "240.00"
+			}
+		},
+		{
+			"description": "Deliverable #16 — milestone component",
+			"quantity": 1,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "84.00"
+			},
+			"lineTotal": {
+				"amount": "84.00"
+			}
+		},
+		{
+			"description": "Deliverable #17 — milestone component",
+			"quantity": 2,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "88.00"
+			},
+			"lineTotal": {
+				"amount": "176.00"
+			}
+		},
+		{
+			"description": "Deliverable #18 — milestone component",
+			"quantity": 3,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "92.00"
+			},
+			"lineTotal": {
+				"amount": "276.00"
+			}
+		},
+		{
+			"description": "Deliverable #19 — milestone component",
+			"quantity": 1,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "96.00"
+			},
+			"lineTotal": {
+				"amount": "96.00"
+			}
+		},
+		{
+			"description": "Deliverable #20 — milestone component",
+			"quantity": 2,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "100.00"
+			},
+			"lineTotal": {
+				"amount": "200.00"
+			}
+		},
+		{
+			"description": "Deliverable #21 — milestone component",
+			"quantity": 3,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "104.00"
+			},
+			"lineTotal": {
+				"amount": "312.00"
+			}
+		},
+		{
+			"description": "Deliverable #22 — milestone component",
+			"quantity": 1,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "108.00"
+			},
+			"lineTotal": {
+				"amount": "108.00"
+			}
+		},
+		{
+			"description": "Deliverable #23 — milestone component",
+			"quantity": 2,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "112.00"
+			},
+			"lineTotal": {
+				"amount": "224.00"
+			}
+		},
+		{
+			"description": "Deliverable #24 — milestone component",
+			"quantity": 3,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "116.00"
+			},
+			"lineTotal": {
+				"amount": "348.00"
+			}
+		},
+		{
+			"description": "Deliverable #25 — milestone component",
+			"quantity": 1,
+			"unit": "each",
+			"unitPrice": {
+				"amount": "120.00"
+			},
+			"lineTotal": {
+				"amount": "120.00"
+			}
+		}
+	],
+	"taxLines": [
+		{
+			"name": "Sales Tax",
+			"rate": 0.0825,
+			"amount": {
+				"amount": "292.38"
+			}
+		}
+	],
+	"pricesIncludeTax": false,
+	"totals": {
+		"subtotal": {
+			"amount": "3544.00"
+		},
+		"taxTotal": {
+			"amount": "292.38"
+		},
+		"grandTotal": {
+			"amount": "3836.38"
+		}
+	},
+	"notes": "Pagination spike fixture — 25 line items for FR-8 gate."
+}

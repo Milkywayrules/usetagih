@@ -4,7 +4,7 @@ baseline_commit: 0648c6c
 
 # Story 1.5: 25-line-item pagination fixture (FR-8 blocking)
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -32,26 +32,26 @@ so that pagination stability is proven before feature work (FR-8, AD-10 blocking
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Pagination fixture JSON (AC: 1)
-  - [ ] Create `packages/render/__fixtures__/payloads/invoice-modern-pagination-25.json` per Dev Notes §Fixture JSON (exactly 25 line items, deterministic pattern, no randomness)
-  - [ ] Verify manual arithmetic: subtotal `3544.00`, tax `292.38` @ 8.25%, grand `3836.38`
-- [ ] Task 2 — Template pagination probe labels (AC: 4, 5)
-  - [ ] Add `#metadata(here().page()) <totals-page>` immediately before/at totals grid in `modern.typ`
-  - [ ] Add `#metadata(counter(page).final()) <page-count>` at document end (after existing harness metadata block)
-  - [ ] Run `golden:check` on `invoice-modern-basic` **before committing** — confirm hash unchanged or follow §Golden impact protocol
-- [ ] Task 3 — Manifest + golden hash (AC: 3, 6)
-  - [ ] Append `invoice-modern-pagination-25` entry to `manifest.json`
-  - [ ] Render in CI Docker; run `golden:update` for pagination fixture only (or full update if basic drifted with justification)
-  - [ ] Commit `__fixtures__/golden/invoice-modern-pagination-25.sha256`
-- [ ] Task 4 — Bun pagination tests (AC: 4)
-  - [ ] Extend `packages/render/src/invoice-modern.test.ts` with `PAGINATION_FIXTURE = "invoice-modern-pagination-25"`
-  - [ ] Add `queryMetadata()` tests for `<page-count>`, `<totals-page>`, `<grand-total>` per Dev Notes §Test assertions
-  - [ ] Add manifest entry existence test for pagination fixture
-  - [ ] Optional: `golden:check` integration via existing harness (no duplicate render logic)
-- [ ] Task 5 — Verification gate (AC: 7, 8)
-  - [ ] In-container: `docker run … golden:check` exit 0 for both fixtures
-  - [ ] Host: `bunx turbo run lint typecheck test build --force`
-  - [ ] Record hashes, page counts, basic-fixture golden impact in Dev Agent Record
+- [x] Task 1 — Pagination fixture JSON (AC: 1)
+  - [x] Create `packages/render/__fixtures__/payloads/invoice-modern-pagination-25.json` per Dev Notes §Fixture JSON (exactly 25 line items, deterministic pattern, no randomness)
+  - [x] Verify manual arithmetic: subtotal `3544.00`, tax `292.38` @ 8.25%, grand `3836.38`
+- [x] Task 2 — Template pagination probe labels (AC: 4, 5)
+  - [x] Add `#metadata(here().page()) <totals-page>` immediately before/at totals grid in `modern.typ`
+  - [x] Add `#metadata(counter(page).final()) <page-count>` at document end (after existing harness metadata block)
+  - [x] Run `golden:check` on `invoice-modern-basic` **before committing** — confirm hash unchanged or follow §Golden impact protocol
+- [x] Task 3 — Manifest + golden hash (AC: 3, 6)
+  - [x] Append `invoice-modern-pagination-25` entry to `manifest.json`
+  - [x] Render in CI Docker; run `golden:update` for pagination fixture only (or full update if basic drifted with justification)
+  - [x] Commit `__fixtures__/golden/invoice-modern-pagination-25.sha256`
+- [x] Task 4 — Bun pagination tests (AC: 4)
+  - [x] Extend `packages/render/src/invoice-modern.test.ts` with `PAGINATION_FIXTURE = "invoice-modern-pagination-25"`
+  - [x] Add `queryMetadata()` tests for `<page-count>`, `<totals-page>`, `<grand-total>` per Dev Notes §Test assertions
+  - [x] Add manifest entry existence test for pagination fixture
+  - [x] Optional: `golden:check` integration via existing harness (no duplicate render logic)
+- [x] Task 5 — Verification gate (AC: 7, 8)
+  - [x] In-container: `docker run … golden:check` exit 0 for both fixtures
+  - [x] Host: `bunx turbo run lint typecheck test build --force`
+  - [x] Record hashes, page counts, basic-fixture golden impact in Dev Agent Record
 
 ## Dev Notes
 
@@ -293,13 +293,39 @@ packages/templates/invoice/
 
 ### Agent Model Used
 
-_(filled by dev agent)_
+Composer 2.5 (headless dev subagent)
 
 ### Debug Log References
 
+- Typst 0.15.1 requires `#context [#metadata(here().page()) <totals-page>]` and `#context [#metadata(counter(page).final()) <page-count>]` — bare calls fail with "can only be used when context is known"
+- Notes after totals caused totals-page (2) ≠ page-count (3); moved notes block before tax/totals so totals land on final page (FR-8)
+- `invoice-modern-basic` golden drifted from `b11be453…105c` → `0554222a…2029` (metadata probes + notes reorder alter PDF bytes); regenerated both fixtures via `golden:update` in CI Docker with workspace volume mount
+- Host/container `golden:check` hashes agree; PR needs `golden-update` label
+
 ### Completion Notes List
 
+- Pagination fixture: 25 line items, subtotal 3544.00, tax 292.38, grand 3836.38
+- Metadata probes: page-count=2, totals-page=2, grand-total=3836.38 (totals-page === page-count)
+- Golden hashes (CI Docker authoritative; host matches):
+  - `invoice-modern-basic`: `0554222a37aeeb7eec28ec88b7af62e764e3ca37f1f6f3a49ff421d1ed182029`
+  - `invoice-modern-pagination-25`: `36d20cdc723ff10b1f388af9636c523068cd85a95f532b0064d24aad0a280f3c`
+- Verification: `golden:check` exit 0 (host + container), `bun test packages/render` 42 pass, `turbo run lint typecheck test build --force` 36/36
+
 ### File List
+
+- `packages/render/__fixtures__/payloads/invoice-modern-pagination-25.json` (new)
+- `packages/render/__fixtures__/golden/invoice-modern-pagination-25.sha256` (new)
+- `packages/render/__fixtures__/golden/invoice-modern-basic.sha256` (updated)
+- `packages/render/manifest.json` (updated)
+- `packages/templates/invoice/modern.typ` (updated)
+- `packages/render/src/invoice-modern.test.ts` (updated)
+- `packages/render/src/golden/manifest.test.ts` (updated)
+- `_bmad-output/implementation-artifacts/1-5-25-line-item-pagination-fixture-fr-8-blocking.md` (updated)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (updated)
+
+### Change Log
+
+- 2026-07-20: Story 1.5 — pagination fixture, metadata page/totals probes, golden hashes, tests
 
 ## Story Validation Record
 

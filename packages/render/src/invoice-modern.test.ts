@@ -19,6 +19,7 @@ const TEMPLATE_DIR = join(REPO_ROOT, "packages/templates/invoice");
 const MANIFEST_PATH = join(PACKAGE_ROOT, "manifest.json");
 
 const BASIC_FIXTURE = "invoice-modern-basic";
+const PAGINATION_FIXTURE = "invoice-modern-pagination-25";
 const WRONG_TOTAL_FIXTURE = "invoice-modern-wrong-total";
 const FOOTER_TEXT = "Rendered with usetagih · usetagih.com";
 
@@ -75,6 +76,9 @@ function queryMetadata(fixture: string, tier: string, label: string): unknown {
 
 test("invoice-modern fixture and golden files exist", () => {
 	expect(existsSync(join(PAYLOADS_DIR, `${BASIC_FIXTURE}.json`))).toBe(true);
+	expect(existsSync(join(PAYLOADS_DIR, `${PAGINATION_FIXTURE}.json`))).toBe(
+		true,
+	);
 	expect(existsSync(join(PAYLOADS_DIR, `${WRONG_TOTAL_FIXTURE}.json`))).toBe(
 		true,
 	);
@@ -102,6 +106,31 @@ test("manifest includes invoice-modern-basic fixture entry", () => {
 
 	const goldenHash = readFileSync(
 		join(GOLDEN_DIR, `${BASIC_FIXTURE}.sha256`),
+		"utf8",
+	).trim();
+	expect(entry?.sha256).toBe(goldenHash);
+});
+
+test("manifest includes invoice-modern-pagination-25 fixture entry", () => {
+	const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf8")) as {
+		fixtures: Array<{
+			id: string;
+			sha256: string;
+			typstVersion: string;
+			schemaVersion: string;
+			inputs: { tier: string };
+		}>;
+	};
+
+	const entry = manifest.fixtures.find((f) => f.id === PAGINATION_FIXTURE);
+	expect(entry).toBeDefined();
+	expect(entry?.typstVersion).toBe("0.15.1");
+	expect(entry?.schemaVersion).toBe("2026-07-20");
+	expect(entry?.inputs.tier).toBe("free");
+	expect(entry?.sha256).toMatch(/^[a-f0-9]{64}$/);
+
+	const goldenHash = readFileSync(
+		join(GOLDEN_DIR, `${PAGINATION_FIXTURE}.sha256`),
 		"utf8",
 	).trim();
 	expect(entry?.sha256).toBe(goldenHash);
@@ -185,6 +214,35 @@ renderTest(
 
 		expect(basicHits[0]?.value).toBe("673.56");
 		expect(wrongHits[0]?.value).toBe("9999.99");
+	},
+);
+
+renderTest(
+	"pagination fixture spans multiple pages with totals on final page",
+	() => {
+		const pageCountHits = queryMetadata(
+			PAGINATION_FIXTURE,
+			"free",
+			"page-count",
+		) as Array<{ value: number }>;
+		const totalsPageHits = queryMetadata(
+			PAGINATION_FIXTURE,
+			"free",
+			"totals-page",
+		) as Array<{ value: number }>;
+		const grandHits = queryMetadata(
+			PAGINATION_FIXTURE,
+			"free",
+			"grand-total",
+		) as Array<{ value: string }>;
+
+		expect(pageCountHits).toHaveLength(1);
+		expect(totalsPageHits).toHaveLength(1);
+		expect(Number(pageCountHits[0]?.value)).toBeGreaterThanOrEqual(2);
+		expect(Number(totalsPageHits[0]?.value)).toBe(
+			Number(pageCountHits[0]?.value),
+		);
+		expect(grandHits[0]?.value).toBe("3836.38");
 	},
 );
 
