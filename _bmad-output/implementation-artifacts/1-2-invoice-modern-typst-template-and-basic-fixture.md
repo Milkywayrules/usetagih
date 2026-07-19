@@ -4,7 +4,7 @@ baseline_commit: 018ac6a
 
 # Story 1.2: Invoice modern Typst template and basic fixture
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -30,33 +30,33 @@ so that the spike proves template+engine viability (FR-6, FR-9 partial).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Canonical basic fixture (AC: 1)
-  - [ ] Create `packages/render/__fixtures__/payloads/invoice-modern-basic.json` per exact JSON in Dev Notes §Fixture JSON
-  - [ ] Create `packages/render/__fixtures__/payloads/invoice-modern-wrong-total.json` (grandTotal only change)
-- [ ] Task 2 — Invoice modern Typst template (AC: 2, 3, 4)
-  - [ ] Create `packages/templates/invoice/modern.typ` importing `../_shared/preamble.typ`
-  - [ ] Read payload via `json(sys.inputs.at("json"))`; read tier via `sys.inputs.at("tier", default: "pro")`
-  - [ ] Implement modern layout per Dev Notes §Template layout (no arithmetic on money fields)
-  - [ ] Footer via `#set page(footer: …)` when `tier == "free"` only
-- [ ] Task 3 — Render harness + driver inputs (AC: 2, 3, 6)
-  - [ ] Extend `compileTypst` usage (or add thin helper) passing `--input json=…` and `--input tier=…` via `extraArgs`
-  - [ ] Create `packages/render/scripts/render-fixture.ts` CLI: `--fixture <name> [--tier free|pro] [--out <path>]`
-  - [ ] Add `package.json` script `"render:fixture": "bun scripts/render-fixture.ts"`
-  - [ ] Add `packages/render/.tmp/` to root `.gitignore` (render output scratch dir)
-- [ ] Task 4 — Golden hash + manifest (AC: 6, 7, 8)
-  - [ ] Render basic fixture once with `tier=free`; compute SHA-256
-  - [ ] Commit `packages/render/__fixtures__/golden/invoice-modern-basic.sha256`
-  - [ ] Append manifest `fixtures[]` entry per Dev Notes §Manifest entry
-  - [ ] Document double-render verification in Dev Agent Record
-- [ ] Task 5 — Bun tests (AC: 5, 9)
-  - [ ] Create `packages/render/src/invoice-modern.test.ts` (environment-gated when Typst binary absent)
-  - [ ] Test: tier=free footer string present in PDF bytes; tier=pro absent
-  - [ ] Test: wrong-total fixture contains `9999.99`, not corrected `673.56`
-  - [ ] Test: consecutive renders byte-identical for basic fixture
-  - [ ] Test: golden sha256 file matches fresh render hash
-- [ ] Task 6 — Verification gate (AC: 10)
-  - [ ] Run full turbo gate with `--force`
-  - [ ] Record hashes and command results in Dev Agent Record
+- [x] Task 1 — Canonical basic fixture (AC: 1)
+  - [x] Create `packages/render/__fixtures__/payloads/invoice-modern-basic.json` per exact JSON in Dev Notes §Fixture JSON
+  - [x] Create `packages/render/__fixtures__/payloads/invoice-modern-wrong-total.json` (grandTotal only change)
+- [x] Task 2 — Invoice modern Typst template (AC: 2, 3, 4)
+  - [x] Create `packages/templates/invoice/modern.typ` importing `../_shared/preamble.typ`
+  - [x] Read payload via `json(sys.inputs.at("json"))`; read tier via `sys.inputs.at("tier", default: "pro")`
+  - [x] Implement modern layout per Dev Notes §Template layout (no arithmetic on money fields)
+  - [x] Footer via `#set page(footer: …)` when `tier == "free"` only
+- [x] Task 3 — Render harness + driver inputs (AC: 2, 3, 6)
+  - [x] Extend `compileTypst` usage (or add thin helper) passing `--input json=…` and `--input tier=…` via `extraArgs`
+  - [x] Create `packages/render/scripts/render-fixture.ts` CLI: `--fixture <name> [--tier free|pro] [--out <path>]`
+  - [x] Add `package.json` script `"render:fixture": "bun scripts/render-fixture.ts"`
+  - [x] Add `packages/render/.tmp/` to root `.gitignore` (render output scratch dir)
+- [x] Task 4 — Golden hash + manifest (AC: 6, 7, 8)
+  - [x] Render basic fixture once with `tier=free`; compute SHA-256
+  - [x] Commit `packages/render/__fixtures__/golden/invoice-modern-basic.sha256`
+  - [x] Append manifest `fixtures[]` entry per Dev Notes §Manifest entry
+  - [x] Document double-render verification in Dev Agent Record
+- [x] Task 5 — Bun tests (AC: 5, 9)
+  - [x] Create `packages/render/src/invoice-modern.test.ts` (environment-gated when Typst binary absent)
+  - [x] Test: tier=free footer string present in PDF bytes; tier=pro absent
+  - [x] Test: wrong-total fixture contains `9999.99`, not corrected `673.56`
+  - [x] Test: consecutive renders byte-identical for basic fixture
+  - [x] Test: golden sha256 file matches fresh render hash
+- [x] Task 6 — Verification gate (AC: 10)
+  - [x] Run full turbo gate with `--force`
+  - [x] Record hashes and command results in Dev Agent Record
 
 ## Dev Notes
 
@@ -402,15 +402,42 @@ bun run --filter @usetagih/render render:fixture -- --fixture invoice-modern-bas
 
 ### Agent Model Used
 
-_(filled by dev agent)_
+Composer 2.5 Fast
 
 ### Debug Log References
 
+- Typst `--input json=` paths resolve relative to the template file, not repo root
+- PDF text is CID-encoded; footer/grand-total assertions use `typst eval` + `#metadata` labels
+
 ### Completion Notes List
+
+- Added `invoice/modern.typ` with navy header, verbatim money display, tier-gated footer, and query metadata hooks
+- Added PRD-conformant fixtures, golden SHA-256 `b11be4533d38f525326164b530a143bd71270440dc4b98f42cec426f2d3a105c`, and manifest entry
+- Added `render-fixture.ts` CLI and `evalTypst()` driver helper for `--input` + introspection
+- Double-render determinism: `/tmp/usetagih-inv-1.pdf` and `/tmp/usetagih-inv-2.pdf` both `b11be4533d38f525326164b530a143bd71270440dc4b98f42cec426f2d3a105c`; golden `-c` OK
+- Footer probe: `query(<footer-text>)` → `Rendered with usetagih · usetagih.com` at tier=free; empty at tier=pro; free/pro PDF hashes differ
+- Wrong-total probe: `query(<grand-total>)` → `9999.99` (basic remains `673.56`)
+- `bun test packages/render`: 12 pass; `bunx turbo run lint typecheck test build --force`: 36/36 tasks exit 0
 
 ### File List
 
+- `.gitignore`
+- `packages/templates/invoice/modern.typ`
+- `packages/render/__fixtures__/payloads/invoice-modern-basic.json`
+- `packages/render/__fixtures__/payloads/invoice-modern-wrong-total.json`
+- `packages/render/__fixtures__/golden/invoice-modern-basic.sha256`
+- `packages/render/manifest.json`
+- `packages/render/package.json`
+- `packages/render/scripts/render-fixture.ts`
+- `packages/render/src/typst-driver.ts`
+- `packages/render/src/index.ts`
+- `packages/render/src/invoice-modern.test.ts`
+- `_bmad-output/implementation-artifacts/1-2-invoice-modern-typst-template-and-basic-fixture.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
 ### Change Log
+
+- 2026-07-20: Story 1.2 — invoice modern template, fixtures, golden hash, render harness, and tests
 
 ### Story Validation Record
 

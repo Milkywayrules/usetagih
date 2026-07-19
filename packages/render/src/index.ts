@@ -5,6 +5,8 @@ export {
 	type CompileTypstOptions,
 	compileTypst,
 	DEFAULT_SOURCE_DATE_EPOCH,
+	type EvalTypstOptions,
+	evalTypst,
 	resolveFontPath,
 	resolveTypstBinaryPath,
 } from "./typst-driver";

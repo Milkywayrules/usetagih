@@ -1,5 +1,5 @@
 # generated: 2026-07-20
-# last_updated: 2026-07-20T03:08:00+07:00
+# last_updated: 2026-07-20T03:15:00+07:00
 # project: usetagih
 # project_key: NOKEY
 # tracking_system: file-system
@@ -45,7 +45,7 @@
 # Epic 5 after Epic 1+3 (Story 5.0 first) | Epic 6 after Epic 3+5 | Epic 7 after Epic 3 | Epic 8 last
 
 generated: 2026-07-20
-last_updated: 2026-07-20T03:08:00+07:00
+last_updated: 2026-07-20T03:15:00+07:00
 project: usetagih
 project_key: NOKEY
 tracking_system: file-system
@@ -72,7 +72,7 @@ development_status:
   # BLOCKING GATE — failure halts Epics 2–8 and escalates to board. Gated by Epic 0.
   epic-1: in-progress
   1-1-pin-typst-0-15-x-font-bundle-and-shared-preamble: done
-  1-2-invoice-modern-typst-template-and-basic-fixture: ready-for-dev
+  1-2-invoice-modern-typst-template-and-basic-fixture: review
   1-3-golden-harness-cli-golden-check: backlog
   1-4-ci-docker-render-ci-image-and-pdf-golden-workflow: backlog
   1-5-25-line-item-pagination-fixture-fr-8-blocking: backlog

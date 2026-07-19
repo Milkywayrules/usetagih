@@ -15,6 +15,25 @@ export type CompileTypstOptions = {
 	extraArgs?: string[];
 };
 
+export type EvalTypstOptions = {
+	inputPath: string;
+	expression: string;
+	fontPath?: string;
+	extraArgs?: string[];
+};
+
+function buildTypstEnv(): NodeJS.ProcessEnv {
+	return {
+		...process.env,
+		SOURCE_DATE_EPOCH:
+			process.env.SOURCE_DATE_EPOCH ?? String(DEFAULT_SOURCE_DATE_EPOCH),
+	};
+}
+
+function buildTypstInputArgs(extraArgs: string[] = []): string[] {
+	return extraArgs;
+}
+
 export function resolveTypstBinaryPath(): string {
 	const envPath = process.env.TYPST_BINARY_PATH;
 	if (envPath) {
@@ -43,11 +62,7 @@ export function compileTypst(options: CompileTypstOptions): void {
 	} = options;
 
 	const binaryPath = resolveTypstBinaryPath();
-	const env = {
-		...process.env,
-		SOURCE_DATE_EPOCH:
-			process.env.SOURCE_DATE_EPOCH ?? String(DEFAULT_SOURCE_DATE_EPOCH),
-	};
+	const env = buildTypstEnv();
 
 	const args = [
 		"compile",
@@ -59,7 +74,7 @@ export function compileTypst(options: CompileTypstOptions): void {
 		...(format === "svg" ? ["--format", "svg"] : []),
 		resolve(inputPath),
 		resolve(outputPath),
-		...extraArgs,
+		...buildTypstInputArgs(extraArgs),
 	];
 
 	const result = Bun.spawnSync([binaryPath, ...args], {
@@ -73,4 +88,43 @@ export function compileTypst(options: CompileTypstOptions): void {
 			`Typst compile failed (exit ${result.exitCode}): ${stderr || "no stderr"}`,
 		);
 	}
+}
+
+export function evalTypst(options: EvalTypstOptions): string {
+	const {
+		inputPath,
+		expression,
+		fontPath = resolveFontPath(),
+		extraArgs = [],
+	} = options;
+
+	const binaryPath = resolveTypstBinaryPath();
+	const env = buildTypstEnv();
+
+	const args = [
+		"eval",
+		expression,
+		"--root",
+		REPO_ROOT,
+		"--ignore-system-fonts",
+		"--font-path",
+		fontPath,
+		"--in",
+		resolve(inputPath),
+		...buildTypstInputArgs(extraArgs),
+	];
+
+	const result = Bun.spawnSync([binaryPath, ...args], {
+		env,
+		stdio: ["ignore", "pipe", "pipe"],
+	});
+
+	if (result.exitCode !== 0) {
+		const stderr = result.stderr.toString().trim();
+		throw new Error(
+			`Typst eval failed (exit ${result.exitCode}): ${stderr || "no stderr"}`,
+		);
+	}
+
+	return result.stdout.toString().trim();
 }

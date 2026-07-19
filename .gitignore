@@ -3,6 +3,7 @@
 .bmad-loop/policy.toml
 
 packages/render/.bin/
+packages/render/.tmp/
 
 node_modules/
 dist/

@@ -17,7 +17,8 @@
 		"test": "bun test",
 		"build": "tsc --outDir dist",
 		"install:typst": "bash scripts/install-typst-local.sh",
-		"render:smoke": "bun scripts/render-smoke.ts"
+		"render:smoke": "bun scripts/render-smoke.ts",
+		"render:fixture": "bun scripts/render-fixture.ts"
 	},
 	"devDependencies": {
 		"@usetagih/config": "workspace:*",
