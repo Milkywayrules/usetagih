@@ -4,7 +4,7 @@ baseline_commit: 23a1e75
 
 # Story 1.6: Logo determinism fixture — PNG, JPEG, SVG (blocking)
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -191,8 +191,8 @@ Replace the existing header `#grid` that only shows seller name — **do not** a
 
 | Format | contentType | bytesBase64 (exact) | logo_checksum (SHA-256 of raw/sanitized bytes) |
 | --- | --- | --- | --- |
-| PNG | `image/png` | `iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+X4f0AAAAASUVORK5CYII=` | `9f8d9d8acd5d181df9cc210eed6451603814e1d8d622c82acf9a5bb7f38bc438` |
-| JPEG | `image/jpeg` | `/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDAREAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA79//Z` | `3b20d13ec3b2b6ea57c851c7688b91c72ba91649b90668c6f21d4842dc46bd8e` |
+| PNG | `image/png` | `iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=` | `5e3d382db4dd83d59aa5742793ad6b7903409e865c83bcbc54835049f043bc15` |
+| JPEG | `image/jpeg` | `/9j/4AAQSkZJRgABAQAAAAAAAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCAABAAEDAREAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAABv/EABQQAQAAAAAAAAAAAAAAAAAAAAD/xAAVAQEBAAAAAAAAAAAAAAAAAAAGCP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AAhakx//2Q==` | `7c60b3084f2b187549233aeb6d4dfc173fa796357b83c0b44d000da5bd06ed37` |
 | SVG | `image/svg+xml` | `PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCI+PHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMEQ5NDg4Ii8+PC9zdmc+` | `eadd635626436423706e82e13d72f302804806e2c34c75616fc662e27328a2c3` |
 
 Decoded SVG (for reference only — fixture uses base64 above):
@@ -487,6 +487,16 @@ Composer 2.5 Fast (headless subagent)
 ## Change Log
 
 - 2026-07-20: logo determinism fixtures (PNG/JPEG/SVG), SVG sanitizer, conditional template logo block, manifest + goldens, stability + double-render tests
+- 2026-07-20: code review — hardened SVG sanitizer to element/attribute allowlist; adversarial probe tests added; biome ignores `.tmp` scratch dirs
+
+## Code Review Record
+
+- **Reviewed:** 2026-07-20 against commit `3c5fe10` + review fixes
+- **Verdict:** APPROVED (after fixes)
+- **Fixture byte adjudication:** PNG/JPEG substituted with valid Typst-decodable 1×1 images (original story bytes had invalid IDAT CRC / zero-component SOF); fixture JSON, manifest, and Dev Agent Record checksums verified via decode + `file` + SHA-256; substitution documented in Debug Log and Dev Notes table updated
+- **Sanitizer adjudication:** original regex blocklist bypassed `javascript:`/`data:` href, entity-encoded handlers, CDATA, `animate`, `@import` style — replaced with allowlist sanitizer; 16 adversarial vectors covered in unit tests
+- **Determinism re-run:** Docker `golden:check` 5/5 PASS; double-render PNG `17d03365…7646` identical; basic `b11be453…105c` and pagination `d19dd496…c584` unchanged; `.tmp/logos/` gitignored, not committed
+- **Turbo gate:** `bunx turbo run lint typecheck test build --force` 36/36 exit 0
 
 ## Story Validation Record
 
