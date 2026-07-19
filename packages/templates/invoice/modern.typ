@@ -3,6 +3,7 @@
 #let payload = json(sys.inputs.at("json"))
 #let tier = sys.inputs.at("tier", default: "pro")
 #let show-footer = tier == "free"
+#let footer-copy = "Rendered with usetagih · usetagih.com"
 
 #let text-primary = rgb("#1E3A5F")
 #let text-secondary = rgb("#475569")
@@ -49,7 +50,7 @@
     if show-footer {
       set align(center)
       set text(size: 8pt, fill: rgb("#64748B"))
-      [Rendered with usetagih · usetagih.com]
+      [#footer-copy]
     }
   },
 )
@@ -147,5 +148,5 @@
 // Harness introspection (queried by render tests; invisible in PDF)
 #metadata(payload.totals.grandTotal.amount) <grand-total>
 #if show-footer [
-  #metadata("Rendered with usetagih · usetagih.com") <footer-text>
+  #metadata(footer-copy) <footer-text>
 ]
