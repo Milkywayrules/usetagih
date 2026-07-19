@@ -16,7 +16,7 @@
 			"id": "invoice-modern-basic",
 			"payload": "__fixtures__/payloads/invoice-modern-basic.json",
 			"template": "../templates/invoice/modern.typ",
-			"sha256": "0554222a37aeeb7eec28ec88b7af62e764e3ca37f1f6f3a49ff421d1ed182029",
+			"sha256": "b11be4533d38f525326164b530a143bd71270440dc4b98f42cec426f2d3a105c",
 			"typstVersion": "0.15.1",
 			"schemaVersion": "2026-07-20",
 			"inputs": {
@@ -27,7 +27,7 @@
 			"id": "invoice-modern-pagination-25",
 			"payload": "__fixtures__/payloads/invoice-modern-pagination-25.json",
 			"template": "../templates/invoice/modern.typ",
-			"sha256": "36d20cdc723ff10b1f388af9636c523068cd85a95f532b0064d24aad0a280f3c",
+			"sha256": "d19dd496ed850cea10f8f50146812c4541fc811f075553222b432e6e691cc584",
 			"typstVersion": "0.15.1",
 			"schemaVersion": "2026-07-20",
 			"inputs": {

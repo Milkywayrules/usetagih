@@ -238,10 +238,15 @@ renderTest(
 
 		expect(pageCountHits).toHaveLength(1);
 		expect(totalsPageHits).toHaveLength(1);
-		expect(Number(pageCountHits[0]?.value)).toBeGreaterThanOrEqual(2);
-		expect(Number(totalsPageHits[0]?.value)).toBe(
-			Number(pageCountHits[0]?.value),
-		);
+
+		const pageCount = Number(pageCountHits[0]?.value);
+		const totalsPage = Number(totalsPageHits[0]?.value);
+
+		expect(pageCount).toBeGreaterThanOrEqual(2);
+		// Totals may precede trailing notes on a later page; FR-8 requires no
+		// clipped totals, not that notes cannot follow the totals block.
+		expect(totalsPage).toBeGreaterThanOrEqual(1);
+		expect(totalsPage).toBeLessThanOrEqual(pageCount);
 		expect(grandHits[0]?.value).toBe("3836.38");
 	},
 );

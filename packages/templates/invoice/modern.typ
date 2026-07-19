@@ -115,13 +115,6 @@
 
 #v(16pt)
 
-#if payload.notes != none [
-  #text(fill: text-secondary, size: 9pt)[Notes]
-  #v(4pt)
-  #payload.notes
-  #v(16pt)
-]
-
 #for tax in payload.taxLines [
   #grid(
     columns: (1fr, auto),
@@ -145,6 +138,13 @@
     [Tax], [#fmt-money(payload.totals.taxTotal.amount)],
     [#text(font: font-bold)[Grand Total]], [#text(font: font-bold)[#fmt-money(payload.totals.grandTotal.amount)]],
   )
+]
+
+#if payload.notes != none [
+  #v(20pt)
+  #text(fill: text-secondary, size: 9pt)[Notes]
+  #v(4pt)
+  #payload.notes
 ]
 
 // Harness introspection (queried by render tests; invisible in PDF)
