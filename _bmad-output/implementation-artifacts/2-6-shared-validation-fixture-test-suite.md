@@ -4,7 +4,7 @@ baseline_commit: 6ab6028ce6b8af954d878e2c19d640caccc2695d
 
 # Story 2.6: Shared validation fixture test suite
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -26,21 +26,21 @@ so that Epic 3 API inherits trusted validation (FR-2, SM-2 prep).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Manifest convention + inventory migration (AC: 1, 2, 3)
-  - [ ] Create sidecar `.expected.json` for every valid and invalid fixture per Dev Notes §Manifest convention
-  - [ ] Move top-level structural invalid fixtures into `__fixtures__/invalid/structural/` (update `document-payload.test.ts` paths)
-  - [ ] Add gap fixtures listed in Dev Notes §Gap fixtures to fill (≥7 new JSON payloads + sidecars)
-  - [ ] Add metadata-only document-type-mismatch sidecar under `__fixtures__/invalid/document-type-mismatch/`
-- [ ] Task 2 — Table-driven runner (AC: 1, 2, 4)
-  - [ ] Create `packages/schema/src/fixtures/runner.ts` — discovery, stage routing, finding extraction helpers
-  - [ ] Create `packages/schema/src/fixtures/fixture-suite.test.ts` — drives all sidecar pairs; asserts pass/fail + path+code
-  - [ ] Create `packages/schema/src/fixtures/sm2-coverage.test.ts` — computes and asserts SM-2 metric ≥0.90 (target 1.0)
-  - [ ] Refactor `validate-arithmetic.test.ts` inline fixture table to load from sidecars OR delegate to shared discovery helper (avoid duplicate expected-path tables)
-- [ ] Task 3 — Duplicate-Zod guard (AC: 5)
-  - [ ] Create `packages/schema/src/guard/no-duplicate-zod.test.ts` per Dev Notes §Duplicate-Zod guard
-- [ ] Task 4 — Verification gate (AC: 6)
-  - [ ] `bun test packages/schema`
-  - [ ] `bunx turbo run lint typecheck test build --force`
+- [x] Task 1 — Manifest convention + inventory migration (AC: 1, 2, 3)
+  - [x] Create sidecar `.expected.json` for every valid and invalid fixture per Dev Notes §Manifest convention
+  - [x] Move top-level structural invalid fixtures into `__fixtures__/invalid/structural/` (update `document-payload.test.ts` paths)
+  - [x] Add gap fixtures listed in Dev Notes §Gap fixtures to fill (≥7 new JSON payloads + sidecars)
+  - [x] Add metadata-only document-type-mismatch sidecar under `__fixtures__/invalid/document-type-mismatch/`
+- [x] Task 2 — Table-driven runner (AC: 1, 2, 4)
+  - [x] Create `packages/schema/src/fixtures/runner.ts` — discovery, stage routing, finding extraction helpers
+  - [x] Create `packages/schema/src/fixtures/fixture-suite.test.ts` — drives all sidecar pairs; asserts pass/fail + path+code
+  - [x] Create `packages/schema/src/fixtures/sm2-coverage.test.ts` — computes and asserts SM-2 metric ≥0.90 (target 1.0)
+  - [x] Refactor `validate-arithmetic.test.ts` inline fixture table to load from sidecars OR delegate to shared discovery helper (avoid duplicate expected-path tables)
+- [x] Task 3 — Duplicate-Zod guard (AC: 5)
+  - [x] Create `packages/schema/src/guard/no-duplicate-zod.test.ts` per Dev Notes §Duplicate-Zod guard
+- [x] Task 4 — Verification gate (AC: 6)
+  - [x] `bun test packages/schema`
+  - [x] `bunx turbo run lint typecheck test build --force`
 
 ## Dev Notes
 
@@ -470,4 +470,31 @@ Composer 2.5
 
 ### Completion Notes List
 
+- consolidated 25 manifest entries (3 pass + 22 fail) under `packages/schema/__fixtures__/` with paired `.expected.json` sidecars
+- table-driven runner discovers all pairs, routes stages, and maps Zod unrecognized-key issues to JSON Pointers
+- SM-2 coverage: 22/22 failure entries include path+code (100%); all 5 payload-reachable codes exercised
+- duplicate-zod guard scans `packages/*/src/**` and `apps/*/src/**` with allowlist `packages/config/src/env/schema.ts`
+- `bun test packages/schema`: 56 pass, 0 fail
+- `bunx turbo run lint typecheck test build --force`: 36 tasks successful
+
 ### File List
+
+- `packages/schema/__fixtures__/valid/*.expected.json` (3 sidecars)
+- `packages/schema/__fixtures__/invalid/arithmetic/*.expected.json` (10 sidecars)
+- `packages/schema/__fixtures__/invalid/structural/` (10 payloads + 10 sidecars, 3 moved)
+- `packages/schema/__fixtures__/invalid/schema-version/unsupported-2025-01-01.json` + sidecar
+- `packages/schema/__fixtures__/invalid/document-type-mismatch/invoice-path-receipt-body.expected.json`
+- `packages/schema/src/fixtures/runner.ts`
+- `packages/schema/src/fixtures/fixture-suite.test.ts`
+- `packages/schema/src/fixtures/sm2-coverage.test.ts`
+- `packages/schema/src/guard/no-duplicate-zod.test.ts`
+- `packages/schema/src/document/primitives.ts` (reject ISO 4217 XXX sentinel)
+- `packages/schema/src/document/document-payload.test.ts` (structural path updates)
+- `packages/schema/src/validation/validate-arithmetic.test.ts` (sidecar-driven expectations)
+- `packages/config/src/env/env.test.ts` (drop direct zod import for AD-1 guard)
+- `_bmad-output/implementation-artifacts/2-6-shared-validation-fixture-test-suite.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+### Change Log
+
+- 2026-07-20: shared validation fixture suite with sidecar manifest, SM-2 metric, and duplicate-zod guard (Epic 2 story 2.6)

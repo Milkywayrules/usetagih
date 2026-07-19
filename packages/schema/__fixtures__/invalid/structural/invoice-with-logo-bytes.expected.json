@@ -1,0 +1,8 @@
+{
+	"outcome": "fail",
+	"stage": "structural",
+	"expected": {
+		"path": "/branding/logoBytes",
+		"code": "VALIDATION_FAILED"
+	}
+}

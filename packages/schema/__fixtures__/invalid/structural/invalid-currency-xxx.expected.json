@@ -1,0 +1,8 @@
+{
+	"outcome": "fail",
+	"stage": "structural",
+	"expected": {
+		"path": "/currency",
+		"code": "VALIDATION_FAILED"
+	}
+}

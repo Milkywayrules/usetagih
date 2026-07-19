@@ -1,0 +1,8 @@
+{
+	"outcome": "fail",
+	"stage": "structural",
+	"expected": {
+		"path": "/issuedAt",
+		"code": "VALIDATION_FAILED"
+	}
+}

@@ -11,8 +11,8 @@
 	"lineItems": [
 		{
 			"description": "Half-up edge",
-			"quantity": 3,
-			"unitPrice": { "amount": "0.335" },
+			"quantity": 1.005,
+			"unitPrice": { "amount": "1.00" },
 			"lineTotal": { "amount": "1.00" }
 		}
 	],

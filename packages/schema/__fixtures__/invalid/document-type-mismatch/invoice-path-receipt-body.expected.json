@@ -1,0 +1,12 @@
+{
+	"outcome": "fail",
+	"stage": "documentTypeMismatch",
+	"pathDocumentType": "invoice",
+	"body": {
+		"documentType": "receipt"
+	},
+	"expected": {
+		"path": "/documentType",
+		"code": "DOCUMENT_TYPE_MISMATCH"
+	}
+}

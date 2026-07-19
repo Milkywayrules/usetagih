@@ -1,0 +1,8 @@
+{
+	"outcome": "fail",
+	"stage": "business",
+	"expected": {
+		"path": "/lineItems/1/lineTotal",
+		"code": "LINE_TOTAL_MISMATCH"
+	}
+}

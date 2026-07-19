@@ -13,7 +13,10 @@ export const isoCountrySchema = z
 export const isoCurrencySchema = z
 	.string()
 	.length(3)
-	.regex(/^[A-Z]{3}$/);
+	.regex(/^[A-Z]{3}$/)
+	.refine((code) => code !== "XXX", {
+		message: "XXX is not a supported ISO 4217 currency code",
+	});
 
 export const cssHexColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
 

@@ -1,0 +1,8 @@
+{
+	"outcome": "fail",
+	"stage": "business",
+	"expected": {
+		"path": "/lineItems/0/unitPrice",
+		"code": "VALIDATION_FAILED"
+	}
+}

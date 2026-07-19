@@ -1,0 +1,8 @@
+{
+	"outcome": "fail",
+	"stage": "structural",
+	"expected": {
+		"path": "/paidAt",
+		"code": "VALIDATION_FAILED"
+	}
+}

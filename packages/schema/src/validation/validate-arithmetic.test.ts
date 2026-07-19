@@ -4,11 +4,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DocumentPayloadSchema } from "../document/document-payload";
 import { quantitySchema } from "../document/primitives";
-import {
-	LINE_TOTAL_MISMATCH_CODE,
-	TAX_TOTAL_MISMATCH_CODE,
-	VALIDATION_FAILED_CODE,
-} from "./codes";
+import { discoverFixturePairs } from "../fixtures/runner";
+import { VALIDATION_FAILED_CODE } from "./codes";
 import { validateDocumentPayloadArithmetic } from "./validate-arithmetic";
 
 const testDir = dirname(fileURLToPath(import.meta.url));
@@ -110,68 +107,30 @@ test("invoice-modern-wrong-total fails grand total check", () => {
 	);
 });
 
-const arithmeticFailureFixtures = [
-	{
-		path: "__fixtures__/invalid/arithmetic/line-total-mismatch-usd.json",
-		expectedPath: "/lineItems/0/lineTotal",
-		expectedCode: LINE_TOTAL_MISMATCH_CODE,
-	},
-	{
-		path: "__fixtures__/invalid/arithmetic/line-total-half-up-edge.json",
-		expectedPath: "/lineItems/0/lineTotal",
-		expectedCode: LINE_TOTAL_MISMATCH_CODE,
-	},
-	{
-		path: "__fixtures__/invalid/arithmetic/tax-total-mismatch.json",
-		expectedPath: "/totals/taxTotal",
-		expectedCode: TAX_TOTAL_MISMATCH_CODE,
-	},
-	{
-		path: "__fixtures__/invalid/arithmetic/subtotal-mismatch.json",
-		expectedPath: "/totals/subtotal",
-		expectedCode: VALIDATION_FAILED_CODE,
-	},
-	{
-		path: "__fixtures__/invalid/arithmetic/grand-total-mismatch-tax-exclusive.json",
-		expectedPath: "/totals/grandTotal",
-		expectedCode: VALIDATION_FAILED_CODE,
-	},
-	{
-		path: "__fixtures__/invalid/arithmetic/grand-total-mismatch-tax-inclusive.json",
-		expectedPath: "/totals/grandTotal",
-		expectedCode: VALIDATION_FAILED_CODE,
-	},
-	{
-		path: "__fixtures__/invalid/arithmetic/discount-exceeds-subtotal.json",
-		expectedPath: "/discount",
-		expectedCode: VALIDATION_FAILED_CODE,
-	},
-	{
-		path: "__fixtures__/invalid/arithmetic/jpy-fractional-line-total.json",
-		expectedPath: "/lineItems/0/lineTotal",
-		expectedCode: VALIDATION_FAILED_CODE,
-	},
-	{
-		path: "__fixtures__/invalid/arithmetic/usd-three-decimal-unit-price.json",
-		expectedPath: "/lineItems/0/unitPrice",
-		expectedCode: VALIDATION_FAILED_CODE,
-	},
-	{
-		path: "__fixtures__/invalid/arithmetic/multi-line-second-item-mismatch.json",
-		expectedPath: "/lineItems/1/lineTotal",
-		expectedCode: LINE_TOTAL_MISMATCH_CODE,
-	},
-] as const;
+const fixturesRoot = join(packageRoot, "__fixtures__");
+const arithmeticFailureFixtures = discoverFixturePairs(fixturesRoot).filter(
+	(pair) =>
+		pair.expected.outcome === "fail" && pair.expected.stage === "business",
+);
 
 test("arithmetic failure fixtures emit expected path and code", () => {
+	expect(arithmeticFailureFixtures.length).toBe(10);
+
 	for (const fixture of arithmeticFailureFixtures) {
-		const payload = DocumentPayloadSchema.parse(loadJson(fixture.path));
+		if (
+			fixture.expected.outcome !== "fail" ||
+			fixture.expected.stage !== "business"
+		) {
+			continue;
+		}
+
+		const payload = DocumentPayloadSchema.parse(fixture.payload);
 		const findings = validateDocumentPayloadArithmetic(payload);
 		expect(findings.length).toBeGreaterThan(0);
 		expect(findings).toContainEqual(
 			expect.objectContaining({
-				path: fixture.expectedPath,
-				code: fixture.expectedCode,
+				path: fixture.expected.expected.path,
+				code: fixture.expected.expected.code,
 			}),
 		);
 	}

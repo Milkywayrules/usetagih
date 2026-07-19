@@ -1,0 +1,8 @@
+{
+	"outcome": "fail",
+	"stage": "schemaVersion",
+	"expected": {
+		"path": "/schemaVersion",
+		"code": "UNSUPPORTED_SCHEMA_VERSION"
+	}
+}

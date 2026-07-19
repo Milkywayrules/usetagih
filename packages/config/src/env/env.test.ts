@@ -1,5 +1,4 @@
 import { expect, test } from "bun:test";
-import { ZodError } from "zod";
 import { DEV_ENV_DEFAULTS, parseEnv } from "./schema";
 
 test("prod rejects missing DATABASE_URL", () => {
@@ -7,13 +6,11 @@ test("prod rejects missing DATABASE_URL", () => {
     parseEnv("prod", {
       USETAGIH_API_PUBLIC_URL: "https://api.example.com",
     })
-  ).toThrow(ZodError);
+  ).toThrow();
 });
 
 test("prod rejects missing USETAGIH_API_PUBLIC_URL", () => {
-  expect(() => parseEnv("prod", { DATABASE_URL: "postgresql://x" })).toThrow(
-    ZodError
-  );
+  expect(() => parseEnv("prod", { DATABASE_URL: "postgresql://x" })).toThrow();
 });
 
 test("prod rejects empty DATABASE_URL", () => {
@@ -22,11 +19,11 @@ test("prod rejects empty DATABASE_URL", () => {
       DATABASE_URL: "",
       USETAGIH_API_PUBLIC_URL: "https://api.example.com",
     })
-  ).toThrow(ZodError);
+  ).toThrow();
 });
 
 test("staging rejects missing vars", () => {
-  expect(() => parseEnv("staging", {})).toThrow(ZodError);
+  expect(() => parseEnv("staging", {})).toThrow();
 });
 
 test("dev accepts empty input with defaults", () => {

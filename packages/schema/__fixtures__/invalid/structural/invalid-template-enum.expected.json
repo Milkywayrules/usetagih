@@ -1,0 +1,8 @@
+{
+	"outcome": "fail",
+	"stage": "structural",
+	"expected": {
+		"path": "/template",
+		"code": "VALIDATION_FAILED"
+	}
+}

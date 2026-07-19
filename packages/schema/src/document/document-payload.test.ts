@@ -57,7 +57,7 @@ test("parses render invoice-modern-basic fixture", () => {
 test("rejects branding.logoBytes under strict parse", () => {
 	expect(() =>
 		DocumentPayloadSchema.parse(
-			loadJson("__fixtures__/invalid/invoice-with-logo-bytes.json"),
+			loadJson("__fixtures__/invalid/structural/invoice-with-logo-bytes.json"),
 		),
 	).toThrow();
 });
@@ -65,13 +65,13 @@ test("rejects branding.logoBytes under strict parse", () => {
 test("rejects cross-type fields on wrong document variants", () => {
 	expect(() =>
 		DocumentPayloadSchema.parse(
-			loadJson("__fixtures__/invalid/receipt-with-due-at.json"),
+			loadJson("__fixtures__/invalid/structural/receipt-with-due-at.json"),
 		),
 	).toThrow();
 
 	expect(() =>
 		DocumentPayloadSchema.parse(
-			loadJson("__fixtures__/invalid/invoice-with-paid-at.json"),
+			loadJson("__fixtures__/invalid/structural/invoice-with-paid-at.json"),
 		),
 	).toThrow();
 });

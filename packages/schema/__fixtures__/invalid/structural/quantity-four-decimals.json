@@ -1,0 +1,38 @@
+{
+	"schemaVersion": "2026-07-20",
+	"documentType": "invoice",
+	"template": "modern",
+	"documentNumber": "INV-MIN-001",
+	"issuedAt": "2026-07-20",
+	"dueAt": "2026-08-20",
+	"currency": "USD",
+	"seller": {
+		"name": "Seller Co"
+	},
+	"buyer": {
+		"name": "Buyer Co"
+	},
+	"lineItems": [
+		{
+			"description": "Minimal line",
+			"quantity": 1.2345,
+			"unitPrice": {
+				"amount": "9.99"
+			},
+			"lineTotal": {
+				"amount": "99.90"
+			}
+		}
+	],
+	"totals": {
+		"subtotal": {
+			"amount": "99.90"
+		},
+		"taxTotal": {
+			"amount": "8.24"
+		},
+		"grandTotal": {
+			"amount": "108.14"
+		}
+	}
+}

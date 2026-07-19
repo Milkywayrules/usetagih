@@ -1,0 +1,8 @@
+{
+	"outcome": "fail",
+	"stage": "business",
+	"expected": {
+		"path": "/totals/grandTotal",
+		"code": "VALIDATION_FAILED"
+	}
+}

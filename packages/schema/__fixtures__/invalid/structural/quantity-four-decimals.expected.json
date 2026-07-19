@@ -1,0 +1,8 @@
+{
+	"outcome": "fail",
+	"stage": "structural",
+	"expected": {
+		"path": "/lineItems/0/quantity",
+		"code": "VALIDATION_FAILED"
+	}
+}

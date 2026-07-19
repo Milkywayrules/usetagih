@@ -1,0 +1,8 @@
+{
+	"outcome": "fail",
+	"stage": "business",
+	"expected": {
+		"path": "/discount",
+		"code": "VALIDATION_FAILED"
+	}
+}
