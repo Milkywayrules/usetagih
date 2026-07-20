@@ -1,7 +1,7 @@
-import { z } from "zod";
 import { DOCUMENT_TYPES, DocumentTypeSchema } from "../document/document-type";
 import type { Template } from "../document/primitives";
 import { schemaVersionSchema, templateSchema } from "../document/primitives";
+import { z } from "../zod.js";
 import type { SchemaVersion } from "./constants";
 import {
 	CURRENT_SCHEMA_VERSION,

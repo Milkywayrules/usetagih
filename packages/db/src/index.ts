@@ -1,5 +1,7 @@
 export type { RenderRepo } from "@usetagih/core";
+export { auth, authConfig } from "./auth/index.js";
 export { createDb, type Db, getDb, probeDb } from "./client.js";
+export { createAuditRepo } from "./repositories/audit-repo.js";
 export { createRenderRepo } from "./repositories/render-repo.js";
 export type { ApiKey, NewApiKey } from "./schema/api-keys.js";
 export type { AuditEvent, NewAuditEvent } from "./schema/audit-events.js";

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "../zod.js";
 import type { ErrorCode } from "./codes";
 import { ERROR_CODES } from "./codes";
 import { type ApiErrorDetail, ApiErrorDetailSchema } from "./detail";

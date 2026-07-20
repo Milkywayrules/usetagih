@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "../zod.js";
 import { cssHexColorSchema, httpsUrlSchema } from "./primitives";
 
 export const BrandingSchema = z

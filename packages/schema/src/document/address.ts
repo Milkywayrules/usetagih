@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "../zod.js";
 import { isoCountrySchema } from "./primitives";
 
 export const AddressSchema = z

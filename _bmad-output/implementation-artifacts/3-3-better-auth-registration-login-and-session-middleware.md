@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.3: better-auth registration, login, and session middleware
 
-Status: ready-for-dev
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -32,48 +32,48 @@ so that I can access the web app securely (FR-21, AD-7).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Extend env schema (AC: 9)
-  - [ ] Add auth vars to `packages/config/src/env/schema.ts` per Dev Notes §Env schema
-  - [ ] Extend `EnvStub` type and update `packages/config/src/env/env.test.ts`
-  - [ ] Create `apps/api/src/env.ts` calling `parseEnv` / api-specific parse helper
-- [ ] Task 2 — Runtime auth config + db audit adapter (AC: 1, 4, 8)
-  - [ ] Extend `packages/db/src/auth/auth.config.ts` per Dev Notes §Auth config extensions (export runtime `auth` — do not break CLI schema generation)
-  - [ ] Re-export `auth`, `authConfig` from `packages/db/src/index.ts`
-  - [ ] Implement `packages/db/src/repositories/audit-repo.ts` (`createAuditRepo` implements `@usetagih/core` `AuditRepo`)
-  - [ ] Export `createAuditRepo` from `packages/db`
-- [ ] Task 3 — Elysia app scaffold (AC: 1, 2, 7)
-  - [ ] Pin `elysia@1.4.29` + dependencies in `apps/api/package.json`
-  - [ ] Implement `apps/api/src/app.ts` — `createApp(deps)` factory (testable, no listen)
-  - [ ] Implement `apps/api/src/auth/mount.ts` — `.mount(auth.handler)` + session macro per Dev Notes §Elysia mount pattern
-  - [ ] Implement `apps/api/src/routes/health.ts` — `GET /health` → `{ status: "ok" }`
-  - [ ] Replace stub `apps/api/src/index.ts` — parse env, `createApp`, `listen` on `PORT` default 3001
-- [ ] Task 4 — Sign-up with mandatory workspace (AC: 4)
-  - [ ] Implement `apps/api/src/routes/auth/sign-up-with-workspace.ts` per Dev Notes §Workspace bootstrap mechanism
-  - [ ] Register route **before** `.mount(auth.handler)` so it is not swallowed
-  - [ ] Insert `workspace_settings` with `tier: "trial"` in same flow
-  - [ ] Append audit `signup` + `workspace.bootstrap` via `AuditRepo`
-- [ ] Task 5 — Session + workspace middleware (AC: 2, 5, 6, 7)
-  - [ ] Implement `apps/api/src/middleware/session-auth.ts`
-  - [ ] Implement `apps/api/src/middleware/workspace-guard.ts`
-  - [ ] Implement `apps/api/src/routes/v1/renders.stub.ts` — guarded `GET /v1/renders`
-  - [ ] Wire middleware chain on `/v1/*` group in `createApp`
-- [ ] Task 6 — Login audit hook (AC: 8)
-  - [ ] Add better-auth hook (e.g. `hooks.after` on sign-in/email sign-in) calling `AuditRepo.append({ action: "login", workspaceId: null, ... })`
-- [ ] Task 7 — Organization hardening (AC: 3)
-  - [ ] Apply invitation-blocking measures in `auth.config.ts` per Dev Notes §Invitation-blocking measures
-  - [ ] Verify `teams: { enabled: false }` unchanged from Story 3.1
-- [ ] Task 8 — Schema error code (AC: 5, 6)
-  - [ ] Add `WORKSPACE_REQUIRED` to `packages/schema/src/errors/codes.ts` + `http-status.ts` (403)
-  - [ ] Export from `packages/schema` index; update codes test
-- [ ] Task 9 — Integration tests (AC: 3, 4, 8, 10)
-  - [ ] Create `apps/api/src/integration/auth.integration.test.ts` per Dev Notes §Integration test harness
-  - [ ] Second-member rejection matrix — one test per mutation route
-  - [ ] Skip suite when `probeDb()` false (document header)
-- [ ] Task 10 — Verification gate (AC: 11)
-  - [ ] `docker compose -f docker/compose.yml up -d postgres` (if not running)
-  - [ ] `bun run --filter @usetagih/db migrate`
-  - [ ] `bun test apps/api`
-  - [ ] `bunx turbo run lint typecheck test build --force`
+- [x] Task 1 — Extend env schema (AC: 9)
+  - [x] Add auth vars to `packages/config/src/env/schema.ts` per Dev Notes §Env schema
+  - [x] Extend `EnvStub` type and update `packages/config/src/env/env.test.ts`
+  - [x] Create `apps/api/src/env.ts` calling `parseEnv` / api-specific parse helper
+- [x] Task 2 — Runtime auth config + db audit adapter (AC: 1, 4, 8)
+  - [x] Extend `packages/db/src/auth/auth.config.ts` per Dev Notes §Auth config extensions (export runtime `auth` — do not break CLI schema generation)
+  - [x] Re-export `auth`, `authConfig` from `packages/db/src/index.ts`
+  - [x] Implement `packages/db/src/repositories/audit-repo.ts` (`createAuditRepo` implements `@usetagih/core` `AuditRepo`)
+  - [x] Export `createAuditRepo` from `packages/db`
+- [x] Task 3 — Elysia app scaffold (AC: 1, 2, 7)
+  - [x] Pin `elysia@1.4.29` + dependencies in `apps/api/package.json`
+  - [x] Implement `apps/api/src/app.ts` — `createApp(deps)` factory (testable, no listen)
+  - [x] Implement `apps/api/src/auth/mount.ts` — `.mount(auth.handler)` + session macro per Dev Notes §Elysia mount pattern
+  - [x] Implement `apps/api/src/routes/health.ts` — `GET /health` → `{ status: "ok" }`
+  - [x] Replace stub `apps/api/src/index.ts` — parse env, `createApp`, `listen` on `PORT` default 3001
+- [x] Task 4 — Sign-up with mandatory workspace (AC: 4)
+  - [x] Implement `apps/api/src/routes/auth/sign-up-with-workspace.ts` per Dev Notes §Workspace bootstrap mechanism
+  - [x] Register route **before** `.mount(auth.handler)` so it is not swallowed
+  - [x] Insert `workspace_settings` with `tier: "trial"` in same flow
+  - [x] Append audit `signup` + `workspace.bootstrap` via `AuditRepo`
+- [x] Task 5 — Session + workspace middleware (AC: 2, 5, 6, 7)
+  - [x] Implement `apps/api/src/middleware/session-auth.ts`
+  - [x] Implement `apps/api/src/middleware/workspace-guard.ts`
+  - [x] Implement guarded `GET /v1/renders` stub returning 501 `NOT_IMPLEMENTED` literal
+  - [x] Wire middleware chain on `/v1/*` group in `createApp`
+- [x] Task 6 — Login audit hook (AC: 8)
+  - [x] Add better-auth hook (e.g. `hooks.after` on sign-in/email sign-in) calling `AuditRepo.append({ action: "login", workspaceId: null, ... })`
+- [x] Task 7 — Organization hardening (AC: 3)
+  - [x] Apply invitation-blocking measures in `auth.config.ts` per Dev Notes §Invitation-blocking measures
+  - [x] Verify `teams: { enabled: false }` unchanged from Story 3.1
+- [x] Task 8 — Schema error code (AC: 5, 6)
+  - [x] Add `WORKSPACE_REQUIRED` to `packages/schema/src/errors/codes.ts` + `http-status.ts` (403)
+  - [x] Export from `packages/schema` index; update codes test
+- [x] Task 9 — Integration tests (AC: 3, 4, 8, 10)
+  - [x] Create `apps/api/src/integration/auth.integration.test.ts` per Dev Notes §Integration test harness
+  - [x] Second-member rejection matrix — one test per mutation route
+  - [x] Skip suite when `probeDb()` false (document header)
+- [x] Task 10 — Verification gate (AC: 11)
+  - [x] `docker compose -f docker/compose.yml up -d postgres` (if not running)
+  - [x] `bun run --filter @usetagih/db migrate`
+  - [x] `bun test apps/api`
+  - [x] `bunx turbo run lint typecheck test build --force`
 
 ## Dev Notes
 
@@ -561,10 +561,82 @@ bunx turbo run lint typecheck test build --force
 
 ### Agent Model Used
 
-Composer 2.5 (create-story headless)
+Composer 2.5 (dev-story headless)
 
 ### Debug Log References
 
+- better-auth `beforeAddMember` hook fires during owner bootstrap on `createOrganization`; unconditional throw blocked org creation — hook now rejects only when member count ≥ 1
+- `auth.api` multi-step signup requires explicit `Cookie` request header jar (`Set-Cookie` from `returnHeaders` is not auto-forwarded)
+- password reset route is `/api/auth/request-password-reset` (not `/forget-password`) in better-auth 1.6.23
+- `add-member` is server-only in better-auth; matrix covers it via `auth.api.addMember`
+
 ### Completion Notes List
 
+- Extended env schema with `BETTER_AUTH_*`, optional GitHub OAuth in dev, required in staging/prod
+- Runtime auth config: org limits, invitation hooks, login audit `hooks.after`, `afterCreateOrganization` for `workspace_settings` + bootstrap audit
+- `createAuditRepo` implements `@usetagih/core` `AuditRepo` with nullable-workspace enforcement
+- Replaced API stub with Elysia `createApp` factory, better-auth mount, sign-up-with-workspace composite route, workspace guard, `/v1/renders` 501 stub
+- Added `WORKSPACE_REQUIRED` error code (403)
+- Integration suite: 7 cases against compose Postgres via `fetch` + `probeDb` skip pattern
+- Verification: migrate ok; `bun test apps/api` 18 pass (with postgres); packages/db 5 pass; packages/config 9 pass; turbo lint/typecheck/test/build 36/36 pass
+
 ### File List
+
+- `_bmad-output/implementation-artifacts/3-3-better-auth-registration-login-and-session-middleware.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `apps/api/package.json`
+- `apps/api/src/app.ts`
+- `apps/api/src/auth/mount.ts`
+- `apps/api/src/env.ts`
+- `apps/api/src/index.ts`
+- `apps/api/src/index.test.ts`
+- `apps/api/src/integration/auth.integration.test.ts`
+- `apps/api/src/middleware/session-auth.ts`
+- `apps/api/src/middleware/workspace-guard.ts`
+- `apps/api/src/routes/auth/sign-up-with-workspace.ts`
+- `apps/api/src/routes/health.ts`
+- `bun.lock`
+- `packages/config/src/env/env.test.ts`
+- `packages/config/src/env/schema.ts`
+- `packages/db/src/auth/auth.config.ts`
+- `packages/db/src/index.ts`
+- `packages/db/src/repositories/audit-repo.ts`
+- `packages/schema/src/errors/codes.test.ts`
+- `packages/schema/src/errors/codes.ts`
+- `packages/schema/src/errors/http-status.ts`
+- `packages/schema/src/guard/no-duplicate-zod.test.ts`
+- `packages/schema/src/index.ts`
+
+## Change Log
+
+- 2026-07-20: Story 3.3 — better-auth registration/login, session middleware, mandatory workspace bootstrap, integration tests
+- 2026-07-20: Code review — workspace guard membership check, password-reset noop, probe tests; status → done
+
+### Review Findings
+
+**Verdict: APPROVED** (after review fixes in follow-up commit)
+
+#### Priority adjudication (dev-reported deviations)
+
+| Item | Verdict | Notes |
+| --- | --- | --- |
+| (a) `beforeAddMember` count guard | **SOUND** | Unconditional throw blocks owner bootstrap on `createOrganization` (hook fires before first member insert). Count ≥ 1 guard equivalent for add-member paths. `membershipLimit: 1` enforced server-side in better-auth 1.6.23 `crud-members.mjs` before hook runs — probe test added. |
+| (b) Cookie jar forwarding | **SOUND** | `AuthCookieJar` is per-request (instantiated per handler call). Integration test confirms `activeOrganizationId` on final session. Partial failure (user created, org fails) strands account without workspace → recovery via `POST /api/auth/organization/create` + set-active; documented in route comment. |
+| (c) `afterCreateOrganization` hook | **SOUND with caveat** | Lazy `getDb()`/`getAuditRepo()` avoids circular imports. Hook runs after org+member persist — settings insert failure leaves org without `workspace_settings` (better-auth does not rollback). Review reordered settings-before-audit so audit failure cannot drop tier row. Documented latent risk for direct `organization/create` hook throws. |
+| (d) Login audit hook | **SOUND** | Failed sign-in returns no `returned.user.id` — no audit row (probe test added). GitHub OAuth sign-in **not audited** — AC-8 requires email login only; gap documented for Story 3.14+. |
+| (e) Password reset route | **SOUND (dev correct)** | better-auth 1.6.23 route is `/request-password-reset` (not `/forget-password`). Added no-op `sendResetPassword` so route returns 200 in dev/tests. |
+| (f) `add-member` via `auth.api` | **SOUND** | `createAuthEndpoint.serverOnly` in better-auth 1.6.23 — no HTTP surface. Matrix correctly uses `auth.api.addMember`. |
+
+#### Findings triage
+
+- [x] [Review][Patch] Workspace guard must verify `activeOrganizationId` is in user's org list [`apps/api/src/middleware/workspace-guard.ts`] — fixed (defense in depth; better-auth validates on set-active)
+- [x] [Review][Patch] Password reset returned 400 without `sendResetPassword` [`packages/db/src/auth/auth.config.ts`] — fixed (no-op stub)
+- [x] [Review][Patch] Probe tests for tenant isolation, failed-login audit, membershipLimit [`apps/api/src/integration/auth.integration.test.ts`] — added
+- [x] [Review][Defer] `afterCreateOrganization` throw leaves org without settings if insert fails — deferred; better-auth hook runs post-commit; monitor in 3.18 workspace CRUD
+- [x] [Review][Defer] GitHub OAuth login audit not captured — deferred; AC-8 scoped to email/password; wire in 3.14+
+- [x] [Review][Defer] `POST /organization/create-team` not in matrix — deferred; teams disabled returns route omission; low risk
+
+#### Verification (review run 2026-07-20)
+
+- `bun test apps/api`: **24 pass**, 0 fail (with compose Postgres)
+- `bunx turbo run lint typecheck test build --force`: **36/36** tasks successful

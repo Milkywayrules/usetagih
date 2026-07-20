@@ -63,6 +63,7 @@ export {
 	RATE_LIMITED_CODE,
 	UNAUTHORIZED_CODE,
 	UNSUPPORTED_SCHEMA_VERSION_CODE,
+	WORKSPACE_REQUIRED_CODE,
 } from "./errors/codes";
 export {
 	type ApiErrorDetail,

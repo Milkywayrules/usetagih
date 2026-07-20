@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "../zod.js";
 import { InvoicePayloadSchema } from "./invoice-payload";
 import { QuotationPayloadSchema } from "./quotation-payload";
 import { ReceiptPayloadSchema } from "./receipt-payload";

@@ -1,12 +1,12 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
-import type { z } from "zod";
 import type { DocumentType } from "../document/document-type";
 import { checkDocumentTypeMismatch } from "../document/document-type-mismatch";
 import type { DOCUMENT_TYPE_MISMATCH_CODE, ErrorCode } from "../errors/codes";
 import { zodIssueToDetail } from "../errors/detail";
 import type { ValidateDocumentPayloadResult } from "../validation/validate-document-payload";
 import { validateDocumentPayload } from "../validation/validate-document-payload";
+import type { z } from "../zod.js";
 
 export type FixtureExpectedPass = { outcome: "pass" };
 

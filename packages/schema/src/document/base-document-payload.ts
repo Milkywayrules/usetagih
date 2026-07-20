@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { CURRENT_SCHEMA_VERSION } from "../version/constants";
+import { z } from "../zod.js";
 import { BrandingSchema } from "./branding";
 import { LineItemSchema } from "./line-item";
 import { MetadataSchema } from "./metadata";

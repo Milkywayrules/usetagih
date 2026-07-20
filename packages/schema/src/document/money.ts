@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "../zod.js";
 import { moneyAmountSchema } from "./primitives";
 
 export const MoneySchema = z

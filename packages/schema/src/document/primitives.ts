@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { CURRENT_SCHEMA_VERSION } from "../version/constants";
+import { z } from "../zod.js";
 
 export const moneyAmountSchema = z.string().regex(/^(?:0|[1-9]\d*)(?:\.\d+)?$/);
 

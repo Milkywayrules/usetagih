@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "../zod.js";
 import { baseDocumentPayloadShape } from "./base-document-payload";
 import { PartySchema } from "./party";
 import { isoDateSchema } from "./primitives";
