@@ -2,7 +2,14 @@
  * Integration tests for session bearer token exchange.
  * Skipped when compose Postgres is unreachable (probeDb false).
  */
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+	afterAll,
+	beforeAll,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { createDb, probeDb } from "@usetagih/db";
 import { SESSION_TOKEN_SCOPES } from "@usetagih/schema";
 import { createApp } from "../app.js";
@@ -18,9 +25,8 @@ import {
 } from "../middleware/csrf.js";
 
 const postgresUp = await probeDb();
-const describeIntegration = postgresUp
-	? (name: string, fn: () => void) => describe(name, fn, { timeout: 15_000 })
-	: describe.skip;
+if (postgresUp) setDefaultTimeout(15_000);
+const describeIntegration = postgresUp ? describe : describe.skip;
 const testEnv = parseApiEnv();
 
 class AuthCookieJar {
