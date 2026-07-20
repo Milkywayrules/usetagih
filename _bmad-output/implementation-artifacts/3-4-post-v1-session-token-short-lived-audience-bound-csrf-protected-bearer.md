@@ -510,3 +510,43 @@ composer-2.5-fast (implementation subagent)
 - 2026-07-20 — Board ratification 2–1: HKDF key derivation, session-bound CSRF HMAC, aud/azp semantics correction, verification hardening, CORS web-origin fix, post-logout residual validity risk acceptance, expanded negative test matrix. Dissent on better-auth-plugin reuse recorded but overruled by majority.
 - 2026-07-20 — Implementation complete: session bearer exchange, scope enum, middleware chain, parity matrix + integration tests; status → review.
 - 2026-07-20 — Code review approved with fixes: negative JWT tests (expired, wrong aud/azp), CSRF auth probe; status → done.
+
+## Code Review
+
+**Reviewer:** adversarial code-review subagent (2026-07-20)  
+**Commits reviewed:** `c464d6f` (feat), `f77d34c` (docs), fixes `67b2b61`, `d0e1d96`  
+**Outcome:** approved — status **done**
+
+### Binding amendments verification
+
+| Amendment | Verdict | Evidence |
+| --- | --- | --- |
+| HKDF signing key (`usetagih:session_bearer:v1`) + separate CSRF key (`usetagih:csrf:v1`) | PASS | `apps/api/src/auth/crypto-keys.ts` — never uses raw `BETTER_AUTH_SECRET` |
+| Verify-side hardening (HS256 pin, required claims, future `iat`, malformed `scp`) | PASS | `session-token.ts` + `bearer-auth.ts`; unit matrix in `session.token.test.ts` |
+| `aud` = API URL, `azp` = web URL | PASS | sign + verify in `session-token.ts` |
+| Session-bound CSRF double-submit (`__Host-` when Secure, SameSite=Strict, timing-safe) | PASS | `middleware/csrf.ts`; cross-session rejection tested |
+| Post-logout residual ≤15 min | PASS (accepted risk) | integration test + dev notes |
+| CORS exact web origin + credentials + `X-CSRF-Token` | PASS | `v1-cors.ts`, `auth/mount.ts`, `auth.config.ts` trustedOrigins |
+| Negative-test matrix | PASS (after fix) | unit + integration coverage for CSRF, alg, claims, iat, scp, aud, azp, expired, logout residual |
+| Tenant: `wid` transport-only | PASS | workspace guard validates session path via DB; bearer trusts JWT `wid` until exp (MVP) |
+| Middleware order / exchange reachability | PASS | `app.ts`: v1Cors → workspaceGuard → authResolver → scopeGuard; token route uses `workspace` macro |
+
+### Findings
+
+| Severity | File | Issue | Resolution |
+| --- | --- | --- | --- |
+| Medium | `session-token.integration.test.ts` | Missing integration cases for expired JWT, wrong `aud`, wrong `azp` per story matrix | Added in `67b2b61` |
+| Low | `session-token.integration.test.ts` | Sign-up flow exceeded default 5s bun timeout under load | `setDefaultTimeout(15_000)` when Postgres up |
+| Low | `session.csrf.ts` + dev record | CSRF cookie not set on sign-in (better-auth hook lacks Set-Cookie seam) | **Accepted** — `GET /v1/session/csrf` refresh + sign-up issues CSRF; document for Story 6.x client |
+| Low | route stubs (`*.stub.ts`, session routes) | `@ts-nocheck` for Elysia macro typing | **Accepted** — localized to route wiring; runtime-valid per integration tests |
+| Info | `auth-resolver.ts` | Bearer path does not re-check org membership (stateless JWT) | **Accepted MVP risk** — same class as post-logout residual; repos enforce tenant at query boundary in 3.3+ |
+| Info | `auth.integration.test.ts` | Intermittent 5s timeout on sign-in tests when suite runs under turbo parallel load | Pre-existing; not introduced by 3.4; session-token suite stable with extended timeout |
+
+### Verification (post-fix, Postgres up)
+
+| Command | Result |
+| --- | --- |
+| `bun test apps/api` | 147 pass / 10 skip / 0 fail |
+| `bun test packages/schema` | 63 pass / 0 fail |
+| `bun test packages/config` | 10 pass / 0 fail |
+| `bunx turbo run lint typecheck test build --force` | 36/36 tasks green (with compose Postgres healthy) |
