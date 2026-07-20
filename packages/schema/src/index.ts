@@ -95,6 +95,12 @@ export {
 	type FixturePair,
 } from "./fixtures/runner";
 export { generateOpenApiComponents } from "./openapi/generate.js";
+export { UpdateBrandingBodySchema } from "./settings/branding-settings";
+export type { BusinessIdentity } from "./settings/business-identity";
+export {
+	BusinessIdentitySchema,
+	UpdateBusinessIdentityBodySchema,
+} from "./settings/business-identity";
 export {
 	LINE_TOTAL_MISMATCH_CODE,
 	TAX_TOTAL_MISMATCH_CODE,

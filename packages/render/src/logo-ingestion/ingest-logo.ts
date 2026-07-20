@@ -10,6 +10,8 @@ export type IngestLogoResult =
 
 export type IngestLogoDeps = FetchLogoDeps;
 
+export const MAX_LOGO_BYTES = 2_097_152;
+
 const CONTENT_EXT: Record<LogoContentType, string> = {
 	"image/png": "png",
 	"image/jpeg": "jpg",
@@ -23,6 +25,56 @@ export function buildLogoStorageKey(
 ): string {
 	const ext = CONTENT_EXT[contentType];
 	return `logos/${workspaceId}/${logoChecksum}.${ext}`;
+}
+
+export async function ingestLogoFromBytes(
+	bytesInput: Uint8Array | Buffer,
+	workspaceId: string,
+): Promise<IngestLogoResult> {
+	const bytes = Buffer.isBuffer(bytesInput)
+		? bytesInput
+		: Buffer.from(bytesInput);
+
+	if (bytes.byteLength === 0) {
+		return { ok: false, reason: "logo file is empty" };
+	}
+	if (bytes.byteLength > MAX_LOGO_BYTES) {
+		return {
+			ok: false,
+			reason: `logo exceeds maximum size of ${MAX_LOGO_BYTES} bytes`,
+		};
+	}
+
+	let bytesToPersist = bytes;
+	const sniff = sniffLogoContentType(bytesToPersist);
+	if (!sniff.ok) {
+		return { ok: false, reason: sniff.reason };
+	}
+
+	if (sniff.contentType === "image/svg+xml") {
+		const sanitized = sanitizeSvgLogo(bytesToPersist);
+		if (!sanitized.ok) {
+			return { ok: false, reason: sanitized.errors.join("; ") };
+		}
+		bytesToPersist = Buffer.from(sanitized.sanitized);
+	}
+
+	const logoChecksum = computeLogoChecksum(bytesToPersist);
+	const storageKey = buildLogoStorageKey(
+		workspaceId,
+		logoChecksum,
+		sniff.contentType,
+	);
+
+	return {
+		ok: true,
+		logo: {
+			bytes: bytesToPersist,
+			logoChecksum,
+			contentType: sniff.contentType,
+			storageKey,
+		},
+	};
 }
 
 export async function ingestLogoFromUrl(

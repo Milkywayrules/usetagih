@@ -49,6 +49,7 @@ import { createRendersRoutes } from "./routes/v1/renders.js";
 import { createSchemasRoutes } from "./routes/v1/schemas.js";
 import { createSessionCsrfRoute } from "./routes/v1/session.csrf.js";
 import { createSessionTokenRoute } from "./routes/v1/session.token.js";
+import { createSettingsRoutes } from "./routes/v1/settings.js";
 import { createShareRoutes } from "./routes/v1/share.js";
 import { createValidateByDocumentTypeRoutes } from "./routes/v1/validate-by-document-type.js";
 import { createWebhooksStubRoutes } from "./routes/v1/webhooks.stub.js";
@@ -177,6 +178,13 @@ export function createApp(deps: AppDeps = {}) {
 					}),
 				)
 				.use(createAuditRoutes({ auditRepo }))
+				.use(
+					createSettingsRoutes({
+						workspaceSettingsRepo,
+						logoBlobStore: renderRuntime.logoBlobStore,
+						apiPublicUrl: env.USETAGIH_API_PUBLIC_URL,
+					}),
+				)
 				.use(createWebhooksStubRoutes())
 				.use(createV1ErrorHandler()),
 		);

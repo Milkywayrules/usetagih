@@ -5,6 +5,7 @@ export const API_SCOPES = [
 	"renders:write",
 	"webhooks:manage",
 	"audit:read",
+	"settings:write",
 ] as const;
 
 export type ApiScope = (typeof API_SCOPES)[number];
@@ -33,6 +34,9 @@ export const ROUTE_SCOPE_REQUIREMENTS = {
 	"POST /v1/quotations/render": ["renders:write"],
 	"POST /v1/receipts/render": ["renders:write"],
 	"GET /v1/audit": ["audit:read"],
+	"PATCH /v1/settings/business": ["settings:write"],
+	"PATCH /v1/settings/branding": ["settings:write"],
+	"POST /v1/settings/branding/logo": ["settings:write"],
 	"POST /v1/webhooks": ["webhooks:manage"],
 	"GET /v1/webhooks": ["webhooks:manage"],
 	"DELETE /v1/webhooks/:id": ["webhooks:manage"],

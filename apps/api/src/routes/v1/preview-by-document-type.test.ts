@@ -12,17 +12,13 @@ import {
 	createTestApiKey,
 } from "../../test-helpers/api-key.js";
 import { initTestLogger } from "../../test-helpers/evlog.js";
+import { createInMemoryWorkspaceSettingsRepo } from "../../test-helpers/workspace-settings.js";
 
 initTestLogger();
 
 const env = parseEnv("dev", { USETAGIH_DOCS_ENABLED: "false" });
 
-const trialWorkspaceSettingsRepo = {
-	getByOrganizationId: async () => ({
-		tier: "trial" as const,
-		branding: null,
-	}),
-};
+const trialWorkspaceSettingsRepo = createInMemoryWorkspaceSettingsRepo();
 
 function createMockPreviewRuntime(
 	overrides: Partial<PreviewUseCaseDeps> = {},

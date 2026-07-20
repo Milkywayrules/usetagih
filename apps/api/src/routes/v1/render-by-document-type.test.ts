@@ -23,17 +23,13 @@ import {
 	createExhaustedQuotaRenderLimitsService,
 	createTestRenderLimitsService,
 } from "../../test-helpers/render-limits.js";
+import { createInMemoryWorkspaceSettingsRepo } from "../../test-helpers/workspace-settings.js";
 
 initTestLogger();
 
 const env = parseEnv("dev", { USETAGIH_DOCS_ENABLED: "false" });
 
-const trialWorkspaceSettingsRepo = {
-	getByOrganizationId: async () => ({
-		tier: "trial" as const,
-		branding: null,
-	}),
-};
+const trialWorkspaceSettingsRepo = createInMemoryWorkspaceSettingsRepo();
 
 function createMockRenderRuntime(
 	overrides: Partial<RenderUseCaseDeps> = {},

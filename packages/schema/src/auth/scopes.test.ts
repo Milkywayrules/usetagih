@@ -11,10 +11,11 @@ test("API_SCOPES matches canonical enum", () => {
 		"renders:write",
 		"webhooks:manage",
 		"audit:read",
+		"settings:write",
 	]);
 });
 
-test("SESSION_TOKEN_SCOPES grants all four scopes", () => {
+test("SESSION_TOKEN_SCOPES grants all scopes", () => {
 	expect(SESSION_TOKEN_SCOPES).toEqual([...API_SCOPES]);
 });
 
