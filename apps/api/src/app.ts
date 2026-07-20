@@ -2,13 +2,20 @@ import type {
 	ApiKeyRepo,
 	AuditRepo,
 	IdempotencyStore,
+	RenderLimitsService,
 	RenderRepo,
+	UsageCounterRepo,
+} from "@usetagih/core";
+import {
+	createInMemoryRenderRateLimiter,
+	createRenderLimitsService,
 } from "@usetagih/core";
 import {
 	createApiKeyRepo,
 	createAuditRepo,
 	createIdempotencyStore,
 	createRenderRepo,
+	createUsageCounterRepo,
 	createWorkspaceSettingsRepo,
 	type Db,
 	getDb,
@@ -58,6 +65,8 @@ export type AppDeps = {
 	previewRuntime?: PreviewRuntimeDeps;
 	renderRuntime?: RenderRuntimeDeps;
 	renderRepo?: RenderRepo;
+	renderLimits?: RenderLimitsService;
+	usageCounterRepo?: UsageCounterRepo;
 	resolveAuditUserId?: (
 		workspaceId: string,
 		userId?: string,
@@ -78,6 +87,12 @@ export function createApp(deps: AppDeps = {}) {
 	const previewRuntime = deps.previewRuntime ?? createPreviewRuntimeDeps();
 	const renderRepo = deps.renderRepo ?? createRenderRepo(db);
 	const renderRuntime = deps.renderRuntime ?? createRenderRuntimeDeps();
+	const renderLimits =
+		deps.renderLimits ??
+		createRenderLimitsService({
+			usageCounterRepo: deps.usageCounterRepo ?? createUsageCounterRepo(db),
+			renderRateLimiter: createInMemoryRenderRateLimiter(),
+		});
 
 	const betterAuth = createBetterAuthPlugin({
 		apiPublicUrl: env.USETAGIH_API_PUBLIC_URL,
@@ -142,6 +157,7 @@ export function createApp(deps: AppDeps = {}) {
 						auditRepo,
 						resolveAuditUserId,
 						onRenderInvoked: deps.onRenderInvoked,
+						renderLimits,
 					}),
 				)
 				.use(

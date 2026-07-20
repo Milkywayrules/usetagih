@@ -23,9 +23,14 @@ export type {
 } from "./logo-blob-store.js";
 export type { LogoFetcher } from "./logo-fetcher.js";
 export type {
+	RenderRateLimiter,
+	RenderRateLimitResult,
+} from "./render-rate-limiter.js";
+export type {
 	NewRenderRecord,
 	RenderListPage,
 	RenderListQuery,
 	RenderRecord,
 	RenderRepo,
 } from "./render-repo.js";
+export type { UsageCounterRepo } from "./usage-counter-repo.js";

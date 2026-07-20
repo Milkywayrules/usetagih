@@ -1,5 +1,10 @@
 // @ts-nocheck — Elysia macros from composed plugins are runtime-valid but not inferred on child instances.
-import type { AuditRepo, IdempotencyStore, RenderRepo } from "@usetagih/core";
+import type {
+	AuditRepo,
+	IdempotencyStore,
+	RenderLimitsService,
+	RenderRepo,
+} from "@usetagih/core";
 import { renderUseCase } from "@usetagih/core";
 import type { WorkspaceSettingsRepo } from "@usetagih/db";
 import { Elysia } from "elysia";
@@ -30,6 +35,7 @@ export type RenderByDocumentTypeDeps = {
 	workspaceSettingsRepo: WorkspaceSettingsRepo;
 	renderRuntime: RenderRuntimeDeps;
 	auditRepo: AuditRepo;
+	renderLimits?: RenderLimitsService;
 	resolveAuditUserId?: (
 		workspaceId: string,
 		userId?: string,
@@ -146,6 +152,17 @@ export function createRenderByDocumentTypeRoutes(
 	deps: RenderByDocumentTypeDeps,
 ) {
 	let app = new Elysia({ name: "render-by-document-type" });
+	const renderLimits =
+		deps.renderLimits === undefined
+			? undefined
+			: {
+					service: deps.renderLimits,
+					getWorkspaceTier: async (workspaceId: string) => {
+						const settings =
+							await deps.workspaceSettingsRepo.getByOrganizationId(workspaceId);
+						return settings?.tier ?? "trial";
+					},
+				};
 
 	for (const documentTypePath of DOCUMENT_TYPE_PATHS) {
 		app = app.use(
@@ -153,6 +170,7 @@ export function createRenderByDocumentTypeRoutes(
 				idempotencyStore: deps.idempotencyStore,
 				documentTypePath,
 				handler: createRenderHandler(documentTypePath, deps),
+				renderLimits,
 			}),
 		);
 	}

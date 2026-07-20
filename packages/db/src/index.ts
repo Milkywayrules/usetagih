@@ -6,6 +6,7 @@ export { createAuditRepo } from "./repositories/audit-repo.js";
 export { createIdempotencyStore } from "./repositories/idempotency-store.js";
 export { createMemoryArtifactStore } from "./repositories/memory-artifact-store.js";
 export { createRenderRepo } from "./repositories/render-repo.js";
+export { createUsageCounterRepo } from "./repositories/usage-counter-repo.js";
 export {
 	createWorkspaceSettingsRepo,
 	type WorkspaceSettingsRecord,
