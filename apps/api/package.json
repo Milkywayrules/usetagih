@@ -7,10 +7,21 @@
 		"lint": "biome check .",
 		"typecheck": "tsc --noEmit",
 		"test": "bun test",
-		"build": "tsc --outDir dist"
+		"build": "tsc --outDir dist",
+		"start": "bun run src/index.ts"
+	},
+	"dependencies": {
+		"@elysiajs/cors": "^1.2.0",
+		"@usetagih/config": "workspace:*",
+		"@usetagih/core": "workspace:*",
+		"@usetagih/db": "workspace:*",
+		"@usetagih/schema": "workspace:*",
+		"better-auth": "1.6.23",
+		"elysia": "1.4.29",
+		"zod": "^4.4.3"
 	},
 	"devDependencies": {
-		"@usetagih/config": "workspace:*",
+		"drizzle-orm": "0.45.2",
 		"typescript": "^5.8.0"
 	}
 }

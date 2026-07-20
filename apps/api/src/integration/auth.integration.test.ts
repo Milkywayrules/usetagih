@@ -1,0 +1,276 @@
+/**
+ * Integration tests for better-auth registration, login, and session middleware.
+ * Skipped when compose Postgres is unreachable (probeDb false).
+ */
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { auth, createDb, probeDb, schema } from "@usetagih/db";
+import { eq } from "drizzle-orm";
+import { createApp } from "../app.js";
+
+const postgresUp = await probeDb();
+const describeIntegration = postgresUp ? describe : describe.skip;
+
+function suffix() {
+	return crypto.randomUUID().slice(0, 8);
+}
+
+function extractCookies(response: Response): string {
+	const cookies = response.headers.getSetCookie();
+	return cookies.map((c) => c.split(";")[0]).join("; ");
+}
+
+async function signUpWithWorkspace(
+	base: string,
+	opts: {
+		email: string;
+		password: string;
+		name: string;
+		workspaceName: string;
+		workspaceSlug: string;
+		cookie?: string;
+	},
+) {
+	const headers: Record<string, string> = {
+		"Content-Type": "application/json",
+	};
+	if (opts.cookie) {
+		headers.cookie = opts.cookie;
+	}
+
+	return fetch(`${base}/api/auth/sign-up-with-workspace`, {
+		method: "POST",
+		headers,
+		body: JSON.stringify({
+			email: opts.email,
+			password: opts.password,
+			name: opts.name,
+			workspaceName: opts.workspaceName,
+			workspaceSlug: opts.workspaceSlug,
+		}),
+	});
+}
+
+describeIntegration("auth integration", () => {
+	let app: ReturnType<typeof createApp>;
+	let base: string;
+	let port: number;
+	const { db, sql } = createDb();
+
+	beforeAll(() => {
+		app = createApp({ db });
+		app.listen(0);
+		port = app.server?.port ?? 0;
+		base = `http://127.0.0.1:${port}`;
+	});
+
+	afterAll(async () => {
+		app.stop();
+		await sql.end({ timeout: 1 });
+	});
+
+	test("sign-up-with-workspace creates user, org, workspace_settings, activeOrganizationId", async () => {
+		const id = suffix();
+		const response = await signUpWithWorkspace(base, {
+			email: `signup-${id}@example.com`,
+			password: "password123",
+			name: "Test User",
+			workspaceName: `Workspace ${id}`,
+			workspaceSlug: `ws-${id}`,
+		});
+
+		expect(response.status).toBe(200);
+		const body = (await response.json()) as {
+			workspaceId: string;
+			session: { activeOrganizationId?: string };
+		};
+		expect(body.workspaceId).toBeDefined();
+		expect(body.session.activeOrganizationId).toBe(body.workspaceId);
+
+		const [settings] = await db
+			.select()
+			.from(schema.workspaceSettings)
+			.where(eq(schema.workspaceSettings.organizationId, body.workspaceId))
+			.limit(1);
+		expect(settings?.tier).toBe("trial");
+	});
+
+	test("GET /v1/renders unauthenticated → 401", async () => {
+		const response = await fetch(`${base}/v1/renders`);
+		expect(response.status).toBe(401);
+		const body = await response.json();
+		expect(body.error.code).toBe("UNAUTHORIZED");
+	});
+
+	test("GET /v1/renders authenticated without active org → 403 WORKSPACE_REQUIRED", async () => {
+		const id = suffix();
+		const email = `no-org-${id}@example.com`;
+		const password = "password123";
+
+		const signUpResponse = await fetch(`${base}/api/auth/sign-up/email`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ email, password, name: "No Org User" }),
+		});
+		expect(signUpResponse.status).toBe(200);
+		const cookie = extractCookies(signUpResponse);
+
+		const response = await fetch(`${base}/v1/renders`, {
+			headers: { cookie },
+		});
+		expect(response.status).toBe(403);
+		const body = await response.json();
+		expect(body.error.code).toBe("WORKSPACE_REQUIRED");
+	});
+
+	test("GET /v1/renders authenticated with active org → 501", async () => {
+		const id = suffix();
+		const signUpResponse = await signUpWithWorkspace(base, {
+			email: `active-${id}@example.com`,
+			password: "password123",
+			name: "Active Org User",
+			workspaceName: `Active WS ${id}`,
+			workspaceSlug: `active-${id}`,
+		});
+		expect(signUpResponse.status).toBe(200);
+		const cookie = extractCookies(signUpResponse);
+
+		const response = await fetch(`${base}/v1/renders`, {
+			headers: { cookie },
+		});
+		expect(response.status).toBe(501);
+		const body = await response.json();
+		expect(body.error.code).toBe("NOT_IMPLEMENTED");
+		expect(body.error.message).toBe("Render list lands in Story 3.12");
+	});
+
+	test("sign-in appends login audit row", async () => {
+		const id = suffix();
+		const email = `login-audit-${id}@example.com`;
+		const password = "password123";
+
+		const signUpResponse = await signUpWithWorkspace(base, {
+			email,
+			password,
+			name: "Login Audit User",
+			workspaceName: `Login WS ${id}`,
+			workspaceSlug: `login-${id}`,
+		});
+		expect(signUpResponse.status).toBe(200);
+		const signUpBody = (await signUpResponse.json()) as {
+			user: { id: string };
+		};
+		const userId = signUpBody.user.id;
+
+		await fetch(`${base}/api/auth/sign-out`, {
+			method: "POST",
+			headers: { cookie: extractCookies(signUpResponse) },
+		});
+
+		const loginResponse = await fetch(`${base}/api/auth/sign-in/email`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ email, password }),
+		});
+		expect(loginResponse.status).toBe(200);
+
+		const loginAudits = await db
+			.select()
+			.from(schema.auditEvents)
+			.where(eq(schema.auditEvents.userId, userId));
+		const loginRow = loginAudits.find((row) => row.action === "login");
+		expect(loginRow).toBeDefined();
+		expect(loginRow?.workspaceId).toBeNull();
+		expect(loginRow?.outcome).toBe("success");
+	});
+
+	test("second-member rejection matrix", async () => {
+		const id = suffix();
+		const ownerResponse = await signUpWithWorkspace(base, {
+			email: `owner-${id}@example.com`,
+			password: "password123",
+			name: "Owner User",
+			workspaceName: `Owner WS ${id}`,
+			workspaceSlug: `owner-${id}`,
+		});
+		expect(ownerResponse.status).toBe(200);
+		const ownerBody = (await ownerResponse.json()) as {
+			workspaceId: string;
+			user: { id: string };
+		};
+		const ownerCookie = extractCookies(ownerResponse);
+		const organizationId = ownerBody.workspaceId;
+
+		const memberResponse = await signUpWithWorkspace(base, {
+			email: `member-${id}@example.com`,
+			password: "password123",
+			name: "Second User",
+			workspaceName: `Member WS ${id}`,
+			workspaceSlug: `member-${id}`,
+		});
+		expect(memberResponse.status).toBe(200);
+		const memberBody = (await memberResponse.json()) as {
+			user: { id: string };
+		};
+		const secondUserId = memberBody.user.id;
+
+		const ownerHeaders = {
+			"Content-Type": "application/json",
+			cookie: ownerCookie,
+		};
+
+		const matrix: Array<{ path: string; body: Record<string, unknown> }> = [
+			{
+				path: "/organization/invite-member",
+				body: {
+					email: "second@example.com",
+					role: "member",
+					organizationId,
+				},
+			},
+			{
+				path: "/organization/accept-invitation",
+				body: { invitationId: crypto.randomUUID() },
+			},
+			{
+				path: "/organization/remove-member",
+				body: { memberId: crypto.randomUUID(), organizationId },
+			},
+		];
+
+		for (const case_ of matrix) {
+			const response = await fetch(`${base}/api/auth${case_.path}`, {
+				method: "POST",
+				headers: ownerHeaders,
+				body: JSON.stringify(case_.body),
+			});
+			expect(response.status).toBeGreaterThanOrEqual(400);
+			expect(response.status).toBeLessThan(500);
+		}
+
+		await expect(
+			auth.api.addMember({
+				body: {
+					userId: secondUserId,
+					role: "member",
+					organizationId,
+				},
+				headers: { cookie: ownerCookie },
+			}),
+		).rejects.toThrow();
+
+		const members = await db
+			.select()
+			.from(schema.member)
+			.where(eq(schema.member.organizationId, organizationId));
+		expect(members).toHaveLength(1);
+	});
+
+	test("password reset route reachable", async () => {
+		const response = await fetch(`${base}/api/auth/request-password-reset`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ email: "reset@example.com" }),
+		});
+		expect(response.status).toBeLessThan(500);
+	});
+});

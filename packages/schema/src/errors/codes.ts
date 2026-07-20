@@ -12,6 +12,7 @@ export const UNAUTHORIZED_CODE = "UNAUTHORIZED" as const;
 export const UNSUPPORTED_SCHEMA_VERSION_CODE =
 	"UNSUPPORTED_SCHEMA_VERSION" as const;
 export const VALIDATION_FAILED_CODE = "VALIDATION_FAILED" as const;
+export const WORKSPACE_REQUIRED_CODE = "WORKSPACE_REQUIRED" as const;
 
 export const ERROR_CODES = [
 	"DOCUMENT_TYPE_MISMATCH",
@@ -27,6 +28,7 @@ export const ERROR_CODES = [
 	"UNAUTHORIZED",
 	"UNSUPPORTED_SCHEMA_VERSION",
 	"VALIDATION_FAILED",
+	"WORKSPACE_REQUIRED",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

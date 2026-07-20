@@ -14,6 +14,7 @@ const ERROR_CODE_HTTP_STATUS: Record<ErrorCode, number> = {
 	UNAUTHORIZED: 401,
 	UNSUPPORTED_SCHEMA_VERSION: 400,
 	VALIDATION_FAILED: 422,
+	WORKSPACE_REQUIRED: 403,
 };
 
 export function getHttpStatusForErrorCode(code: ErrorCode): number {

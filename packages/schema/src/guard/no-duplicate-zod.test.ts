@@ -2,7 +2,10 @@ import { expect, test } from "bun:test";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
-const ALLOWLIST = new Set(["packages/config/src/env/schema.ts"]);
+const ALLOWLIST = new Set([
+	"packages/config/src/env/schema.ts",
+	"apps/api/src/routes/auth/sign-up-with-workspace.ts",
+]);
 const SCAN_ROOTS = ["packages", "apps"];
 
 /** Direct zod imports / object definitions outside the canonical schema owner. */

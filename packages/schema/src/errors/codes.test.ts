@@ -14,6 +14,7 @@ import {
 	UNAUTHORIZED_CODE,
 	UNSUPPORTED_SCHEMA_VERSION_CODE,
 	VALIDATION_FAILED_CODE,
+	WORKSPACE_REQUIRED_CODE,
 } from "./codes";
 import { getHttpStatusForErrorCode } from "./http-status";
 
@@ -31,6 +32,7 @@ const EXPECTED_HTTP_STATUS: Record<(typeof ERROR_CODES)[number], number> = {
 	UNAUTHORIZED: 401,
 	UNSUPPORTED_SCHEMA_VERSION: 400,
 	VALIDATION_FAILED: 422,
+	WORKSPACE_REQUIRED: 403,
 };
 
 const CODE_CONSTANTS = {
@@ -47,11 +49,12 @@ const CODE_CONSTANTS = {
 	UNAUTHORIZED_CODE,
 	UNSUPPORTED_SCHEMA_VERSION_CODE,
 	VALIDATION_FAILED_CODE,
+	WORKSPACE_REQUIRED_CODE,
 } as const;
 
-test("ERROR_CODES contains exactly 13 PRD codes", () => {
-	expect(ERROR_CODES).toHaveLength(13);
-	expect(new Set(ERROR_CODES).size).toBe(13);
+test("ERROR_CODES contains exactly 14 PRD codes", () => {
+	expect(ERROR_CODES).toHaveLength(14);
+	expect(new Set(ERROR_CODES).size).toBe(14);
 });
 
 test("every code constant matches its ERROR_CODES entry", () => {
@@ -81,4 +84,9 @@ test("402 and 429 status codes are exclusive to QUOTA_EXCEEDED and RATE_LIMITED"
 	expect(
 		ERROR_CODES.filter((code) => getHttpStatusForErrorCode(code) === 429),
 	).toEqual(["RATE_LIMITED"]);
+});
+
+test("WORKSPACE_REQUIRED maps to 403", () => {
+	expect(getHttpStatusForErrorCode("WORKSPACE_REQUIRED")).toBe(403);
+	expect(WORKSPACE_REQUIRED_CODE).toBe("WORKSPACE_REQUIRED");
 });
