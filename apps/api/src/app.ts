@@ -3,12 +3,15 @@ import {
 	createApiKeyRepo,
 	createAuditRepo,
 	createIdempotencyStore,
+	createWorkspaceSettingsRepo,
 	type Db,
 	getDb,
 } from "@usetagih/db";
 import { Elysia } from "elysia";
 import { createBetterAuthPlugin } from "./auth/mount.js";
 import { parseApiEnv } from "./env.js";
+import type { PreviewRuntimeDeps } from "./lib/preview-deps.js";
+import { createPreviewRuntimeDeps } from "./lib/preview-deps.js";
 import { createAuthResolver } from "./middleware/auth-resolver.js";
 import { createRequestIdPlugin } from "./middleware/request-id.js";
 import { createScopeGuard } from "./middleware/scope-guard.js";
@@ -22,6 +25,7 @@ import { createSignUpWithWorkspaceRoute } from "./routes/auth/sign-up-with-works
 import { createHealthRoutes } from "./routes/health.js";
 import { createApiKeysRoutes } from "./routes/v1/api-keys.js";
 import { createAuditStubRoutes } from "./routes/v1/audit.stub.js";
+import { createPreviewByDocumentTypeRoutes } from "./routes/v1/preview-by-document-type.js";
 import { createRenderByDocumentTypeStubRoutes } from "./routes/v1/render-by-document-type.stub.js";
 import { createRendersStubRoutes } from "./routes/v1/renders.stub.js";
 import { createSchemasRoutes } from "./routes/v1/schemas.js";
@@ -39,6 +43,7 @@ export type AppDeps = {
 	env?: ReturnType<typeof parseApiEnv>;
 	otelEnabled?: boolean;
 	onRenderStubInvoked?: () => void;
+	previewRuntime?: PreviewRuntimeDeps;
 };
 
 export function createApp(deps: AppDeps = {}) {
@@ -49,6 +54,8 @@ export function createApp(deps: AppDeps = {}) {
 	const auditRepo = deps.auditRepo ?? createAuditRepo(db);
 	const apiKeyRepo = deps.apiKeyRepo ?? createApiKeyRepo(db);
 	const idempotencyStore = deps.idempotencyStore ?? createIdempotencyStore(db);
+	const workspaceSettingsRepo = createWorkspaceSettingsRepo(db);
+	const previewRuntime = deps.previewRuntime ?? createPreviewRuntimeDeps();
 
 	const betterAuth = createBetterAuthPlugin({
 		apiPublicUrl: env.USETAGIH_API_PUBLIC_URL,
@@ -79,6 +86,12 @@ export function createApp(deps: AppDeps = {}) {
 				.use(createApiKeysRoutes({ apiKeyRepo, auditRepo }))
 				.use(createSchemasRoutes())
 				.use(createValidateByDocumentTypeRoutes())
+				.use(
+					createPreviewByDocumentTypeRoutes({
+						workspaceSettingsRepo,
+						previewRuntime,
+					}),
+				)
 				.use(
 					createRenderByDocumentTypeStubRoutes({
 						idempotencyStore,

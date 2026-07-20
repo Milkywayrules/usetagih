@@ -5,6 +5,11 @@ export { createApiKeyRepo } from "./repositories/api-key-repo.js";
 export { createAuditRepo } from "./repositories/audit-repo.js";
 export { createIdempotencyStore } from "./repositories/idempotency-store.js";
 export { createRenderRepo } from "./repositories/render-repo.js";
+export {
+	createWorkspaceSettingsRepo,
+	type WorkspaceSettingsRecord,
+	type WorkspaceSettingsRepo,
+} from "./repositories/workspace-settings-repo.js";
 export type { ApiKey, NewApiKey } from "./schema/api-keys.js";
 export type { AuditEvent, NewAuditEvent } from "./schema/audit-events.js";
 export { AUDIT_ACTIONS_NULLABLE_WORKSPACE } from "./schema/audit-events.js";

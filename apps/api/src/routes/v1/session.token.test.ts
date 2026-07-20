@@ -63,7 +63,29 @@ describe("session token scope parity matrix", () => {
 		},
 	] as const;
 
-	const scopeRegistryMatrix = [...stubMatrix, ...validateMatrix] as const;
+	const previewMatrix = [
+		{
+			route: "/v1/invoices/preview",
+			method: "POST",
+			scope: "renders:write" as const,
+		},
+		{
+			route: "/v1/quotations/preview",
+			method: "POST",
+			scope: "renders:write" as const,
+		},
+		{
+			route: "/v1/receipts/preview",
+			method: "POST",
+			scope: "renders:write" as const,
+		},
+	] as const;
+
+	const scopeRegistryMatrix = [
+		...stubMatrix,
+		...validateMatrix,
+		...previewMatrix,
+	] as const;
 
 	for (const row of stubMatrix) {
 		test(`session bearer ${row.method} ${row.route} with ${row.scope} → 501`, async () => {
@@ -120,6 +142,54 @@ describe("session token scope parity matrix", () => {
 	}
 
 	for (const row of validateMatrix) {
+		test(`session bearer ${row.method} ${row.route} with ${row.scope} passes scope guard`, async () => {
+			const signed = await signSessionBearerToken(
+				{
+					userId: crypto.randomUUID(),
+					workspaceId: crypto.randomUUID(),
+				},
+				env,
+			);
+
+			const response = await app.handle(
+				new Request(`http://localhost${row.route}`, {
+					method: row.method,
+					headers: {
+						Authorization: `Bearer ${signed.accessToken}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({}),
+				}),
+			);
+
+			expect(response.status).not.toBe(401);
+			expect(response.status).not.toBe(403);
+		});
+
+		test(`API key ${row.method} ${row.route} with ${row.scope} passes scope guard`, async () => {
+			const workspaceId = crypto.randomUUID();
+			const { secret } = await createTestApiKey(apiKeyRepo, {
+				workspaceId,
+				scopes: [row.scope],
+			});
+
+			const response = await app.handle(
+				new Request(`http://localhost${row.route}`, {
+					method: row.method,
+					headers: {
+						Authorization: `Bearer ${secret}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({}),
+				}),
+			);
+
+			expect(response.status).not.toBe(401);
+			expect(response.status).not.toBe(403);
+		});
+	}
+
+	for (const row of previewMatrix) {
 		test(`session bearer ${row.method} ${row.route} with ${row.scope} passes scope guard`, async () => {
 			const signed = await signSessionBearerToken(
 				{
