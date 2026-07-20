@@ -1,15 +1,19 @@
 import { cors } from "@elysiajs/cors";
 import { auth } from "@usetagih/db";
 import { Elysia } from "elysia";
+import { CSRF_HEADER } from "../middleware/csrf.js";
 
-export function createBetterAuthPlugin(options: { apiPublicUrl: string }) {
+export function createBetterAuthPlugin(options: {
+	apiPublicUrl: string;
+	webPublicUrl: string;
+}) {
 	return new Elysia({ name: "better-auth" })
 		.use(
 			cors({
-				origin: options.apiPublicUrl,
+				origin: options.webPublicUrl,
 				methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 				credentials: true,
-				allowedHeaders: ["Content-Type", "Authorization"],
+				allowedHeaders: ["Content-Type", "Authorization", CSRF_HEADER],
 			}),
 		)
 		.mount(auth.handler)

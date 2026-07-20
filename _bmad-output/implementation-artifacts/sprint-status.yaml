@@ -45,7 +45,7 @@
 # Epic 5 after Epic 1+3 (Story 5.0 first) | Epic 6 after Epic 3+5 | Epic 7 after Epic 3 | Epic 8 last
 
 generated: 2026-07-20
-last_updated: 2026-07-20T08:05:00+07:00
+last_updated: 2026-07-20T08:30:00+07:00
 project: usetagih
 project_key: NOKEY
 tracking_system: file-system
@@ -99,7 +99,7 @@ development_status:
   3-1-drizzle-database-schema-and-migrations-for-core-tables: done
   3-2-packages-core-ports-and-validate-use-case: done
   3-3-better-auth-registration-login-and-session-middleware: done
-  3-4-post-v1-session-token-short-lived-audience-bound-csrf-protected-bearer: backlog
+  3-4-post-v1-session-token-short-lived-audience-bound-csrf-protected-bearer: done
   3-5-api-key-create-list-and-revoke-endpoints: backlog
   3-6-auth-middleware-request-id-and-unified-error-envelope: backlog
   3-7-idempotency-middleware-for-render-endpoints: backlog

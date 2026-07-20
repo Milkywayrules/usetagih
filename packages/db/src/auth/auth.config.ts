@@ -37,7 +37,7 @@ function getAuditRepo() {
 export const authConfig = {
 	baseURL: env.BETTER_AUTH_URL,
 	secret: env.BETTER_AUTH_SECRET,
-	trustedOrigins: [env.USETAGIH_API_PUBLIC_URL],
+	trustedOrigins: [env.USETAGIH_API_PUBLIC_URL, env.USETAGIH_WEB_PUBLIC_URL],
 	database: drizzleAdapter(getDb(), {
 		provider: "pg",
 		schema,

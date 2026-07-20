@@ -3,6 +3,8 @@ import { auth } from "@usetagih/db";
 import { isAPIError } from "better-auth/api";
 import { Elysia } from "elysia";
 import { z } from "zod";
+import type { ApiEnv } from "../../env.js";
+import { appendCsrfCookie } from "../../middleware/csrf.js";
 
 const signUpWithWorkspaceBody = z.object({
 	email: z.email(),
@@ -67,7 +69,10 @@ function clientIp(request: Request): string | null {
 	);
 }
 
-export function createSignUpWithWorkspaceRoute(deps: { auditRepo: AuditRepo }) {
+export function createSignUpWithWorkspaceRoute(deps: {
+	auditRepo: AuditRepo;
+	env: ApiEnv;
+}) {
 	return new Elysia().post(
 		"/api/auth/sign-up-with-workspace",
 		async ({ body, request, set }) => {
@@ -122,6 +127,15 @@ export function createSignUpWithWorkspaceRoute(deps: { auditRepo: AuditRepo }) {
 				});
 
 				jar.applyToResponse(set);
+
+				if (session?.session?.id) {
+					appendCsrfCookie(
+						set,
+						request,
+						deps.env.BETTER_AUTH_SECRET,
+						session.session.id,
+					);
+				}
 
 				return {
 					user: signUp.response.user,
