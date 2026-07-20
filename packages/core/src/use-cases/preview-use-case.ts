@@ -110,21 +110,27 @@ export async function previewUseCase(
 		};
 	}
 
-	const rendered = (() => {
-		try {
-			return deps.renderPreviewFromPayload({
-				payload,
-				workspaceTier: input.workspaceTier,
-				logo: logoResult.logo,
-			});
-		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : "preview render failed";
-			throw Object.assign(new Error(message), {
-				previewRenderFailure: true as const,
-			});
-		}
-	})();
+	let rendered: PreviewRenderResult;
+	try {
+		rendered = deps.renderPreviewFromPayload({
+			payload,
+			workspaceTier: input.workspaceTier,
+			logo: logoResult.logo,
+		});
+	} catch (error) {
+		return {
+			ok: false,
+			code: "VALIDATION_FAILED",
+			details: [
+				{
+					path: "/",
+					code: "VALIDATION_FAILED",
+					message:
+						error instanceof Error ? error.message : "preview render failed",
+				},
+			],
+		};
+	}
 
 	return {
 		ok: true,
