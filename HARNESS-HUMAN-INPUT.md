@@ -11,6 +11,15 @@ Cursor's state store lives on C:; when it fills, the chat DB corrupts ("missing 
 - [ ] Optional: Cursor roaming data is 5.6 GB (`C:\Users\user\AppData\Roaming\Cursor`) — old workspaceStorage/Cache can be trimmed from within Cursor or manually
 - [ ] Consider moving the Cursor user-data dir or freeing another ~10 GB headroom so this stops recurring
 
+## URGENT — Docker CLI segfault (exit 139) blocks Story 3.5
+
+Story 3.5 integration verification cannot finish until `docker` works from WSL (Postgres via compose; integration tests must run, not skip). Exit 139 often correlates with a full C: drive or a wedged Docker Desktop backend — see the section above for VHDX reclaim.
+
+- [ ] Confirm Docker Desktop is running on Windows (system tray whale icon)
+- [ ] If C: is still ~100% full, reclaim space first (existing Docker VHDX compact steps) — Docker often segfaults / fails when the host disk is full
+- [ ] Restart Docker Desktop after reclaiming space; from WSL verify: `docker version` and `docker compose -f docker/compose.yml up -d postgres` succeed
+- [ ] Notify agent / leave a note when Postgres is healthy so Story 3.5 review can finish (integration tests must run, not skip)
+
 ## FYI — veto window (agent proceeds unless you object)
 
 - [ ] **pino → evlog supersession**: your directive #5c (evlog) conflicts with the ratified architecture spine (pino, Story 8.6). The right-hand board voted unanimously to adopt **evlog** (maturity independently verified: v2.x, first-party Elysia plugin, drain pipeline, OTLP adapter) and amend Story 8.6 + spine accordingly, preserving the exact log field contract and metric names. Veto here if you actually want pino kept.
