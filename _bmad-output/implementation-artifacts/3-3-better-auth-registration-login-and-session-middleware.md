@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.3: better-auth registration, login, and session middleware
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -610,3 +610,33 @@ Composer 2.5 (dev-story headless)
 ## Change Log
 
 - 2026-07-20: Story 3.3 — better-auth registration/login, session middleware, mandatory workspace bootstrap, integration tests
+- 2026-07-20: Code review — workspace guard membership check, password-reset noop, probe tests; status → done
+
+### Review Findings
+
+**Verdict: APPROVED** (after review fixes in follow-up commit)
+
+#### Priority adjudication (dev-reported deviations)
+
+| Item | Verdict | Notes |
+| --- | --- | --- |
+| (a) `beforeAddMember` count guard | **SOUND** | Unconditional throw blocks owner bootstrap on `createOrganization` (hook fires before first member insert). Count ≥ 1 guard equivalent for add-member paths. `membershipLimit: 1` enforced server-side in better-auth 1.6.23 `crud-members.mjs` before hook runs — probe test added. |
+| (b) Cookie jar forwarding | **SOUND** | `AuthCookieJar` is per-request (instantiated per handler call). Integration test confirms `activeOrganizationId` on final session. Partial failure (user created, org fails) strands account without workspace → recovery via `POST /api/auth/organization/create` + set-active; documented in route comment. |
+| (c) `afterCreateOrganization` hook | **SOUND with caveat** | Lazy `getDb()`/`getAuditRepo()` avoids circular imports. Hook runs after org+member persist — settings insert failure leaves org without `workspace_settings` (better-auth does not rollback). Review reordered settings-before-audit so audit failure cannot drop tier row. Documented latent risk for direct `organization/create` hook throws. |
+| (d) Login audit hook | **SOUND** | Failed sign-in returns no `returned.user.id` — no audit row (probe test added). GitHub OAuth sign-in **not audited** — AC-8 requires email login only; gap documented for Story 3.14+. |
+| (e) Password reset route | **SOUND (dev correct)** | better-auth 1.6.23 route is `/request-password-reset` (not `/forget-password`). Added no-op `sendResetPassword` so route returns 200 in dev/tests. |
+| (f) `add-member` via `auth.api` | **SOUND** | `createAuthEndpoint.serverOnly` in better-auth 1.6.23 — no HTTP surface. Matrix correctly uses `auth.api.addMember`. |
+
+#### Findings triage
+
+- [x] [Review][Patch] Workspace guard must verify `activeOrganizationId` is in user's org list [`apps/api/src/middleware/workspace-guard.ts`] — fixed (defense in depth; better-auth validates on set-active)
+- [x] [Review][Patch] Password reset returned 400 without `sendResetPassword` [`packages/db/src/auth/auth.config.ts`] — fixed (no-op stub)
+- [x] [Review][Patch] Probe tests for tenant isolation, failed-login audit, membershipLimit [`apps/api/src/integration/auth.integration.test.ts`] — added
+- [x] [Review][Defer] `afterCreateOrganization` throw leaves org without settings if insert fails — deferred; better-auth hook runs post-commit; monitor in 3.18 workspace CRUD
+- [x] [Review][Defer] GitHub OAuth login audit not captured — deferred; AC-8 scoped to email/password; wire in 3.14+
+- [x] [Review][Defer] `POST /organization/create-team` not in matrix — deferred; teams disabled returns route omission; low risk
+
+#### Verification (review run 2026-07-20)
+
+- `bun test apps/api`: **24 pass**, 0 fail (with compose Postgres)
+- `bunx turbo run lint typecheck test build --force`: **36/36** tasks successful
