@@ -6,6 +6,7 @@ const ALLOWLIST = new Set([
 	"packages/config/src/env/schema.ts",
 	"apps/api/src/routes/auth/sign-up-with-workspace.ts",
 	"apps/api/src/routes/v1/api-keys.schemas.ts",
+	"apps/api/src/routes/v1/renders.schemas.ts",
 ]);
 const SCAN_ROOTS = ["packages", "apps"];
 

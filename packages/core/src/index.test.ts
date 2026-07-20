@@ -9,6 +9,7 @@ test("public exports include ports and validateUseCase", () => {
 		},
 		getByIdAndWorkspace: async () => null,
 		listByWorkspace: async () => [],
+		listByWorkspacePaginated: async () => ({ items: [], total: 0 }),
 	};
 	expect(renderRepoShape).toBeDefined();
 });

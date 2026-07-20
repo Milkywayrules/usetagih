@@ -1,4 +1,9 @@
-import type { ApiKeyRepo, AuditRepo, IdempotencyStore } from "@usetagih/core";
+import type {
+	ApiKeyRepo,
+	AuditRepo,
+	IdempotencyStore,
+	RenderRepo,
+} from "@usetagih/core";
 import {
 	createApiKeyRepo,
 	createAuditRepo,
@@ -7,8 +12,10 @@ import {
 	createWorkspaceSettingsRepo,
 	type Db,
 	getDb,
+	schema,
 	type WorkspaceSettingsRepo,
 } from "@usetagih/db";
+import { eq } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { createBetterAuthPlugin } from "./auth/mount.js";
 import { parseApiEnv } from "./env.js";
@@ -31,7 +38,7 @@ import { createApiKeysRoutes } from "./routes/v1/api-keys.js";
 import { createAuditStubRoutes } from "./routes/v1/audit.stub.js";
 import { createPreviewByDocumentTypeRoutes } from "./routes/v1/preview-by-document-type.js";
 import { createRenderByDocumentTypeRoutes } from "./routes/v1/render-by-document-type.js";
-import { createRendersStubRoutes } from "./routes/v1/renders.stub.js";
+import { createRendersRoutes } from "./routes/v1/renders.js";
 import { createSchemasRoutes } from "./routes/v1/schemas.js";
 import { createSessionCsrfRoute } from "./routes/v1/session.csrf.js";
 import { createSessionTokenRoute } from "./routes/v1/session.token.js";
@@ -49,6 +56,11 @@ export type AppDeps = {
 	onRenderInvoked?: () => void;
 	previewRuntime?: PreviewRuntimeDeps;
 	renderRuntime?: RenderRuntimeDeps;
+	renderRepo?: RenderRepo;
+	resolveAuditUserId?: (
+		workspaceId: string,
+		userId?: string,
+	) => Promise<string | null>;
 	workspaceSettingsRepo?: WorkspaceSettingsRepo;
 };
 
@@ -63,7 +75,7 @@ export function createApp(deps: AppDeps = {}) {
 	const workspaceSettingsRepo =
 		deps.workspaceSettingsRepo ?? createWorkspaceSettingsRepo(db);
 	const previewRuntime = deps.previewRuntime ?? createPreviewRuntimeDeps();
-	const renderRepo = createRenderRepo(db);
+	const renderRepo = deps.renderRepo ?? createRenderRepo(db);
 	const renderRuntime = deps.renderRuntime ?? createRenderRuntimeDeps();
 
 	const betterAuth = createBetterAuthPlugin({
@@ -111,7 +123,27 @@ export function createApp(deps: AppDeps = {}) {
 						onRenderInvoked: deps.onRenderInvoked,
 					}),
 				)
-				.use(createRendersStubRoutes())
+				.use(
+					createRendersRoutes({
+						renderRepo,
+						artifactStore: renderRuntime.artifactStore,
+						auditRepo,
+						webPublicUrl: env.USETAGIH_WEB_PUBLIC_URL,
+						resolveAuditUserId:
+							deps.resolveAuditUserId ??
+							(async (workspaceId, userId) => {
+								if (userId) {
+									return userId;
+								}
+								const [memberRow] = await db
+									.select({ userId: schema.member.userId })
+									.from(schema.member)
+									.where(eq(schema.member.organizationId, workspaceId))
+									.limit(1);
+								return memberRow?.userId ?? null;
+							}),
+					}),
+				)
 				.use(createAuditStubRoutes())
 				.use(createWebhooksStubRoutes())
 				.use(createV1ErrorHandler()),

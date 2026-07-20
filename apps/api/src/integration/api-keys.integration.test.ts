@@ -130,10 +130,16 @@ describeIntegration("api keys integration", () => {
 		expect(listed.keys.some((k) => k.id === created.id)).toBe(true);
 		expect(listed.keys.every((k) => k.secret === undefined)).toBe(true);
 
-		const stubResponse = await fetch(`${base}/v1/renders`, {
+		const rendersListResponse = await fetch(`${base}/v1/renders`, {
 			headers: { Authorization: `Bearer ${created.secret}` },
 		});
-		expect(stubResponse.status).toBe(501);
+		expect(rendersListResponse.status).toBe(200);
+		const listedRenders = (await rendersListResponse.json()) as {
+			renders: unknown[];
+			total: number;
+		};
+		expect(listedRenders.total).toBeGreaterThanOrEqual(0);
+		expect(Array.isArray(listedRenders.renders)).toBe(true);
 
 		const revokeResponse = await fetch(`${base}/v1/api-keys/${created.id}`, {
 			method: "DELETE",

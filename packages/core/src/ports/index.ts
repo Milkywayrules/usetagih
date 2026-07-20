@@ -18,6 +18,8 @@ export type {
 export type { LogoFetcher } from "./logo-fetcher.js";
 export type {
 	NewRenderRecord,
+	RenderListPage,
+	RenderListQuery,
 	RenderRecord,
 	RenderRepo,
 } from "./render-repo.js";
