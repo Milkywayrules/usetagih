@@ -99,9 +99,7 @@ describe("respondApiError", () => {
 		const app = new Elysia()
 			.use(createRequestIdPlugin())
 			.group("/v1", (group) =>
-				group
-					.post("/items", ({ body }) => body)
-					.use(createV1ErrorHandler()),
+				group.post("/items", ({ body }) => body).use(createV1ErrorHandler()),
 			);
 
 		const response = await app.handle(
