@@ -36,32 +36,32 @@ so that I review document before export (FR-10, Story 1.7 contract).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Render layer: template resolution + payload preview (AC: 2, 4, 5, 11)
-  - [ ] Add `packages/render/src/template-path.ts` — `resolveDocumentTemplatePath(documentType, template)` → absolute `.typ` path under `packages/templates/{type}/{template}.typ`; throw typed error if missing
-  - [ ] Add `packages/render/src/preview-from-payload.ts` — write payload JSON to temp dir, optional logo via `prepareIngestedLogoForTypst`, call `renderPreview()`, build `html` wrapper; cleanup temps in `finally`
-  - [ ] Add `mapWorkspaceTierToTypstTier(tier)` helper in render or core
-  - [ ] Export from `packages/render/src/index.ts`
-  - [ ] Extend `preview.test.ts` or add `preview-from-payload.test.ts` — pagination parity when Typst available
-- [ ] Task 2 — Core `previewUseCase` (AC: 2, 6, 7, 8, 9, 10)
-  - [ ] Create `packages/core/src/use-cases/preview-use-case.ts` — compose `validateUseCase`, `resolveLogoUseCase`, template check, `renderPreviewFromPayload` via injected deps
-  - [ ] Export from `packages/core/src/use-cases/index.ts` and `packages/core/src/index.ts`
-  - [ ] Unit tests with fake render + logo deps in `preview-use-case.test.ts`
-- [ ] Task 3 — DB workspace settings reader (AC: 6, 7)
-  - [ ] Add `packages/db/src/repositories/workspace-settings-repo.ts` — `getByOrganizationId(workspaceId)` → `{ tier, branding }`
-  - [ ] Export `createWorkspaceSettingsRepo` from `packages/db/src/index.ts`
-- [ ] Task 4 — API route + HTTP mapping (AC: 1, 3, 8, 9, 10, 12)
-  - [ ] Create `apps/api/src/lib/map-preview-result.ts` — maps use-case result → 200 body or AD-11 envelope
-  - [ ] Create `apps/api/src/routes/v1/preview-by-document-type.ts` — POST `/{invoices|quotations|receipts}/preview` with `authenticated: true`, `requireScope: "renders:write"`
-  - [ ] Wire logo ingestion deps (reuse Story 3.10 modules) in route factory or `AppDeps`
-  - [ ] Wire in `apps/api/src/app.ts`
-  - [ ] Extend `ROUTE_SCOPE_REQUIREMENTS` + `session.token.test.ts` matrix
-- [ ] Task 5 — Tests (AC: 13, 14)
-  - [ ] `apps/api/src/routes/v1/preview-by-document-type.test.ts`
-  - [ ] `apps/api/src/lib/map-preview-result.test.ts`
-  - [ ] `apps/api/src/integration/preview.integration.test.ts` — postgres + typst gated
-- [ ] Task 6 — Verification gate (AC: 15)
-  - [ ] `docker compose -f docker/compose.yml up -d postgres`
-  - [ ] `bunx turbo run lint typecheck test build --force`
+- [x] Task 1 — Render layer: template resolution + payload preview (AC: 2, 4, 5, 11)
+  - [x] Add `packages/render/src/template-path.ts` — `resolveDocumentTemplatePath(documentType, template)` → absolute `.typ` path under `packages/templates/{type}/{template}.typ`; throw typed error if missing
+  - [x] Add `packages/render/src/preview-from-payload.ts` — write payload JSON to temp dir, optional logo via `prepareIngestedLogoForTypst`, call `renderPreview()`, build `html` wrapper; cleanup temps in `finally`
+  - [x] Add `mapWorkspaceTierToTypstTier(tier)` helper in render or core
+  - [x] Export from `packages/render/src/index.ts`
+  - [x] Extend `preview.test.ts` or add `preview-from-payload.test.ts` — pagination parity when Typst available
+- [x] Task 2 — Core `previewUseCase` (AC: 2, 6, 7, 8, 9, 10)
+  - [x] Create `packages/core/src/use-cases/preview-use-case.ts` — compose `validateUseCase`, `resolveLogoUseCase`, template check, `renderPreviewFromPayload` via injected deps
+  - [x] Export from `packages/core/src/use-cases/index.ts` and `packages/core/src/index.ts`
+  - [x] Unit tests with fake render + logo deps in `preview-use-case.test.ts`
+- [x] Task 3 — DB workspace settings reader (AC: 6, 7)
+  - [x] Add `packages/db/src/repositories/workspace-settings-repo.ts` — `getByOrganizationId(workspaceId)` → `{ tier, branding }`
+  - [x] Export `createWorkspaceSettingsRepo` from `packages/db/src/index.ts`
+- [x] Task 4 — API route + HTTP mapping (AC: 1, 3, 8, 9, 10, 12)
+  - [x] Create `apps/api/src/lib/map-preview-result.ts` — maps use-case result → 200 body or AD-11 envelope
+  - [x] Create `apps/api/src/routes/v1/preview-by-document-type.ts` — POST `/{invoices|quotations|receipts}/preview` with `authenticated: true`, `requireScope: "renders:write"`
+  - [x] Wire logo ingestion deps (reuse Story 3.10 modules) in route factory or `AppDeps`
+  - [x] Wire in `apps/api/src/app.ts`
+  - [x] Extend `ROUTE_SCOPE_REQUIREMENTS` + `session.token.test.ts` matrix
+- [x] Task 5 — Tests (AC: 13, 14)
+  - [x] `apps/api/src/routes/v1/preview-by-document-type.test.ts`
+  - [x] `apps/api/src/lib/map-preview-result.test.ts`
+  - [x] `apps/api/src/integration/preview.integration.test.ts` — postgres + typst gated
+- [x] Task 6 — Verification gate (AC: 15)
+  - [x] `docker compose -f docker/compose.yml up -d postgres`
+  - [x] `bunx turbo run lint typecheck test build --force`
 
 ## Dev Notes
 
@@ -233,11 +233,46 @@ composer-2.5-fast
 
 ### Completion Notes List
 
+- `previewUseCase` composes validate → template guard → logo resolve → `renderPreviewFromPayload`
+- POST `/v1/{invoices|quotations|receipts}/preview` with `renders:write`; quotation/receipt return 400 when `.typ` missing (Epic 5)
+- `docker compose postgres` + `bunx turbo run lint typecheck test build --force` → 36/36 exit 0
+
 ### File List
+
+- packages/render/src/template-path.ts
+- packages/render/src/template-path.test.ts
+- packages/render/src/tier-map.ts
+- packages/render/src/tier-map.test.ts
+- packages/render/src/preview-html.ts
+- packages/render/src/preview-html.test.ts
+- packages/render/src/preview-from-payload.ts
+- packages/render/src/preview-from-payload.test.ts
+- packages/render/src/golden/render-fixture.ts
+- packages/render/src/index.ts
+- packages/core/src/use-cases/preview-use-case.ts
+- packages/core/src/use-cases/preview-use-case.test.ts
+- packages/core/src/use-cases/index.ts
+- packages/core/src/index.ts
+- packages/db/src/repositories/workspace-settings-repo.ts
+- packages/db/src/index.ts
+- apps/api/src/lib/map-preview-result.ts
+- apps/api/src/lib/map-preview-result.test.ts
+- apps/api/src/lib/preview-deps.ts
+- apps/api/src/routes/v1/preview-by-document-type.ts
+- apps/api/src/routes/v1/preview-by-document-type.test.ts
+- apps/api/src/integration/preview.integration.test.ts
+- apps/api/src/routes/v1/session.token.test.ts
+- apps/api/src/app.ts
+- apps/api/package.json
+- packages/schema/src/auth/scopes.ts
+- bun.lock
+- _bmad-output/implementation-artifacts/3-11-post-v1-documenttype-preview-multi-page-svg-response.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
 
 ## Change Log
 
 - 2026-07-20: story 3.11 created — ready for dev
+- 2026-07-20: story 3.11 implementation — preview endpoint (status → review)
 
 ## Story Validation Record
 
