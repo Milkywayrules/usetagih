@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.6: Auth middleware, request-id, and unified error envelope
 
-Status: review
+Status: done
 
 ## Story
 
@@ -356,3 +356,48 @@ Composer
 ## Change Log
 
 - 2026-07-20: Story 3.6 — request-id middleware, AD-11 error envelope on `/v1`, `NOT_IMPLEMENTED` 501 stubs
+- 2026-07-20: Adversarial code review pass — Postgres integration green, turbo 36/36; status → done
+
+## Code Review
+
+**Reviewer:** adversarial code-review subagent (2026-07-20)
+**Branch:** `feat/story-3-6-auth-middleware-envelope` (tip `87b09c6`)
+**Baseline:** `740a720` (story prep)
+
+### Findings
+
+| ID | Severity | Area | Finding | Resolution |
+| --- | --- | --- | --- | --- |
+| CR-1 | Info | Request-id | `createRequestIdPlugin` first in `createApp()`; `X-Request-Id` on success + error; inbound `req_<uuid>` propagated; header/body `requestId` parity verified | Pass |
+| CR-2 | Info | WeakMap pattern | Module-level `WeakMap<Request,string>` in `request-id.ts` — idempotent `getRequestId`, no retention leak (keys GC with Request); macros use `getRequestId(request)` because derive context does not flow into macro `resolve`; `store.requestId` set in `onRequest` stays consistent | Pass |
+| CR-3 | Info | Envelope centralization | `buildApiErrorEnvelope` invoked only from `apps/api/src/lib/api-error.ts`; all listed ad-hoc paths migrated to `respondApiError` / `statusApiError` | Pass |
+| CR-4 | Info | Macro early return | `statusApiError` attaches `X-Request-Id` via `set.headers` before `status()` — covers macro paths that skip `onAfterHandle` | Pass |
+| CR-5 | Info | Global `/v1` errors | `createV1ErrorHandler`: 404 `NOT_FOUND`, 422 `VALIDATION_FAILED` + `details[]`, 500 `INTERNAL_ERROR` generic message; catch-all unknown route; no stack/raw message in body | Pass |
+| CR-6 | Info | Stub 501 | `NOT_IMPLEMENTED` schema code → HTTP 501; stubs + scope-parity matrix assert envelope + header parity | Pass |
+| CR-7 | Info | NFR-5 | Cross-workspace api-key DELETE → 404 `NOT_FOUND` with full envelope | Pass |
+| CR-8 | Info | Auth semantics | Bearer JWT/API-key disambiguation and scope guards unchanged (Stories 3.4–3.5); success bodies remain flat | Pass |
+| CR-9 | Low | Test duplication | `resolveRequestId` cases duplicated in `request-id.test.ts` and `error-envelope.test.ts` | Non-blocking — dedupe optional follow-up |
+| CR-10 | Low | Integration gap | No postgres-gated integration test for api-keys 422 validation envelope (unit test covers mapping) | Non-blocking — AC 12 satisfied at unit layer |
+
+### Verification results
+
+| Gate | Result | Notes |
+| --- | --- | --- |
+| `docker compose -f docker/compose.yml up -d postgres` | **PASS** | Container healthy |
+| `bun run --filter @usetagih/db migrate` | **PASS** | Migrations applied |
+| `bun test apps/api` | **130 pass / 0 skip / 0 fail** | Integration suites ran (auth 11, api-keys 3, session-token 10); 444 `expect()` calls |
+| `bun test packages/schema` | **64 pass** (via turbo) | `NOT_IMPLEMENTED` in `ERROR_CODES`, maps to 501 |
+| `bunx turbo run lint typecheck test build --force` | **36/36 exit 0** | All packages green |
+| Manual spot-check | **PASS** | `/health` 200 + `X-Request-Id`; inbound header propagated; 401 envelope header/body match |
+
+### Commits reviewed
+
+| SHA | Type | Summary | Trailer verify |
+| --- | --- | --- | --- |
+| `70ee335` | feat | add NOT_IMPLEMENTED error code for stub routes | clean |
+| `c884901` | feat | unify v1 error envelope and request-id middleware | clean |
+| `87b09c6` | docs | mark story 3.6 ready for review | clean |
+
+### Outcome
+
+**Status → `done`.** All 14 acceptance criteria verified. No blocking or high-severity defects; WeakMap request-id pattern is correct for Elysia macro context gaps. Postgres integration gate green.
