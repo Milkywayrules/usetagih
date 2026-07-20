@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.9: GET /v1/schemas and POST /v1/{documentType}/validate
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -345,6 +345,48 @@ composer-2.5-fast
 ## Change Log
 
 - 2026-07-20: story 3.9 implementation — schemas discovery + validate-only routes (status → review)
+- 2026-07-20: adversarial code review — no medium+ findings; status → done
+
+## Code Review (2026-07-20)
+
+**Reviewer:** adversarial code review (Story 3.9 schemas + validate)  
+**Implementation:** PR #19 @ `51d55aa`  
+**Verdict:** **PASS** — all 14 ACs satisfied; no medium+ code fixes required
+
+### AC checklist (14/14)
+
+| AC | Result | Notes |
+| --- | --- | --- |
+| 1 | PASS | `GET /v1/schemas` unauthenticated → 200 flat `getSchemaMetadata()` body (not envelope-wrapped) |
+| 2 | PASS | Authenticated session bearer → identical 200 body; auth does not change shape or require workspace |
+| 3 | PASS | `POST /v1/{invoices\|quotations\|receipts}/validate` with `renders:write` → 200 `{ valid: true, normalizedPreview }` with defaulted `schemaVersion: "2026-07-20"` |
+| 4 | PASS | Failures map via `mapValidateResultToResponse` → AD-11 envelope; structural/business failures → 422 (`VALIDATION_FAILED` top-level, business codes in `details[]`) |
+| 5 | PASS | Path/body `documentType` mismatch → 400 `DOCUMENT_TYPE_MISMATCH` with `/documentType` detail |
+| 6 | PASS | Unsupported `schemaVersion` → 400 `UNSUPPORTED_SCHEMA_VERSION` with `/schemaVersion` detail |
+| 7 | PASS | Unknown path segment → 404 `NOT_FOUND` via `/v1` catch-all |
+| 8 | PASS | Missing auth → 401 `UNAUTHORIZED`; insufficient scope → 403 `FORBIDDEN` |
+| 9 | PASS | Handler calls `validateUseCase({ pathDocumentType, rawPayload })` only; shared `document-type-paths.ts` mapping |
+| 10 | PASS | `ROUTE_SCOPE_REQUIREMENTS` includes three validate routes → `renders:write`; `session.token.test.ts` matrix extended |
+| 11 | PASS | Unit tests: schemas 200; validate happy path per type; 422 structural; 400 mismatch/unsupported version; auth/scope denial |
+| 12 | PASS | Postgres-gated integration: sign-up → API key → validate all three minimal fixtures → 200 + correct `normalizedPreview.documentType` |
+| 13 | PASS | `docker compose postgres` + `bunx turbo run lint typecheck test build --force` → 36/36 exit 0 |
+| 14 | PASS | No audit, preview, render pipeline, SDK, OpenAPI Spectral, quota, or idempotency changes |
+
+### Findings triage
+
+| ID | Sev | Bucket | Title | Resolution |
+| --- | --- | --- | --- | --- |
+| CR-1 | low | defer | No dedicated HTTP test for `LINE_TOTAL_MISMATCH` / `TAX_TOTAL_MISMATCH` | Same `mapValidateResultToResponse` path as structural 422; `validateUseCase` returns `VALIDATION_FAILED` top-level with business codes in `details` per PRD §10.3 |
+| CR-2 | low | dismiss | `defaultMessageForCode` returns identical fallback for all codes | Use case always supplies `details[0].message`; fallback unreachable for mapped failure codes |
+| CR-3 | low | dismiss | `@ts-nocheck` on validate route module | Accepted — same Elysia macro pattern as Stories 3.4/3.7/3.8 |
+| CR-4 | low | dismiss | Integration test uses API key path only (not session token) | AC 12 allows either; unit test covers session bearer; integration covers sign-up → scoped API key E2E |
+
+### Verification run
+
+| Gate | Result | Notes |
+| --- | --- | --- |
+| `docker compose -f docker/compose.yml up -d postgres` | **PASS** | Container healthy |
+| `bunx turbo run lint typecheck test build --force` | **36/36 exit 0** | `@usetagih/api` 115 pass / 0 fail |
 
 ## Story Validation Record
 
