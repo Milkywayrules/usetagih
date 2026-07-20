@@ -5,6 +5,7 @@ export const INTERNAL_ERROR_CODE = "INTERNAL_ERROR" as const;
 export const INVALID_REQUEST_CODE = "INVALID_REQUEST" as const;
 export const LINE_TOTAL_MISMATCH_CODE = "LINE_TOTAL_MISMATCH" as const;
 export const NOT_FOUND_CODE = "NOT_FOUND" as const;
+export const NOT_IMPLEMENTED_CODE = "NOT_IMPLEMENTED" as const;
 export const QUOTA_EXCEEDED_CODE = "QUOTA_EXCEEDED" as const;
 export const RATE_LIMITED_CODE = "RATE_LIMITED" as const;
 export const TAX_TOTAL_MISMATCH_CODE = "TAX_TOTAL_MISMATCH" as const;
@@ -22,6 +23,7 @@ export const ERROR_CODES = [
 	"INVALID_REQUEST",
 	"LINE_TOTAL_MISMATCH",
 	"NOT_FOUND",
+	"NOT_IMPLEMENTED",
 	"QUOTA_EXCEEDED",
 	"RATE_LIMITED",
 	"TAX_TOTAL_MISMATCH",

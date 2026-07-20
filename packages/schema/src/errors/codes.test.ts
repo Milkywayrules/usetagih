@@ -8,6 +8,7 @@ import {
 	INVALID_REQUEST_CODE,
 	LINE_TOTAL_MISMATCH_CODE,
 	NOT_FOUND_CODE,
+	NOT_IMPLEMENTED_CODE,
 	QUOTA_EXCEEDED_CODE,
 	RATE_LIMITED_CODE,
 	TAX_TOTAL_MISMATCH_CODE,
@@ -26,6 +27,7 @@ const EXPECTED_HTTP_STATUS: Record<(typeof ERROR_CODES)[number], number> = {
 	INVALID_REQUEST: 400,
 	LINE_TOTAL_MISMATCH: 422,
 	NOT_FOUND: 404,
+	NOT_IMPLEMENTED: 501,
 	QUOTA_EXCEEDED: 402,
 	RATE_LIMITED: 429,
 	TAX_TOTAL_MISMATCH: 422,
@@ -43,6 +45,7 @@ const CODE_CONSTANTS = {
 	INVALID_REQUEST_CODE,
 	LINE_TOTAL_MISMATCH_CODE,
 	NOT_FOUND_CODE,
+	NOT_IMPLEMENTED_CODE,
 	QUOTA_EXCEEDED_CODE,
 	RATE_LIMITED_CODE,
 	TAX_TOTAL_MISMATCH_CODE,
@@ -52,9 +55,9 @@ const CODE_CONSTANTS = {
 	WORKSPACE_REQUIRED_CODE,
 } as const;
 
-test("ERROR_CODES contains exactly 14 PRD codes", () => {
-	expect(ERROR_CODES).toHaveLength(14);
-	expect(new Set(ERROR_CODES).size).toBe(14);
+test("ERROR_CODES contains exactly 15 PRD and extension codes", () => {
+	expect(ERROR_CODES).toHaveLength(15);
+	expect(new Set(ERROR_CODES).size).toBe(15);
 });
 
 test("every code constant matches its ERROR_CODES entry", () => {
@@ -84,6 +87,11 @@ test("402 and 429 status codes are exclusive to QUOTA_EXCEEDED and RATE_LIMITED"
 	expect(
 		ERROR_CODES.filter((code) => getHttpStatusForErrorCode(code) === 429),
 	).toEqual(["RATE_LIMITED"]);
+});
+
+test("NOT_IMPLEMENTED maps to 501", () => {
+	expect(getHttpStatusForErrorCode("NOT_IMPLEMENTED")).toBe(501);
+	expect(NOT_IMPLEMENTED_CODE).toBe("NOT_IMPLEMENTED");
 });
 
 test("WORKSPACE_REQUIRED maps to 403", () => {
