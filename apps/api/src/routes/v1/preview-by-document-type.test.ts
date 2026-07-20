@@ -17,6 +17,13 @@ initTestLogger();
 
 const env = parseEnv("dev", { USETAGIH_DOCS_ENABLED: "false" });
 
+const trialWorkspaceSettingsRepo = {
+	getByOrganizationId: async () => ({
+		tier: "trial" as const,
+		branding: null,
+	}),
+};
+
 function createMockPreviewRuntime(
 	overrides: Partial<PreviewUseCaseDeps> = {},
 ): PreviewRuntimeDeps {
@@ -54,6 +61,7 @@ describe("POST /v1/{documentType}/preview", () => {
 			apiKeyRepo,
 			otelEnabled: false,
 			previewRuntime: createMockPreviewRuntime(),
+			workspaceSettingsRepo: trialWorkspaceSettingsRepo,
 		});
 	});
 

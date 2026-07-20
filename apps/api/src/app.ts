@@ -6,6 +6,7 @@ import {
 	createWorkspaceSettingsRepo,
 	type Db,
 	getDb,
+	type WorkspaceSettingsRepo,
 } from "@usetagih/db";
 import { Elysia } from "elysia";
 import { createBetterAuthPlugin } from "./auth/mount.js";
@@ -44,6 +45,7 @@ export type AppDeps = {
 	otelEnabled?: boolean;
 	onRenderStubInvoked?: () => void;
 	previewRuntime?: PreviewRuntimeDeps;
+	workspaceSettingsRepo?: WorkspaceSettingsRepo;
 };
 
 export function createApp(deps: AppDeps = {}) {
@@ -54,7 +56,8 @@ export function createApp(deps: AppDeps = {}) {
 	const auditRepo = deps.auditRepo ?? createAuditRepo(db);
 	const apiKeyRepo = deps.apiKeyRepo ?? createApiKeyRepo(db);
 	const idempotencyStore = deps.idempotencyStore ?? createIdempotencyStore(db);
-	const workspaceSettingsRepo = createWorkspaceSettingsRepo(db);
+	const workspaceSettingsRepo =
+		deps.workspaceSettingsRepo ?? createWorkspaceSettingsRepo(db);
 	const previewRuntime = deps.previewRuntime ?? createPreviewRuntimeDeps();
 
 	const betterAuth = createBetterAuthPlugin({
