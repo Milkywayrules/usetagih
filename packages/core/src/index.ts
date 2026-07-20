@@ -1,3 +1,5 @@
+export { createInMemoryRenderRateLimiter } from "./in-memory/render-rate-limiter.js";
+export { createInMemoryUsageCounterRepo } from "./in-memory/usage-counter-repo.js";
 export type {
 	ApiKeyCreateInput,
 	ApiKeyRecord,
@@ -17,15 +19,23 @@ export type {
 	NewRenderRecord,
 	RenderListPage,
 	RenderListQuery,
+	RenderRateLimiter,
+	RenderRateLimitResult,
 	RenderRecord,
 	RenderRepo,
 	RenderStatus,
+	UsageCounterRepo,
 	WorkspaceTier,
 } from "./ports/index.js";
 export {
 	formatRenderId,
 	parseRenderId,
 } from "./render-id.js";
+export type {
+	RenderLimitsCheckResult,
+	RenderLimitsService,
+} from "./services/render-limits-service.js";
+export { createRenderLimitsService } from "./services/render-limits-service.js";
 export type { ShareTokenPayload } from "./share-token.js";
 export {
 	buildShareUrl,
@@ -34,6 +44,15 @@ export {
 	resolveShareTtlDays,
 	verifyShareToken,
 } from "./share-token.js";
+export {
+	currentUsageMonth,
+	formatQuotaExceededMessage,
+	formatRateLimitedMessage,
+	getMonthlyRenderQuota,
+	getNextWorkspaceTier,
+	getRateLimitRendersPerMin,
+	WORKSPACE_TIERS,
+} from "./tier-limits.js";
 export {
 	AUDIT_RETENTION_DAYS,
 	type AuditEventMetadata,

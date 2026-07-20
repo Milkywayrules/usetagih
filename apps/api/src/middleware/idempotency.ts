@@ -1,8 +1,14 @@
 // @ts-nocheck — Elysia macros from composed plugins are runtime-valid but not inferred on child instances.
-import type { IdempotencyStore } from "@usetagih/core";
+import type {
+	IdempotencyStore,
+	RenderLimitsService,
+	WorkspaceTier,
+} from "@usetagih/core";
 import {
 	IDEMPOTENCY_CONFLICT_CODE,
 	INVALID_REQUEST_CODE,
+	QUOTA_EXCEEDED_CODE,
+	RATE_LIMITED_CODE,
 } from "@usetagih/schema";
 import { Elysia } from "elysia";
 import { respondApiError } from "../lib/api-error.js";
@@ -61,10 +67,16 @@ export function getIdempotencyContext(
 	return idempotencyContextByRequest.get(request);
 }
 
+type RenderLimitsDeps = {
+	service: RenderLimitsService;
+	getWorkspaceTier: (workspaceId: string) => Promise<WorkspaceTier>;
+};
+
 export function createIdempotencyMiddleware(options: {
 	idempotencyStore: IdempotencyStore;
 	documentTypePath: string;
 	handler: RenderRouteHandler;
+	renderLimits?: RenderLimitsDeps;
 }) {
 	const endpoint = `POST /v1/${options.documentTypePath}/render`;
 
@@ -138,6 +150,53 @@ export function createIdempotencyMiddleware(options: {
 				cacheHit: false,
 				rawBody,
 			});
+
+			if (options.renderLimits) {
+				const tier = await options.renderLimits.getWorkspaceTier(workspaceId);
+				const limits = await options.renderLimits.service.checkBeforeRender({
+					workspaceId,
+					tier,
+				});
+
+				if (!limits.ok) {
+					if (limits.kind === "rate_limited") {
+						set.headers ??= {};
+						set.headers["Retry-After"] = String(limits.retryAfterSeconds);
+						return respondApiError({
+							set,
+							code: RATE_LIMITED_CODE,
+							message: limits.message,
+							requestId,
+							request,
+							details: [],
+						});
+					}
+
+					return respondApiError({
+						set,
+						code: QUOTA_EXCEEDED_CODE,
+						message: limits.message,
+						requestId,
+						request,
+						details: [
+							{
+								path: "/tier",
+								code: QUOTA_EXCEEDED_CODE,
+								message: limits.tier,
+							},
+							...(limits.nextTier
+								? [
+										{
+											path: "/nextTier",
+											code: QUOTA_EXCEEDED_CODE,
+											message: limits.nextTier,
+										},
+									]
+								: []),
+						],
+					});
+				}
+			}
 		})
 		.onAfterHandle(async (ctx) => {
 			const request = ctx.request;
@@ -166,6 +225,14 @@ export function createIdempotencyMiddleware(options: {
 				responseBody,
 				expiresAt: new Date(Date.now() + IDEMPOTENCY_TTL_MS),
 			});
+
+			if (options.renderLimits) {
+				const tier = await options.renderLimits.getWorkspaceTier(workspaceId);
+				await options.renderLimits.service.recordSuccessfulRender({
+					workspaceId,
+					tier,
+				});
+			}
 
 			const reload = await options.idempotencyStore.lookup({
 				workspaceId,

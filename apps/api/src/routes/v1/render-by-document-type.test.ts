@@ -1,7 +1,12 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { parseEnv } from "@usetagih/config/env";
 import type { RenderUseCaseDeps } from "@usetagih/core";
-import { ApiErrorEnvelopeSchema } from "@usetagih/schema";
+import { currentUsageMonth } from "@usetagih/core";
+import {
+	ApiErrorEnvelopeSchema,
+	QUOTA_EXCEEDED_CODE,
+	RATE_LIMITED_CODE,
+} from "@usetagih/schema";
 import missingBuyerInvoice from "../../../../../packages/schema/__fixtures__/invalid/structural/missing-buyer-invoice.json";
 import invoiceMinimal from "../../../../../packages/schema/__fixtures__/valid/invoice-minimal.json";
 import quotationMinimal from "../../../../../packages/schema/__fixtures__/valid/quotation-minimal.json";
@@ -14,6 +19,10 @@ import {
 import { createInMemoryAuditRepo } from "../../test-helpers/audit.js";
 import { initTestLogger } from "../../test-helpers/evlog.js";
 import { createMemoryIdempotencyStore } from "../../test-helpers/idempotency-store.js";
+import {
+	createExhaustedQuotaRenderLimitsService,
+	createTestRenderLimitsService,
+} from "../../test-helpers/render-limits.js";
 
 initTestLogger();
 
@@ -96,6 +105,7 @@ describe("POST /v1/{documentType}/render", () => {
 	let app: ReturnType<typeof createApp>;
 	const apiKeyRepo = createInMemoryApiKeyRepo();
 	const auditRepo = createInMemoryAuditRepo();
+	const { service: renderLimits } = createTestRenderLimitsService();
 
 	beforeAll(() => {
 		app = createApp({
@@ -107,6 +117,7 @@ describe("POST /v1/{documentType}/render", () => {
 			renderRuntime: createMockRenderRuntime(),
 			workspaceSettingsRepo: trialWorkspaceSettingsRepo,
 			resolveAuditUserId: async () => "00000000-0000-4000-8000-000000000001",
+			renderLimits,
 		});
 	});
 
@@ -263,5 +274,147 @@ describe("POST /v1/{documentType}/render", () => {
 		);
 
 		expect(response.status).toBe(403);
+	});
+});
+
+describe("POST /v1/{documentType}/render limits", () => {
+	const apiKeyRepo = createInMemoryApiKeyRepo();
+	const auditRepo = createInMemoryAuditRepo();
+	const fixedNow = () => new Date("2026-07-20T12:00:00.000Z");
+
+	async function createBearer(workspaceId = crypto.randomUUID()) {
+		const { secret } = await createTestApiKey(apiKeyRepo, {
+			workspaceId,
+			scopes: ["renders:write"],
+		});
+		return { secret, workspaceId };
+	}
+
+	function createLimitsApp(
+		renderLimits: ReturnType<typeof createTestRenderLimitsService>["service"],
+	) {
+		return createApp({
+			env,
+			apiKeyRepo,
+			auditRepo,
+			otelEnabled: false,
+			idempotencyStore: createMemoryIdempotencyStore(),
+			renderRuntime: createMockRenderRuntime(),
+			workspaceSettingsRepo: trialWorkspaceSettingsRepo,
+			resolveAuditUserId: async () => "00000000-0000-4000-8000-000000000001",
+			renderLimits,
+		});
+	}
+
+	test("rate limit exceeded → 429 RATE_LIMITED with Retry-After", async () => {
+		const { service: renderLimits } = createTestRenderLimitsService({
+			now: fixedNow,
+		});
+		const app = createLimitsApp(renderLimits);
+		const { secret } = await createBearer();
+
+		for (let i = 0; i < 30; i += 1) {
+			const okResponse = await app.handle(
+				new Request("http://localhost/v1/invoices/render", {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${secret}`,
+						"Content-Type": "application/json",
+						"Idempotency-Key": `rate-limit-ok-${i}`,
+					},
+					body: JSON.stringify(invoiceMinimal),
+				}),
+			);
+			expect(okResponse.status).toBe(201);
+		}
+
+		const blocked = await app.handle(
+			new Request("http://localhost/v1/invoices/render", {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${secret}`,
+					"Content-Type": "application/json",
+					"Idempotency-Key": "rate-limit-blocked",
+				},
+				body: JSON.stringify(invoiceMinimal),
+			}),
+		);
+
+		expect(blocked.status).toBe(429);
+		expect(blocked.headers.get("Retry-After")).not.toBeNull();
+		const body = ApiErrorEnvelopeSchema.parse(await blocked.json());
+		expect(body.error.code).toBe(RATE_LIMITED_CODE);
+	});
+
+	test("monthly quota exceeded → 402 QUOTA_EXCEEDED naming tier and next tier", async () => {
+		const workspaceId = crypto.randomUUID();
+		const { service, primeQuota } = createExhaustedQuotaRenderLimitsService({
+			tier: "trial",
+			now: fixedNow,
+		});
+		await primeQuota(workspaceId);
+
+		const app = createLimitsApp(service);
+		const { secret } = await createBearer(workspaceId);
+
+		const response = await app.handle(
+			new Request("http://localhost/v1/invoices/render", {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${secret}`,
+					"Content-Type": "application/json",
+					"Idempotency-Key": "quota-exceeded-key",
+				},
+				body: JSON.stringify(invoiceMinimal),
+			}),
+		);
+
+		expect(response.status).toBe(402);
+		const body = ApiErrorEnvelopeSchema.parse(await response.json());
+		expect(body.error.code).toBe(QUOTA_EXCEEDED_CODE);
+		expect(body.error.message).toContain("trial");
+		expect(body.error.message).toContain("starter");
+		expect(body.error.details?.some((detail) => detail.path === "/tier")).toBe(
+			true,
+		);
+		expect(
+			body.error.details?.some((detail) => detail.path === "/nextTier"),
+		).toBe(true);
+	});
+
+	test("idempotent retry with same key does not double-count quota", async () => {
+		const { service: renderLimits, usageCounterRepo } =
+			createTestRenderLimitsService({ now: fixedNow });
+		const app = createLimitsApp(renderLimits);
+		const workspaceId = crypto.randomUUID();
+		const { secret } = await createBearer(workspaceId);
+		const month = currentUsageMonth(fixedNow());
+
+		const requestInit = {
+			method: "POST" as const,
+			headers: {
+				Authorization: `Bearer ${secret}`,
+				"Content-Type": "application/json",
+				"Idempotency-Key": "quota-idempotent-key",
+			},
+			body: JSON.stringify(invoiceMinimal),
+		};
+
+		const first = await app.handle(
+			new Request("http://localhost/v1/invoices/render", requestInit),
+		);
+		expect(first.status).toBe(201);
+		const firstBody = (await first.json()) as { renderId: string };
+
+		const second = await app.handle(
+			new Request("http://localhost/v1/invoices/render", requestInit),
+		);
+		expect(second.status).toBe(201);
+		const secondBody = (await second.json()) as { renderId: string };
+		expect(secondBody.renderId).toBe(firstBody.renderId);
+
+		expect(await usageCounterRepo.getRenderCount({ workspaceId, month })).toBe(
+			1,
+		);
 	});
 });
