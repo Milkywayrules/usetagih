@@ -26,3 +26,15 @@ no need to handle empty / unconfigured (like github oauth, r2, and others), just
 stop if it is mandatory for user/human to provide it NOW. continue if it can be defered withouth any extra temporary implementation to pass it.
 
 8. use t3 env for runtime env validations.
+
+## Harness activation tiers (board-ratified 2026-07-20)
+
+Directives #1–8 stay authoritative; tiers say **when** each applies during BMad MVP vs pre-production.
+
+| Tier | When | Directives |
+|------|------|------------|
+| **T0** | Always during BMad | #4 branch+PR; #5 Elysia platform (done); #6 periodic `AGENTS.md` reindex |
+| **T1** | Story/epic triggered | #1 base-ui when web epic starts; #3 multi-tenant via epic stories (e.g. 3.19); #8 t3-env on env-touching stories; #7 partial — stop only when mandatory human config is needed **now** (per #7) |
+| **T2** | Pre-production gate | #2 pricing tiers + mock payment; #7 full enforcement; orchestrator + right-hand dual signoff; create `AGENTS_STOP_FILE` |
+
+**Stop/ship gate:** Epics 0–8 MVP stories complete (Epic 9 excluded) **and** orchestrator + right-hand production confidence. This gate ends the harness loop (STOP), not deferral of T0/T1.
