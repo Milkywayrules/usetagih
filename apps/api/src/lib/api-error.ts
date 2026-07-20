@@ -5,6 +5,7 @@ import {
 	getHttpStatusForErrorCode,
 } from "@usetagih/schema";
 import { REQUEST_ID_HEADER } from "../middleware/request-id.js";
+import { applySecurityHeadersToSet } from "../middleware/security-headers.js";
 
 type StatusSetter = {
 	status?: number | string;
@@ -12,9 +13,24 @@ type StatusSetter = {
 };
 type StatusFn = (code: number, body: unknown) => unknown;
 
-function attachRequestIdHeader(set: StatusSetter, requestId: string) {
+function attachStandardResponseHeaders(
+	set: StatusSetter,
+	requestId: string,
+	path: string,
+) {
 	set.headers ??= {};
 	set.headers[REQUEST_ID_HEADER] = requestId;
+	applySecurityHeadersToSet(set, path);
+}
+
+function resolveRequestPath(request?: Request, path?: string) {
+	if (path) {
+		return path;
+	}
+	if (request) {
+		return new URL(request.url).pathname;
+	}
+	return "";
 }
 
 export function respondApiError(options: {
@@ -22,11 +38,17 @@ export function respondApiError(options: {
 	code: ErrorCode;
 	message: string;
 	requestId: string;
+	request?: Request;
+	path?: string;
 	details?: readonly ApiErrorDetail[];
 }) {
 	const status = getHttpStatusForErrorCode(options.code);
 	options.set.status = status;
-	attachRequestIdHeader(options.set, options.requestId);
+	attachStandardResponseHeaders(
+		options.set,
+		options.requestId,
+		resolveRequestPath(options.request, options.path),
+	);
 	return buildApiErrorEnvelope({
 		code: options.code,
 		message: options.message,
@@ -42,10 +64,16 @@ export function statusApiError(
 		code: ErrorCode;
 		message: string;
 		requestId: string;
+		request?: Request;
+		path?: string;
 		details?: readonly ApiErrorDetail[];
 	},
 ) {
-	attachRequestIdHeader(set, options.requestId);
+	attachStandardResponseHeaders(
+		set,
+		options.requestId,
+		resolveRequestPath(options.request, options.path),
+	);
 	const httpStatus = getHttpStatusForErrorCode(options.code);
 	return status(
 		httpStatus,
@@ -59,7 +87,7 @@ export function statusApiError(
 }
 
 export function respondApiErrorFromContext(
-	ctx: { requestId: string; set: StatusSetter },
+	ctx: { requestId: string; set: StatusSetter; request?: Request },
 	options: {
 		code: ErrorCode;
 		message: string;
@@ -69,6 +97,7 @@ export function respondApiErrorFromContext(
 	return respondApiError({
 		set: ctx.set,
 		requestId: ctx.requestId,
+		request: ctx.request,
 		...options,
 	});
 }
@@ -80,6 +109,7 @@ export function statusApiErrorFromStore(
 	options: {
 		code: ErrorCode;
 		message: string;
+		request?: Request;
 		details?: readonly ApiErrorDetail[];
 	},
 ) {

@@ -88,7 +88,7 @@ function validationDetails(error: unknown): readonly ApiErrorDetail[] {
 
 export function createV1ErrorHandler() {
 	return new Elysia({ name: "v1-error-handler" })
-		.onError({ as: "global" }, ({ code, error, set, store }) => {
+		.onError({ as: "global" }, ({ code, error, request, set, store }) => {
 			const requestId = (store as { requestId: string }).requestId;
 
 			if (code === "NOT_FOUND") {
@@ -96,6 +96,7 @@ export function createV1ErrorHandler() {
 					set,
 					code: NOT_FOUND_CODE,
 					message: "Route not found",
+					request,
 					requestId,
 				});
 			}
@@ -105,6 +106,7 @@ export function createV1ErrorHandler() {
 					set,
 					code: VALIDATION_FAILED_CODE,
 					message: "Request validation failed",
+					request,
 					requestId,
 					details: validationDetails(error),
 				});
@@ -122,14 +124,16 @@ export function createV1ErrorHandler() {
 				set,
 				code: INTERNAL_ERROR_CODE,
 				message: "An internal error occurred",
+				request,
 				requestId,
 			});
 		})
-		.all("*", ({ set, store }) =>
+		.all("*", ({ request, set, store }) =>
 			respondApiError({
 				set,
 				code: NOT_FOUND_CODE,
 				message: "Route not found",
+				request,
 				requestId: (store as { requestId: string }).requestId,
 			}),
 		);

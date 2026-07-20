@@ -102,7 +102,7 @@ development_status:
   3-4-post-v1-session-token-short-lived-audience-bound-csrf-protected-bearer: done
   3-5-api-key-create-list-and-revoke-endpoints: done
   3-6-auth-middleware-request-id-and-unified-error-envelope: done
-  3-7-elysia-platform-baseline: review
+  3-7-elysia-platform-baseline: done
   3-8-idempotency-middleware-for-render-endpoints: backlog
   3-9-get-v1-schemas-and-post-v1-documenttype-validate: backlog
   3-10-logo-ingestion-ssrf-hardened-pipeline: backlog

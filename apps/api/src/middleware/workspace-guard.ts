@@ -22,6 +22,7 @@ export function createWorkspaceGuard() {
 					return statusApiError(status, set, {
 						code: UNAUTHORIZED_CODE,
 						message: "Authentication required",
+						request,
 						requestId: getRequestId(request),
 					}) as never;
 				}
@@ -32,6 +33,7 @@ export function createWorkspaceGuard() {
 					return statusApiError(status, set, {
 						code: WORKSPACE_REQUIRED_CODE,
 						message: "Active workspace required",
+						request,
 						requestId: getRequestId(request),
 					}) as never;
 				}
@@ -43,6 +45,7 @@ export function createWorkspaceGuard() {
 					return statusApiError(status, set, {
 						code: WORKSPACE_REQUIRED_CODE,
 						message: "Active workspace required",
+						request,
 						requestId: getRequestId(request),
 					}) as never;
 				}

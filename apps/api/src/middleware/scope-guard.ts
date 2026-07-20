@@ -25,6 +25,7 @@ export function createScopeGuard() {
 						return statusApiError(status, set, {
 							code: UNAUTHORIZED_CODE,
 							message: "Authentication required",
+							request,
 							requestId: getRequestId(request),
 						}) as never;
 					}
@@ -36,6 +37,7 @@ export function createScopeGuard() {
 						return statusApiError(status, set, {
 							code: FORBIDDEN_CODE,
 							message: `Insufficient scope: requires ${missing ?? scopes[0]}`,
+							request,
 							requestId: getRequestId(request),
 						}) as never;
 					}

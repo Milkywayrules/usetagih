@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { beforeEach, describe, expect, test } from "bun:test";
 import {
 	ApiErrorEnvelopeSchema,
 	getHttpStatusForErrorCode,
@@ -6,9 +6,24 @@ import {
 	VALIDATION_FAILED_CODE,
 } from "@usetagih/schema";
 import { Elysia } from "elysia";
+import { initLogger } from "evlog";
+import {
+	clearMemoryLogs,
+	createMemoryDrain,
+	readMemoryLogs,
+} from "evlog/memory";
 import { respondApiError } from "../lib/api-error.js";
+import { createEvlogPlugin } from "../plugins/evlog.js";
 import { createRequestIdPlugin, resolveRequestId } from "./request-id.js";
 import { createV1ErrorHandler } from "./v1-error-handler.js";
+
+const ERROR_LOG_STORE = "error-envelope-evlog";
+const errorLogDrain = createMemoryDrain({ store: ERROR_LOG_STORE });
+
+beforeEach(() => {
+	clearMemoryLogs(ERROR_LOG_STORE);
+	initLogger({ env: { service: "usetagih-api-test" } });
+});
 
 describe("request-id middleware", () => {
 	test("resolveRequestId generates req_ prefix for missing inbound", () => {
@@ -119,6 +134,7 @@ describe("respondApiError", () => {
 	test("v1 error handler masks internal errors without stack leakage", async () => {
 		const app = new Elysia()
 			.use(createRequestIdPlugin())
+			.use(createEvlogPlugin({ drain: errorLogDrain }))
 			.group("/v1", (group) =>
 				group
 					.get("/boom", () => {
@@ -136,5 +152,14 @@ describe("respondApiError", () => {
 		const body = ApiErrorEnvelopeSchema.parse(JSON.parse(raw));
 		expect(body.error.code).toBe("INTERNAL_ERROR");
 		expect(body.error.message).toBe("An internal error occurred");
+
+		const errorEvents = readMemoryLogs({
+			store: ERROR_LOG_STORE,
+			limit: 10,
+		}).filter((event) => event.level === "error");
+		expect(errorEvents.length).toBeGreaterThan(0);
+		expect(JSON.stringify(errorEvents.at(-1)?.error)).toContain(
+			"super secret stack material",
+		);
 	});
 });
