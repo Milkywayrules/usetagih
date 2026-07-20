@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.10: Logo ingestion SSRF-hardened pipeline
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -314,6 +314,54 @@ composer-2.5-fast
 - bun.lock
 - _bmad-output/implementation-artifacts/3-10-logo-ingestion-ssrf-hardened-pipeline.md
 - _bmad-output/implementation-artifacts/sprint-status.yaml
+
+## Change Log
+
+- 2026-07-20: story 3.10 implementation — SSRF-hardened logo ingestion pipeline (status → review)
+- 2026-07-20: adversarial code review — no medium+ findings; status → done
+
+## Code Review (2026-07-20)
+
+**Reviewer:** adversarial code review (Story 3.10 logo ingestion SSRF pipeline)  
+**Implementation:** PR #23 @ `d569aa6`  
+**Verdict:** **PASS** — all 15 ACs satisfied; no medium+ code fixes required
+
+### AC checklist (15/15)
+
+| AC | Result | Notes |
+| --- | --- | --- |
+| 1 | PASS | `validateHttpsUrl` rejects `http:`, `file:`, `data:`, IP-literal hosts, missing host; failures surface as `VALIDATION_FAILED` `/branding/logoUrl` via `resolveLogoUseCase` |
+| 2 | PASS | `resolveAndValidateHost` checks every DNS A/AAAA record against RFC1918, loopback, link-local, CGNAT, unspecified, IPv6 ULA/link-local blocklist before connect |
+| 3 | PASS | Resolve-then-connect IP pinning via `node:https` to validated address with `servername`/`Host` for original hostname; documented in `fetch-logo.ts` |
+| 4 | PASS | Manual redirect follow capped at 3; non-HTTPS redirect targets rejected; each redirect re-runs URL + DNS SSRF validation |
+| 5 | PASS | Raw body stream capped at 2 MB; gzip/deflate/br decompression capped at 10 MB via `maxOutputLength` |
+| 6 | PASS | `sniffLogoContentType` enforces PNG/JPEG/SVG magic bytes; ignores `Content-Type` header alone |
+| 7 | PASS | SVG path runs `sanitizeSvgLogo`; persisted bytes are post-sanitization; PNG/JPEG skip sanitizer |
+| 8 | PASS | `computeLogoChecksum` on bytes written to storage (post-SVG-sanitization when applicable) |
+| 9 | PASS | `buildLogoStorageKey` → `logos/{workspaceId}/{logoChecksum}.{ext}`; `LogoBlobStore.put` accepts content-type metadata |
+| 10 | PASS | `findLogoByUrl` cache + `resolveLogoUseCaseFromStorage` re-read by checksum/key skip network; tests assert single fetch count |
+| 11 | PASS | `mergeBranding` payload overrides workspace; absent payload logo falls back to workspace; no logo → `{ logo: null }` |
+| 12 | PASS | `prepareIngestedLogoForTypst` writes temp file + relative `logo=` arg + returns `logoChecksum` for render snapshot wiring |
+| 13 | PASS | Mock-server tests cover blocked private IPs, redirect cap, oversize body, wrong magic bytes, malicious SVG, determinism re-read |
+| 14 | PASS | `docker compose postgres` + `bunx turbo run lint typecheck test build --force` → 36/36 exit 0 |
+| 15 | PASS | No HTTP routes, preview, audit, R2 production adapter, golden fixture network fetch, or API payload schema changes |
+
+### Findings triage
+
+| ID | Sev | Bucket | Title | Resolution |
+| --- | --- | --- | --- | --- |
+| CR-1 | low | defer | `LogoBlobStore` filesystem stub stores bytes only (no separate content-type sidecar) | AC 15 allows MinIO/filesystem stub for tests; Story 3.12 production adapter can persist metadata |
+| CR-2 | low | defer | IPv4-mapped IPv6 addresses fail-closed when parser cannot extract embedded IPv4 | DNS AAAA records rarely use `::ffff:` form; fail-closed favors SSRF safety over edge-case reachability |
+| CR-3 | low | dismiss | `findLogoByUrl` is optional on `ResolveLogoDeps` | Composition root (Story 3.12) wires `MemoryLogoBlobStore.findByUrl`; `resolveLogoUseCaseFromStorage` covers checksum/key re-read path per AC 10 |
+| CR-4 | low | dismiss | Alternate IPv4 encodings (`0177.0.0.1`, `2130706433`) bypass `isBlockedHostname` on raw hostname | `URL` normalizes hostname to dotted-quad before SSRF checks; fetch rejects loopback encodings |
+| CR-5 | low | dismiss | `streamBodyWithLimit` may invoke `resolve` twice on oversize streams | Promise first-resolve wins; stream destroyed on limit breach; no observed incorrect success path |
+
+### Verification run
+
+| Gate | Result | Notes |
+| --- | --- | --- |
+| `docker compose -f docker/compose.yml up -d postgres` | **PASS** | Container healthy |
+| `bunx turbo run lint typecheck test build --force` | **36/36 exit 0** | Logo ingestion suites: 23 pass in `packages/render` + `packages/core` |
 
 ## Story Validation Record
 
