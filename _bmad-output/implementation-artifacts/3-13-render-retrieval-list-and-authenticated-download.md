@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.13: Render retrieval, list, and authenticated download
 
-Status: review
+Status: done
 
 ## Story
 
@@ -34,7 +34,7 @@ So that I can retrieve artifacts after render (FR-13, FR-14, FR-15).
 - [x] Task 4 — Scopes + session.token parity matrix
 - [x] Task 5 — Unit + integration tests
 - [x] Task 6 — Verification gate: docker postgres + turbo 36/36
-- [ ] Task 7 — PR, merge, adversarial review
+- [x] Task 7 — PR, merge, adversarial review
 
 ## Dev Agent Record
 
@@ -44,8 +44,36 @@ composer-2.5-fast (implementation subagent)
 
 ### Completion Notes
 
-(pending)
+- Replaced `createRendersStubRoutes` GET handlers with real retrieval routes; POST `/v1/renders` remains `NOT_IMPLEMENTED`.
+- Download verifies artifact sha256; audit uses workspace owner userId for API-key auth with `apiKeyId` in metadata.
+- Merged via PR #31 (`3e999e9`).
+
+### Adversarial code review (2026-07-20)
+
+**Reviewer:** adversarial code review (Story 3.13 render retrieval)  
+**Verdict:** no medium+ findings — status → done
+
+| ID | Severity | Disposition | Finding | Notes |
+| --- | --- | --- | --- | --- |
+| CR-1 | low | defer | API-key download audit attributes workspace owner, not key holder | FK requires valid `user_id`; `apiKeyId` preserved in metadata — full actor model deferred to Story 3.15 |
+| CR-2 | low | dismiss | In-memory artifact store shared across sync render + download in single process | Same class as Story 3.12; production R2 adapter lands later |
+| CR-3 | low | dismiss | `resolveAuditUserId` member lookup assumes MVP single-member workspace | Matches Story 3.3 membershipLimit: 1 |
 
 ### File List
 
-(pending)
+- packages/core/src/render-id.ts
+- packages/core/src/use-cases/render-metadata.ts
+- packages/core/src/use-cases/get-render-use-case.ts
+- packages/core/src/use-cases/list-renders-use-case.ts
+- packages/core/src/use-cases/download-render-use-case.ts
+- packages/core/src/use-cases/render-retrieval-use-case.test.ts
+- packages/core/src/ports/render-repo.ts
+- packages/db/src/repositories/render-repo.ts
+- apps/api/src/routes/v1/renders.ts
+- apps/api/src/routes/v1/renders.schemas.ts
+- apps/api/src/routes/v1/renders.test.ts
+- apps/api/src/integration/render-retrieval.integration.test.ts
+- apps/api/src/app.ts
+- packages/schema/src/auth/scopes.ts
+- apps/api/src/routes/v1/session.token.test.ts
+- _bmad-output/implementation-artifacts/3-13-render-retrieval-list-and-authenticated-download.md
