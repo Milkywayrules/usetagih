@@ -357,6 +357,7 @@ Composer
 
 - 2026-07-20: Story 3.6 — request-id middleware, AD-11 error envelope on `/v1`, `NOT_IMPLEMENTED` 501 stubs
 - 2026-07-20: Adversarial code review pass — Postgres integration green, turbo 36/36; status → done
+- 2026-07-20: Follow-up review — CR-11 PARSE→422 fix (`c62689c`); 131 api tests green
 
 ## Code Review
 
@@ -378,6 +379,14 @@ Composer
 | CR-8 | Info | Auth semantics | Bearer JWT/API-key disambiguation and scope guards unchanged (Stories 3.4–3.5); success bodies remain flat | Pass |
 | CR-9 | Low | Test duplication | `resolveRequestId` cases duplicated in `request-id.test.ts` and `error-envelope.test.ts` | Non-blocking — dedupe optional follow-up |
 | CR-10 | Low | Integration gap | No postgres-gated integration test for api-keys 422 validation envelope (unit test covers mapping) | Non-blocking — AC 12 satisfied at unit layer |
+| CR-11 | **High** | AC 4 / validation | Elysia `PARSE` errors (malformed JSON body) fell through `onError` default → **500** `INTERNAL_ERROR` instead of **422** `VALIDATION_FAILED` | **Fixed** in `c62689c` — `code === "PARSE"` handled alongside `VALIDATION` |
+
+### Follow-up review (2026-07-20, tip `c62689c`)
+
+Adversarial re-pass focused on requestId parity, AD-11 envelopes, 404/422/501/500 paths, bearer chain, WeakMap macro pattern. One blocking defect found and patched:
+
+- **CR-11 (patch):** `POST /v1/api-keys` with `{invalid json` returned 500 before fix; now 422 with full AD-11 envelope and `requestId` parity.
+- All other focus areas confirmed: WeakMap `getRequestId(request)` stable across macros; `statusApiError` sets header before macro `status()`; bearer chain 401/403/501 matrix unchanged; 404 catch-all + 500 masking verified; no inline `{ error: { code, message } }` literals remain in `apps/api/src`.
 
 ### Verification results
 
@@ -385,7 +394,7 @@ Composer
 | --- | --- | --- |
 | `docker compose -f docker/compose.yml up -d postgres` | **PASS** | Container healthy |
 | `bun run --filter @usetagih/db migrate` | **PASS** | Migrations applied |
-| `bun test apps/api` | **130 pass / 0 skip / 0 fail** | Integration suites ran (auth 11, api-keys 3, session-token 10); 444 `expect()` calls |
+| `bun test apps/api` | **131 pass / 0 skip / 0 fail** | Integration suites ran (auth 11, api-keys 3, session-token 10); 448 `expect()` calls; includes PARSE→422 unit test |
 | `bun test packages/schema` | **64 pass** (via turbo) | `NOT_IMPLEMENTED` in `ERROR_CODES`, maps to 501 |
 | `bunx turbo run lint typecheck test build --force` | **36/36 exit 0** | All packages green |
 | Manual spot-check | **PASS** | `/health` 200 + `X-Request-Id`; inbound header propagated; 401 envelope header/body match |
@@ -397,7 +406,8 @@ Composer
 | `70ee335` | feat | add NOT_IMPLEMENTED error code for stub routes | clean |
 | `c884901` | feat | unify v1 error envelope and request-id middleware | clean |
 | `87b09c6` | docs | mark story 3.6 ready for review | clean |
+| `c62689c` | fix | map elysia PARSE errors to 422 validation envelope | clean |
 
 ### Outcome
 
-**Status → `done`.** All 14 acceptance criteria verified. No blocking or high-severity defects; WeakMap request-id pattern is correct for Elysia macro context gaps. Postgres integration gate green.
+**Status → `done`.** All 14 acceptance criteria verified after CR-11 patch. WeakMap request-id pattern correct for Elysia macro context gaps. Postgres integration gate green; turbo 36/36.
