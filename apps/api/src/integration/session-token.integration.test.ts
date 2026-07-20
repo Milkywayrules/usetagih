@@ -6,7 +6,10 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { createDb, probeDb } from "@usetagih/db";
 import { SESSION_TOKEN_SCOPES } from "@usetagih/schema";
 import { createApp } from "../app.js";
-import { verifySessionBearerToken } from "../auth/session-token.js";
+import {
+	signSessionBearerTokenRaw,
+	verifySessionBearerToken,
+} from "../auth/session-token.js";
 import { parseApiEnv } from "../env.js";
 import {
 	CSRF_HEADER,
@@ -15,7 +18,9 @@ import {
 } from "../middleware/csrf.js";
 
 const postgresUp = await probeDb();
-const describeIntegration = postgresUp ? describe : describe.skip;
+const describeIntegration = postgresUp
+	? (name: string, fn: () => void) => describe(name, fn, { timeout: 15_000 })
+	: describe.skip;
 const testEnv = parseApiEnv();
 
 class AuthCookieJar {
@@ -147,34 +152,122 @@ describeIntegration("session token integration", () => {
 		expect(response.status).toBe(401);
 	});
 
-	test("Bearer token on GET /v1/renders → 501", async () => {
-		const id = suffix();
-		await signUpWithWorkspace(`bearer-${id}`);
+	test("GET /v1/session/csrf without session → 401", async () => {
+		const response = await fetch(`${base}/v1/session/csrf`);
+		expect(response.status).toBe(401);
+		const body = await response.json();
+		expect(body.error.code).toBe("UNAUTHORIZED");
+	});
 
+	async function exchangeSessionBearer(): Promise<string> {
 		const csrfResponse = await fetch(`${base}/v1/session/csrf`, {
 			headers: jar.headers(),
 		});
 		jar.absorb(csrfResponse);
-
 		const csrfRequest = new Request(`${base}/v1/session/token`, {
 			method: "POST",
 			headers: jar.headers(),
 		});
 		const csrfToken = readCsrfCookie(csrfRequest, false);
-		expect(csrfToken).toBeTruthy();
-
 		const tokenResponse = await fetch(`${base}/v1/session/token`, {
 			method: "POST",
 			headers: jar.headers({ [CSRF_HEADER]: csrfToken ?? "" }),
 		});
+		expect(tokenResponse.status).toBe(200);
 		const { accessToken } = (await tokenResponse.json()) as {
 			accessToken: string;
 		};
+		return accessToken;
+	}
+
+	test("Bearer token on GET /v1/renders → 501", async () => {
+		const id = suffix();
+		await signUpWithWorkspace(`bearer-${id}`);
+
+		const accessToken = await exchangeSessionBearer();
 
 		const rendersResponse = await fetch(`${base}/v1/renders`, {
 			headers: { Authorization: `Bearer ${accessToken}` },
 		});
 		expect(rendersResponse.status).toBe(501);
+	});
+
+	test("expired JWT → 401", async () => {
+		const id = suffix();
+		await signUpWithWorkspace(`expired-${id}`);
+		const now = Math.floor(Date.now() / 1000);
+		const token = await signSessionBearerTokenRaw(
+			{
+				sub: crypto.randomUUID(),
+				wid: crypto.randomUUID(),
+				scp: [...SESSION_TOKEN_SCOPES],
+				azp: testEnv.USETAGIH_WEB_PUBLIC_URL,
+				typ: "session_bearer",
+				jti: crypto.randomUUID(),
+				iat: now - 1200,
+				exp: now - 300,
+				aud: testEnv.USETAGIH_API_PUBLIC_URL,
+				iss: testEnv.USETAGIH_API_PUBLIC_URL,
+			},
+			testEnv,
+		);
+
+		const response = await fetch(`${base}/v1/renders`, {
+			headers: { Authorization: `Bearer ${token}` },
+		});
+		expect(response.status).toBe(401);
+	});
+
+	test("JWT with wrong aud → 401", async () => {
+		const id = suffix();
+		await signUpWithWorkspace(`wrong-aud-${id}`);
+		const now = Math.floor(Date.now() / 1000);
+		const token = await signSessionBearerTokenRaw(
+			{
+				sub: crypto.randomUUID(),
+				wid: crypto.randomUUID(),
+				scp: [...SESSION_TOKEN_SCOPES],
+				azp: testEnv.USETAGIH_WEB_PUBLIC_URL,
+				typ: "session_bearer",
+				jti: crypto.randomUUID(),
+				iat: now,
+				exp: now + 900,
+				aud: "https://evil.example/api",
+				iss: testEnv.USETAGIH_API_PUBLIC_URL,
+			},
+			testEnv,
+		);
+
+		const response = await fetch(`${base}/v1/renders`, {
+			headers: { Authorization: `Bearer ${token}` },
+		});
+		expect(response.status).toBe(401);
+	});
+
+	test("JWT with wrong azp → 401", async () => {
+		const id = suffix();
+		await signUpWithWorkspace(`wrong-azp-${id}`);
+		const now = Math.floor(Date.now() / 1000);
+		const token = await signSessionBearerTokenRaw(
+			{
+				sub: crypto.randomUUID(),
+				wid: crypto.randomUUID(),
+				scp: [...SESSION_TOKEN_SCOPES],
+				azp: "https://evil.example",
+				typ: "session_bearer",
+				jti: crypto.randomUUID(),
+				iat: now,
+				exp: now + 900,
+				aud: testEnv.USETAGIH_API_PUBLIC_URL,
+				iss: testEnv.USETAGIH_API_PUBLIC_URL,
+			},
+			testEnv,
+		);
+
+		const response = await fetch(`${base}/v1/renders`, {
+			headers: { Authorization: `Bearer ${token}` },
+		});
+		expect(response.status).toBe(401);
 	});
 
 	test("CSRF token from different session → 403", async () => {
@@ -201,23 +294,7 @@ describeIntegration("session token integration", () => {
 		const id = suffix();
 		await signUpWithWorkspace(`logout-residual-${id}`);
 
-		const csrfResponse = await fetch(`${base}/v1/session/csrf`, {
-			headers: jar.headers(),
-		});
-		jar.absorb(csrfResponse);
-		const csrfRequest = new Request(`${base}/v1/session/token`, {
-			method: "POST",
-			headers: jar.headers(),
-		});
-		const csrfToken = readCsrfCookie(csrfRequest, false);
-
-		const tokenResponse = await fetch(`${base}/v1/session/token`, {
-			method: "POST",
-			headers: jar.headers({ [CSRF_HEADER]: csrfToken ?? "" }),
-		});
-		const { accessToken } = (await tokenResponse.json()) as {
-			accessToken: string;
-		};
+		const accessToken = await exchangeSessionBearer();
 
 		const signOutResponse = await fetch(`${base}/api/auth/sign-out`, {
 			method: "POST",

@@ -205,6 +205,87 @@ describe("session token scope parity matrix", () => {
 		expect(response.status).toBe(401);
 	});
 
+	test("expired JWT → 401", async () => {
+		const now = Math.floor(Date.now() / 1000);
+		const token = await signSessionBearerTokenRaw(
+			{
+				sub: crypto.randomUUID(),
+				wid: crypto.randomUUID(),
+				scp: [...SESSION_TOKEN_SCOPES],
+				azp: env.USETAGIH_WEB_PUBLIC_URL,
+				typ: "session_bearer",
+				jti: crypto.randomUUID(),
+				iat: now - 1200,
+				exp: now - 300,
+				aud: env.USETAGIH_API_PUBLIC_URL,
+				iss: env.USETAGIH_API_PUBLIC_URL,
+			},
+			env,
+		);
+
+		const response = await app.handle(
+			new Request("http://localhost/v1/renders", {
+				headers: { Authorization: `Bearer ${token}` },
+			}),
+		);
+
+		expect(response.status).toBe(401);
+	});
+
+	test("wrong aud → 401", async () => {
+		const now = Math.floor(Date.now() / 1000);
+		const token = await signSessionBearerTokenRaw(
+			{
+				sub: crypto.randomUUID(),
+				wid: crypto.randomUUID(),
+				scp: [...SESSION_TOKEN_SCOPES],
+				azp: env.USETAGIH_WEB_PUBLIC_URL,
+				typ: "session_bearer",
+				jti: crypto.randomUUID(),
+				iat: now,
+				exp: now + 900,
+				aud: "https://evil.example/api",
+				iss: env.USETAGIH_API_PUBLIC_URL,
+			},
+			env,
+		);
+
+		const response = await app.handle(
+			new Request("http://localhost/v1/renders", {
+				headers: { Authorization: `Bearer ${token}` },
+			}),
+		);
+
+		expect(response.status).toBe(401);
+	});
+
+	test("wrong azp → 401", async () => {
+		const now = Math.floor(Date.now() / 1000);
+		const token = await signSessionBearerTokenRaw(
+			{
+				sub: crypto.randomUUID(),
+				wid: crypto.randomUUID(),
+				scp: [...SESSION_TOKEN_SCOPES],
+				azp: "https://evil.example",
+				typ: "session_bearer",
+				jti: crypto.randomUUID(),
+				iat: now,
+				exp: now + 900,
+				aud: env.USETAGIH_API_PUBLIC_URL,
+				iss: env.USETAGIH_API_PUBLIC_URL,
+			},
+			env,
+		);
+
+		const response = await app.handle(
+			new Request("http://localhost/v1/renders", {
+				headers: { Authorization: `Bearer ${token}` },
+			}),
+		);
+
+		expect(response.status).toBe(401);
+	});
+
 	test("session-bound CSRF rejection helper", () => {
 		const sessionA = crypto.randomUUID();
 		const sessionB = crypto.randomUUID();
