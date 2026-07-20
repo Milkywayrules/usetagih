@@ -95,6 +95,27 @@ describe("respondApiError", () => {
 		expect(body.error.requestId).toBe(requestIdHeader);
 	});
 
+	test("v1 error handler maps malformed JSON body to 422 VALIDATION_FAILED", async () => {
+		const app = new Elysia()
+			.use(createRequestIdPlugin())
+			.group("/v1", (group) =>
+				group.post("/items", ({ body }) => body).use(createV1ErrorHandler()),
+			);
+
+		const response = await app.handle(
+			new Request("http://localhost/v1/items", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: "{invalid json",
+			}),
+		);
+		expect(response.status).toBe(422);
+		const body = ApiErrorEnvelopeSchema.parse(await response.json());
+		expect(body.error.code).toBe("VALIDATION_FAILED");
+		expect(body.error.message).toBe("Request validation failed");
+		expect(Array.isArray(body.error.details)).toBe(true);
+	});
+
 	test("v1 error handler masks internal errors without stack leakage", async () => {
 		const app = new Elysia()
 			.use(createRequestIdPlugin())
