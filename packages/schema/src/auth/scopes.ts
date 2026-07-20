@@ -19,6 +19,8 @@ export const SESSION_TOKEN_SCOPES: readonly ApiScope[] = [...API_SCOPES];
 /** Route → required scope(s) — single source for parity matrix (3.4 session side; 3.5 adds api_key column). */
 export const ROUTE_SCOPE_REQUIREMENTS = {
 	"GET /v1/renders": ["renders:read"],
+	"GET /v1/renders/{renderId}": ["renders:read"],
+	"GET /v1/renders/{renderId}/download": ["renders:read"],
 	"POST /v1/renders": ["renders:write"],
 	"POST /v1/invoices/validate": ["renders:write"],
 	"POST /v1/quotations/validate": ["renders:write"],

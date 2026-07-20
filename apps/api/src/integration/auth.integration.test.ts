@@ -141,7 +141,7 @@ describeIntegration("auth integration", () => {
 		expect(body.error.code).toBe("WORKSPACE_REQUIRED");
 	});
 
-	test("GET /v1/renders authenticated with active org → 501", async () => {
+	test("GET /v1/renders authenticated with active org → 200 empty list", async () => {
 		const id = suffix();
 		const signUpResponse = await signUpWithWorkspace(base, {
 			email: `active-${id}@example.com`,
@@ -156,15 +156,13 @@ describeIntegration("auth integration", () => {
 		const response = await fetch(`${base}/v1/renders`, {
 			headers: { cookie },
 		});
-		expect(response.status).toBe(501);
-		const body = ApiErrorEnvelopeSchema.parse(await response.json());
-		expect(body.error.code).toBe("NOT_IMPLEMENTED");
-		expect(body.error.message).toBe("Render list lands in Story 3.12");
-		const requestIdHeader = response.headers.get("X-Request-Id");
-		expect(requestIdHeader).not.toBeNull();
-		if (!requestIdHeader) throw new Error("expected X-Request-Id header");
-		expect(body.error.requestId).toBe(requestIdHeader);
-		expect(Array.isArray(body.error.details)).toBe(true);
+		expect(response.status).toBe(200);
+		const body = (await response.json()) as {
+			renders: unknown[];
+			total: number;
+		};
+		expect(Array.isArray(body.renders)).toBe(true);
+		expect(body.total).toBeGreaterThanOrEqual(0);
 	});
 
 	test("GET /v1/unknown-route-xyz → 404 NOT_FOUND envelope", async () => {

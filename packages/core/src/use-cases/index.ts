@@ -1,4 +1,23 @@
 export {
+	type DownloadRenderUseCaseFailure,
+	type DownloadRenderUseCaseInput,
+	type DownloadRenderUseCaseResult,
+	type DownloadRenderUseCaseSuccess,
+	downloadRenderUseCase,
+} from "./download-render-use-case.js";
+export {
+	type GetRenderUseCaseInput,
+	type GetRenderUseCaseResult,
+	getRenderUseCase,
+} from "./get-render-use-case.js";
+export {
+	DEFAULT_LIST_PAGE_SIZE,
+	type ListRendersUseCaseInput,
+	type ListRendersUseCaseResult,
+	listRendersUseCase,
+	MAX_LIST_PAGE_SIZE,
+} from "./list-renders-use-case.js";
+export {
 	type PreviewRenderResult,
 	type PreviewUseCaseDeps,
 	type PreviewUseCaseFailure,
@@ -7,6 +26,10 @@ export {
 	type PreviewUseCaseSuccess,
 	previewUseCase,
 } from "./preview-use-case.js";
+export {
+	mapRenderRecordToMetadata,
+	type RenderMetadata,
+} from "./render-metadata.js";
 export {
 	DEFAULT_SHARE_TTL_DAYS,
 	hashPayload,

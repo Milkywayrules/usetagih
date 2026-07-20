@@ -58,6 +58,9 @@ function createMockRenderRuntime(
 			async listByWorkspace() {
 				return [];
 			},
+			async listByWorkspacePaginated() {
+				return { items: [], total: 0 };
+			},
 		},
 		artifactStore: {
 			async put({ body }) {

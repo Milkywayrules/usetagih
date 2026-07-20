@@ -189,7 +189,7 @@ describeIntegration("session token integration", () => {
 		return accessToken;
 	}
 
-	test("Bearer token on GET /v1/renders → 501", async () => {
+	test("Bearer token on GET /v1/renders → 200", async () => {
 		const id = suffix();
 		await signUpWithWorkspace(`bearer-${id}`);
 
@@ -198,7 +198,12 @@ describeIntegration("session token integration", () => {
 		const rendersResponse = await fetch(`${base}/v1/renders`, {
 			headers: { Authorization: `Bearer ${accessToken}` },
 		});
-		expect(rendersResponse.status).toBe(501);
+		expect(rendersResponse.status).toBe(200);
+		const body = (await rendersResponse.json()) as {
+			renders: unknown[];
+			total: number;
+		};
+		expect(Array.isArray(body.renders)).toBe(true);
 	});
 
 	test("expired JWT → 401", async () => {

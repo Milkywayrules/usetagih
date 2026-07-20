@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { parseEnv } from "@usetagih/config/env";
+import type { RenderRepo } from "@usetagih/core";
 import {
 	API_SCOPES,
 	ApiErrorEnvelopeSchema,
@@ -25,16 +26,36 @@ setDefaultTimeout(15_000);
 
 const env = parseEnv("dev", { USETAGIH_DOCS_ENABLED: "false" });
 
+const stubRenderRepo: RenderRepo = {
+	async insert() {
+		throw new Error("unexpected render insert in scope parity tests");
+	},
+	async getByIdAndWorkspace() {
+		return null;
+	},
+	async listByWorkspace() {
+		return [];
+	},
+	async listByWorkspacePaginated() {
+		return { items: [], total: 0 };
+	},
+};
+
 describe("session token scope parity matrix", () => {
 	let app: ReturnType<typeof createApp>;
 	const apiKeyRepo = createInMemoryApiKeyRepo();
 
 	beforeAll(() => {
-		app = createApp({ env, apiKeyRepo, otelEnabled: false });
+		app = createApp({
+			env,
+			apiKeyRepo,
+			otelEnabled: false,
+			renderRepo: stubRenderRepo,
+			resolveAuditUserId: async () => "00000000-0000-4000-8000-000000000001",
+		});
 	});
 
 	const stubMatrix = [
-		{ route: "/v1/renders", method: "GET", scope: "renders:read" as const },
 		{ route: "/v1/renders", method: "POST", scope: "renders:write" as const },
 		{ route: "/v1/audit", method: "GET", scope: "audit:read" as const },
 		{ route: "/v1/webhooks", method: "GET", scope: "webhooks:manage" as const },
@@ -81,10 +102,25 @@ describe("session token scope parity matrix", () => {
 		},
 	] as const;
 
+	const rendersRetrievalMatrix = [
+		{ route: "/v1/renders", method: "GET", scope: "renders:read" as const },
+		{
+			route: "/v1/renders/rnd_00000000-0000-4000-8000-000000000099",
+			method: "GET",
+			scope: "renders:read" as const,
+		},
+		{
+			route: "/v1/renders/rnd_00000000-0000-4000-8000-000000000099/download",
+			method: "GET",
+			scope: "renders:read" as const,
+		},
+	] as const;
+
 	const scopeRegistryMatrix = [
 		...stubMatrix,
 		...validateMatrix,
 		...previewMatrix,
+		...rendersRetrievalMatrix,
 	] as const;
 
 	for (const row of stubMatrix) {
@@ -237,10 +273,58 @@ describe("session token scope parity matrix", () => {
 		});
 	}
 
+	for (const row of rendersRetrievalMatrix) {
+		test(`session bearer ${row.method} ${row.route} with ${row.scope} passes scope guard`, async () => {
+			const signed = await signSessionBearerToken(
+				{
+					userId: crypto.randomUUID(),
+					workspaceId: crypto.randomUUID(),
+				},
+				env,
+			);
+
+			const response = await app.handle(
+				new Request(`http://localhost${row.route}`, {
+					method: row.method,
+					headers: {
+						Authorization: `Bearer ${signed.accessToken}`,
+					},
+				}),
+			);
+
+			expect(response.status).not.toBe(401);
+			expect(response.status).not.toBe(403);
+		});
+
+		test(`API key ${row.method} ${row.route} with ${row.scope} passes scope guard`, async () => {
+			const workspaceId = crypto.randomUUID();
+			const { secret } = await createTestApiKey(apiKeyRepo, {
+				workspaceId,
+				scopes: [row.scope],
+			});
+
+			const response = await app.handle(
+				new Request(`http://localhost${row.route}`, {
+					method: row.method,
+					headers: {
+						Authorization: `Bearer ${secret}`,
+					},
+				}),
+			);
+
+			expect(response.status).not.toBe(401);
+			expect(response.status).not.toBe(403);
+		});
+	}
+
 	test("ROUTE_SCOPE_REQUIREMENTS aligns with matrix routes", () => {
 		for (const row of scopeRegistryMatrix) {
+			const normalizedRoute = row.route.replace(
+				/\/rnd_[0-9a-f-]{36}(?=\/|$)/gi,
+				"/{renderId}",
+			);
 			const key =
-				`${row.method} ${row.route}` as keyof typeof ROUTE_SCOPE_REQUIREMENTS;
+				`${row.method} ${normalizedRoute}` as keyof typeof ROUTE_SCOPE_REQUIREMENTS;
 			expect(ROUTE_SCOPE_REQUIREMENTS[key]).toContain(row.scope);
 		}
 	});
@@ -330,7 +414,12 @@ describe("session token scope parity matrix", () => {
 			}),
 		);
 
-		expect(response.status).toBe(501);
+		expect(response.status).toBe(200);
+		const listBody = (await response.json()) as {
+			renders: unknown[];
+			total: number;
+		};
+		expect(Array.isArray(listBody.renders)).toBe(true);
 	});
 
 	test("wrong algorithm token → 401", async () => {

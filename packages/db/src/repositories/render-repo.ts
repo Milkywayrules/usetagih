@@ -1,7 +1,31 @@
-import type { NewRenderRecord, RenderRecord, RenderRepo } from "@usetagih/core";
-import { and, desc, eq } from "drizzle-orm";
+import type {
+	NewRenderRecord,
+	RenderListQuery,
+	RenderRecord,
+	RenderRepo,
+} from "@usetagih/core";
+import { and, count, desc, eq, gte, lte, type SQL } from "drizzle-orm";
 import type { Db } from "../client.js";
 import { renders } from "../schema/renders.js";
+
+function buildWorkspaceListFilters(
+	workspaceId: string,
+	query: RenderListQuery,
+): SQL | undefined {
+	const filters: SQL[] = [eq(renders.workspaceId, workspaceId)];
+
+	if (query.documentType) {
+		filters.push(eq(renders.documentType, query.documentType));
+	}
+	if (query.from) {
+		filters.push(gte(renders.createdAt, query.from));
+	}
+	if (query.to) {
+		filters.push(lte(renders.createdAt, query.to));
+	}
+
+	return and(...filters);
+}
 
 export function createRenderRepo(db: Db): RenderRepo {
 	return {
@@ -41,6 +65,31 @@ export function createRenderRepo(db: Db): RenderRepo {
 				.where(eq(renders.workspaceId, workspaceId))
 				.orderBy(desc(renders.createdAt))
 				.limit(limit);
+		},
+
+		async listByWorkspacePaginated(
+			workspaceId: string,
+			query: RenderListQuery,
+		) {
+			const where = buildWorkspaceListFilters(workspaceId, query);
+
+			const [countRow] = await db
+				.select({ total: count() })
+				.from(renders)
+				.where(where);
+
+			const items = await db
+				.select()
+				.from(renders)
+				.where(where)
+				.orderBy(desc(renders.createdAt))
+				.limit(query.limit)
+				.offset(query.offset);
+
+			return {
+				items,
+				total: Number(countRow?.total ?? 0),
+			};
 		},
 	} satisfies RenderRepo;
 }
