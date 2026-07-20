@@ -9,8 +9,10 @@ import { Elysia } from "elysia";
 import { createBetterAuthPlugin } from "./auth/mount.js";
 import { parseApiEnv } from "./env.js";
 import { createAuthResolver } from "./middleware/auth-resolver.js";
+import { createRequestIdPlugin } from "./middleware/request-id.js";
 import { createScopeGuard } from "./middleware/scope-guard.js";
 import { createV1Cors } from "./middleware/v1-cors.js";
+import { createV1ErrorHandler } from "./middleware/v1-error-handler.js";
 import { createWorkspaceGuard } from "./middleware/workspace-guard.js";
 import { createSignUpWithWorkspaceRoute } from "./routes/auth/sign-up-with-workspace.js";
 import { createHealthRoutes } from "./routes/health.js";
@@ -44,6 +46,7 @@ export function createApp(deps: AppDeps = {}) {
 	const v1Cors = createV1Cors({ webPublicUrl: env.USETAGIH_WEB_PUBLIC_URL });
 
 	return new Elysia()
+		.use(createRequestIdPlugin())
 		.use(createHealthRoutes())
 		.use(createSignUpWithWorkspaceRoute({ auditRepo, env }))
 		.use(betterAuth)
@@ -58,6 +61,7 @@ export function createApp(deps: AppDeps = {}) {
 				.use(createApiKeysRoutes({ apiKeyRepo, auditRepo }))
 				.use(createRendersStubRoutes())
 				.use(createAuditStubRoutes())
-				.use(createWebhooksStubRoutes()),
+				.use(createWebhooksStubRoutes())
+				.use(createV1ErrorHandler()),
 		);
 }

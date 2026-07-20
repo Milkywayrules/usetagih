@@ -1,15 +1,22 @@
 // @ts-nocheck — Elysia macros from composed plugins are runtime-valid but not inferred on child instances.
 import type { ApiKeyRepo, AuditRepo } from "@usetagih/core";
+import {
+	NOT_FOUND_CODE,
+	VALIDATION_FAILED_CODE,
+	zodIssuesToDetails,
+} from "@usetagih/schema";
 import { Elysia } from "elysia";
 import {
 	generateApiKeySecret,
 	hashApiKeySecret,
 } from "../../auth/api-key-crypto.js";
+import { statusApiError } from "../../lib/api-error.js";
 import {
 	deriveApiKeyStatus,
 	formatExternalApiKeyId,
 	parseExternalApiKeyId,
 } from "../../middleware/auth-context.js";
+import { getRequestId } from "../../middleware/request-id.js";
 import { rejectApiKeyManagementAuth } from "../../middleware/session-management-auth.js";
 import {
 	ApiKeyIdParamSchema,
@@ -24,15 +31,6 @@ function clientIp(request: Request): string | null {
 	);
 }
 
-function validationFailed(status: (code: number, body: unknown) => unknown) {
-	return status(400, {
-		error: {
-			code: "VALIDATION_FAILED",
-			message: "Request validation failed",
-		},
-	});
-}
-
 export function createApiKeysRoutes(deps: {
 	apiKeyRepo: ApiKeyRepo;
 	auditRepo: AuditRepo;
@@ -40,26 +38,51 @@ export function createApiKeysRoutes(deps: {
 	return new Elysia()
 		.post(
 			"/api-keys",
-			async ({ body, request, status, authContext, userId, workspaceId }) => {
-				const sessionGuard = rejectApiKeyManagementAuth(authContext, status);
+			async ({
+				body,
+				request,
+				status,
+				set,
+				authContext,
+				userId,
+				workspaceId,
+			}) => {
+				const sessionGuard = rejectApiKeyManagementAuth(
+					authContext,
+					request,
+					status,
+					set,
+				);
 				if (sessionGuard) {
 					return sessionGuard;
 				}
 
+				const requestId = getRequestId(request);
 				const parsed = CreateApiKeyBodySchema.safeParse(body);
 				if (!parsed.success) {
-					return validationFailed(status);
+					return statusApiError(status, set, {
+						code: VALIDATION_FAILED_CODE,
+						message: "Request validation failed",
+						requestId,
+						details: zodIssuesToDetails(parsed.error),
+					});
 				}
 
 				let expiresAt: Date | null = null;
 				if (parsed.data.expiresAt) {
 					expiresAt = new Date(parsed.data.expiresAt);
 					if (expiresAt <= new Date()) {
-						return status(400, {
-							error: {
-								code: "VALIDATION_FAILED",
-								message: "expiresAt must be in the future",
-							},
+						return statusApiError(status, set, {
+							code: VALIDATION_FAILED_CODE,
+							message: "expiresAt must be in the future",
+							requestId,
+							details: [
+								{
+									path: "/expiresAt",
+									code: VALIDATION_FAILED_CODE,
+									message: "expiresAt must be in the future",
+								},
+							],
 						});
 					}
 				}
@@ -100,8 +123,13 @@ export function createApiKeysRoutes(deps: {
 		)
 		.get(
 			"/api-keys",
-			async ({ status, authContext }) => {
-				const sessionGuard = rejectApiKeyManagementAuth(authContext, status);
+			async ({ request, status, set, authContext }) => {
+				const sessionGuard = rejectApiKeyManagementAuth(
+					authContext,
+					request,
+					status,
+					set,
+				);
 				if (sessionGuard) {
 					return sessionGuard;
 				}
@@ -127,45 +155,61 @@ export function createApiKeysRoutes(deps: {
 		)
 		.delete(
 			"/api-keys/:keyId",
-			async ({ params, request, status, authContext, userId, workspaceId }) => {
-				const sessionGuard = rejectApiKeyManagementAuth(authContext, status);
+			async ({
+				params,
+				request,
+				status,
+				set,
+				authContext,
+				userId,
+				workspaceId,
+			}) => {
+				const sessionGuard = rejectApiKeyManagementAuth(
+					authContext,
+					request,
+					status,
+					set,
+				);
 				if (sessionGuard) {
 					return sessionGuard;
 				}
 
+				const requestId = getRequestId(request);
 				const parsedParams = ApiKeyIdParamSchema.safeParse(params);
 				if (!parsedParams.success) {
-					return validationFailed(status);
+					return statusApiError(status, set, {
+						code: VALIDATION_FAILED_CODE,
+						message: "Request validation failed",
+						requestId,
+						details: zodIssuesToDetails(parsedParams.error),
+					});
 				}
 
 				const keyUuid = parseExternalApiKeyId(parsedParams.data.keyId);
 				if (!keyUuid) {
-					return status(404, {
-						error: {
-							code: "NOT_FOUND",
-							message: "API key not found",
-						},
+					return statusApiError(status, set, {
+						code: NOT_FOUND_CODE,
+						message: "API key not found",
+						requestId,
 					});
 				}
 
 				const existing = await deps.apiKeyRepo.findById(workspaceId, keyUuid);
 				if (!existing) {
-					return status(404, {
-						error: {
-							code: "NOT_FOUND",
-							message: "API key not found",
-						},
+					return statusApiError(status, set, {
+						code: NOT_FOUND_CODE,
+						message: "API key not found",
+						requestId,
 					});
 				}
 
 				const wasAlreadyRevoked = existing.revokedAt !== null;
 				const record = await deps.apiKeyRepo.revoke(workspaceId, keyUuid);
 				if (!record) {
-					return status(404, {
-						error: {
-							code: "NOT_FOUND",
-							message: "API key not found",
-						},
+					return statusApiError(status, set, {
+						code: NOT_FOUND_CODE,
+						message: "API key not found",
+						requestId,
 					});
 				}
 

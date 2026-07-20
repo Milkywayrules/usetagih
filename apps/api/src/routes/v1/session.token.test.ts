@@ -1,6 +1,8 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import {
 	API_SCOPES,
+	ApiErrorEnvelopeSchema,
+	NOT_IMPLEMENTED_CODE,
 	ROUTE_SCOPE_REQUIREMENTS,
 	SESSION_TOKEN_SCOPES,
 } from "@usetagih/schema";
@@ -59,6 +61,12 @@ describe("session token scope parity matrix", () => {
 			);
 
 			expect(response.status).toBe(501);
+			const body = ApiErrorEnvelopeSchema.parse(await response.json());
+			expect(body.error.code).toBe(NOT_IMPLEMENTED_CODE);
+			const requestIdHeader = response.headers.get("X-Request-Id");
+			expect(requestIdHeader).not.toBeNull();
+			if (!requestIdHeader) throw new Error("expected X-Request-Id header");
+			expect(body.error.requestId).toBe(requestIdHeader);
 		});
 
 		test(`API key ${row.method} ${row.route} with ${row.scope} → 501`, async () => {
@@ -78,6 +86,12 @@ describe("session token scope parity matrix", () => {
 			);
 
 			expect(response.status).toBe(501);
+			const body = ApiErrorEnvelopeSchema.parse(await response.json());
+			expect(body.error.code).toBe(NOT_IMPLEMENTED_CODE);
+			const requestIdHeader = response.headers.get("X-Request-Id");
+			expect(requestIdHeader).not.toBeNull();
+			if (!requestIdHeader) throw new Error("expected X-Request-Id header");
+			expect(body.error.requestId).toBe(requestIdHeader);
 		});
 	}
 
