@@ -6,7 +6,7 @@
 	"scripts": {
 		"lint": "biome check .",
 		"typecheck": "tsc --noEmit",
-		"test": "bun test src --timeout 30000",
+		"test": "bun test src tests --timeout 30000",
 		"build": "tsc --outDir dist",
 		"start": "bun run src/index.ts"
 	},
