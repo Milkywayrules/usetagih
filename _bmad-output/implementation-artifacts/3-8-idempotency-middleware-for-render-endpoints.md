@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.8: Idempotency middleware for render endpoints
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -33,30 +33,30 @@ so that retries do not double-charge quota or duplicate artifacts (FR-24, AD-5).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Hash + header helpers (AC: 1, 2, 3)
-  - [ ] Create `apps/api/src/lib/idempotency-crypto.ts` — `validateIdempotencyKeyHeader`, `hashIdempotencyKey`, `hashRequestBody` using Web Crypto `crypto.subtle.digest("SHA-256", …)` (Bun-native, no new deps)
-  - [ ] Unit tests in `apps/api/src/lib/idempotency-crypto.test.ts`
-- [ ] Task 2 — `IdempotencyStore` Drizzle adapter (AC: 6, 7, 8)
-  - [ ] Implement `packages/db/src/repositories/idempotency-store.ts` — `lookup`/`store` per port; filter `expires_at > now()` on lookup; map DB unique violation on store race to safe behavior
-  - [ ] Export `createIdempotencyStore` from `packages/db/src/index.ts`
-  - [ ] Tests in `packages/db/src/repositories/idempotency-store.test.ts` + extend isolation coverage if needed
-- [ ] Task 3 — Idempotency middleware plugin (AC: 1–7, 9)
-  - [ ] Create `apps/api/src/middleware/idempotency.ts` — Elysia plugin factory `createIdempotencyMiddleware({ idempotencyStore })`
-  - [ ] Derive `endpoint` from route template + document type param
-  - [ ] On hit: return cached body + status; on conflict: `respondApiError` with `IDEMPOTENCY_CONFLICT_CODE`; on miss: `onAfterHandle` or equivalent to store successful 2xx response
-  - [ ] Require `authContext.workspaceId` — runs only on authenticated render routes
-- [ ] Task 4 — Document-type render stub routes (AC: 9, 10)
-  - [ ] Create `apps/api/src/routes/v1/render-by-document-type.stub.ts` — POST `/invoices/render`, `/quotations/render`, `/receipts/render` with `authenticated` + `requireScope: "renders:write"` + idempotency middleware
-  - [ ] Inner handler returns synthetic 201 body (generate `renderId` once per handler invocation — middleware must prevent double generation on retry)
-  - [ ] Wire in `apps/api/src/app.ts` replacing or supplementing `createRendersStubRoutes` POST stub (keep GET `/v1/renders` list stub as-is for Story 3.13)
-  - [ ] Inject `idempotencyStore` via `AppDeps`
-- [ ] Task 5 — Tests (AC: 11)
-  - [ ] `apps/api/src/middleware/idempotency.test.ts` — header validation, hit short-circuit, conflict 409 envelope
-  - [ ] `apps/api/src/integration/idempotency.integration.test.ts` — sign-up → session token or API key → POST render twice → same ids; different body → 409
-- [ ] Task 6 — Verification gate (AC: 12)
-  - [ ] `bun test packages/db`
-  - [ ] `bun test apps/api`
-  - [ ] `bunx turbo run lint typecheck test build --force`
+- [x] Task 1 — Hash + header helpers (AC: 1, 2, 3)
+  - [x] Create `apps/api/src/lib/idempotency-crypto.ts` — `validateIdempotencyKeyHeader`, `hashIdempotencyKey`, `hashRequestBody` using Web Crypto `crypto.subtle.digest("SHA-256", …)` (Bun-native, no new deps)
+  - [x] Unit tests in `apps/api/src/lib/idempotency-crypto.test.ts`
+- [x] Task 2 — `IdempotencyStore` Drizzle adapter (AC: 6, 7, 8)
+  - [x] Implement `packages/db/src/repositories/idempotency-store.ts` — `lookup`/`store` per port; filter `expires_at > now()` on lookup; map DB unique violation on store race to safe behavior
+  - [x] Export `createIdempotencyStore` from `packages/db/src/index.ts`
+  - [x] Tests in `packages/db/src/repositories/idempotency-store.test.ts` + extend isolation coverage if needed
+- [x] Task 3 — Idempotency middleware plugin (AC: 1–7, 9)
+  - [x] Create `apps/api/src/middleware/idempotency.ts` — Elysia plugin factory `createIdempotencyMiddleware({ idempotencyStore })`
+  - [x] Derive `endpoint` from route template + document type param
+  - [x] On hit: return cached body + status; on conflict: `respondApiError` with `IDEMPOTENCY_CONFLICT_CODE`; on miss: `onAfterHandle` or equivalent to store successful 2xx response
+  - [x] Require `authContext.workspaceId` — runs only on authenticated render routes
+- [x] Task 4 — Document-type render stub routes (AC: 9, 10)
+  - [x] Create `apps/api/src/routes/v1/render-by-document-type.stub.ts` — POST `/invoices/render`, `/quotations/render`, `/receipts/render` with `authenticated` + `requireScope: "renders:write"` + idempotency middleware
+  - [x] Inner handler returns synthetic 201 body (generate `renderId` once per handler invocation — middleware must prevent double generation on retry)
+  - [x] Wire in `apps/api/src/app.ts` replacing or supplementing `createRendersStubRoutes` POST stub (keep GET `/v1/renders` list stub as-is for Story 3.13)
+  - [x] Inject `idempotencyStore` via `AppDeps`
+- [x] Task 5 — Tests (AC: 11)
+  - [x] `apps/api/src/middleware/idempotency.test.ts` — header validation, hit short-circuit, conflict 409 envelope
+  - [x] `apps/api/src/integration/idempotency.integration.test.ts` — sign-up → session token or API key → POST render twice → same ids; different body → 409
+- [x] Task 6 — Verification gate (AC: 12)
+  - [x] `bun test packages/db`
+  - [x] `bun test apps/api`
+  - [x] `bunx turbo run lint typecheck test build --force`
 
 ## Dev Notes
 
@@ -281,10 +281,34 @@ apps/api/src/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Composer 2.5 Fast
 
 ### Debug Log References
 
+- Elysia plugin `onBeforeHandle` hooks only apply to routes registered on the same plugin instance; middleware co-registers POST handler per document type.
+- `status(201, body)` responses are normalized before idempotency snapshot storage.
+
 ### Completion Notes List
 
+- Implemented SHA-256 idempotency crypto helpers, Drizzle `IdempotencyStore` adapter, and render idempotency middleware wired to POST `/v1/{invoices|quotations|receipts}/render` stub routes.
+- Middleware enforces `Idempotency-Key` validation, 24h TTL caching, 409 conflict on body mismatch, and handler short-circuit on retry.
+- Added unit tests (crypto, middleware), postgres-gated db adapter tests, and integration tests (retry + conflict + missing header).
+- `bunx turbo run lint typecheck test build --force` passes (api: 85 tests, db: 9 tests).
+
 ### File List
+
+- `apps/api/src/app.ts` (modified)
+- `apps/api/src/lib/idempotency-crypto.ts` (new)
+- `apps/api/src/lib/idempotency-crypto.test.ts` (new)
+- `apps/api/src/middleware/idempotency.ts` (new)
+- `apps/api/src/middleware/idempotency.test.ts` (new)
+- `apps/api/src/routes/v1/render-by-document-type.stub.ts` (new)
+- `apps/api/src/integration/idempotency.integration.test.ts` (new)
+- `packages/db/src/index.ts` (modified)
+- `packages/db/src/repositories/idempotency-store.ts` (new)
+- `packages/db/src/repositories/idempotency-store.test.ts` (new)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (modified)
+
+### Change Log
+
+- 2026-07-20: Story 3.8 — idempotency middleware, db adapter, render stub routes, tests; status → review

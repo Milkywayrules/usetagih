@@ -1,7 +1,8 @@
-import type { ApiKeyRepo, AuditRepo } from "@usetagih/core";
+import type { ApiKeyRepo, AuditRepo, IdempotencyStore } from "@usetagih/core";
 import {
 	createApiKeyRepo,
 	createAuditRepo,
+	createIdempotencyStore,
 	type Db,
 	getDb,
 } from "@usetagih/db";
@@ -21,6 +22,7 @@ import { createSignUpWithWorkspaceRoute } from "./routes/auth/sign-up-with-works
 import { createHealthRoutes } from "./routes/health.js";
 import { createApiKeysRoutes } from "./routes/v1/api-keys.js";
 import { createAuditStubRoutes } from "./routes/v1/audit.stub.js";
+import { createRenderByDocumentTypeStubRoutes } from "./routes/v1/render-by-document-type.stub.js";
 import { createRendersStubRoutes } from "./routes/v1/renders.stub.js";
 import { createSessionCsrfRoute } from "./routes/v1/session.csrf.js";
 import { createSessionTokenRoute } from "./routes/v1/session.token.js";
@@ -31,8 +33,10 @@ export type AppDeps = {
 	db?: Db;
 	auditRepo?: AuditRepo;
 	apiKeyRepo?: ApiKeyRepo;
+	idempotencyStore?: IdempotencyStore;
 	env?: ReturnType<typeof parseApiEnv>;
 	otelEnabled?: boolean;
+	onRenderStubInvoked?: () => void;
 };
 
 export function createApp(deps: AppDeps = {}) {
@@ -42,6 +46,7 @@ export function createApp(deps: AppDeps = {}) {
 	const db = deps.db ?? getDb();
 	const auditRepo = deps.auditRepo ?? createAuditRepo(db);
 	const apiKeyRepo = deps.apiKeyRepo ?? createApiKeyRepo(db);
+	const idempotencyStore = deps.idempotencyStore ?? createIdempotencyStore(db);
 
 	const betterAuth = createBetterAuthPlugin({
 		apiPublicUrl: env.USETAGIH_API_PUBLIC_URL,
@@ -70,6 +75,13 @@ export function createApp(deps: AppDeps = {}) {
 				.use(createSessionCsrfRoute({ env }))
 				.use(createSessionTokenRoute({ env }))
 				.use(createApiKeysRoutes({ apiKeyRepo, auditRepo }))
+				.use(
+					createRenderByDocumentTypeStubRoutes({
+						idempotencyStore,
+						env,
+						onRenderStubInvoked: deps.onRenderStubInvoked,
+					}),
+				)
 				.use(createRendersStubRoutes())
 				.use(createAuditStubRoutes())
 				.use(createWebhooksStubRoutes())
