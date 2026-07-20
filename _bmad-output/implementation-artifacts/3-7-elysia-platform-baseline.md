@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.7: Elysia platform baseline
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -57,39 +57,39 @@ so that integrators and ops get baseline observability and hardening before feat
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Env schema: `USETAGIH_DOCS_ENABLED` + `OTEL_EXPORTER_OTLP_ENDPOINT` (AC: 3, 6, 16)
-  - [ ] Extend `packages/config/src/env/schema.ts` — boolean docs flag with per-environment defaults; optional OTel endpoint URL
-  - [ ] Extend `EnvStub` interface + `DEV_ENV_DEFAULTS` if needed
-  - [ ] Add tests in `packages/config/src/env/env.test.ts` — dev default true; prod default false; staging requires explicit; OTel optional
-  - [ ] Document both vars in `doppler.yaml` comments and SOLUTION-DESIGN §9 table (no secret values)
-- [ ] Task 2 — Dependencies (AC: 1, 6, 11)
-  - [ ] Pin in `apps/api/package.json`: `@elysiajs/openapi`, `@elysiajs/opentelemetry`, `evlog` (exact versions — match elysia 1.4.29 peer range)
-  - [ ] Do **not** add helmet / pino
-- [ ] Task 3 — OpenAPI + Scalar plugin (AC: 1–5)
-  - [ ] Create `apps/api/src/plugins/openapi-docs.ts` — env-gated; paths `/v1/openapi.json` + `/docs`; merge schema components + route stubs; partial-maturity marker
-  - [ ] Resolve components merge: read built `@usetagih/schema` `openapi/components.json` (after `turbo build`) — prefer adding minimal `@usetagih/schema` export if needed vs duplicating generator
-  - [ ] When disabled: register no-op or guard returning 404 for both paths
-  - [ ] Tests: docs enabled → 200 on both; disabled → 404 on both
-- [ ] Task 4 — OTel bootstrap (AC: 6–10)
-  - [ ] Create `apps/api/src/telemetry/otel.ts` — init only when `OTEL_EXPORTER_OTLP_ENDPOINT` set; `service.name=usetagih-api`; requestId span attribute hook
-  - [ ] Wire in `index.ts` **before** `createApp()`; register shutdown flush on SIGTERM/SIGINT
-  - [ ] Tests: boot without endpoint; mock/spy that exporter not called
-- [ ] Task 5 — evlog plugin + enrichment (AC: 11–15)
-  - [ ] Create `apps/api/src/plugins/evlog.ts` — `initLogger` + `.use(evlog())`; derive hook to `log.set({ requestId, workspaceId })` from context
-  - [ ] Replace `console.error` in `v1-error-handler.ts` with evlog error logging
-  - [ ] Plugin order: after `createRequestIdPlugin`, before route handlers
-  - [ ] Tests: request log includes `requestId`; workspaceId when auth context present
-- [ ] Task 6 — Security headers middleware (AC: 17–20)
-  - [ ] Create `apps/api/src/middleware/security-headers.ts` — ~20 lines `onAfterHandle`
-  - [ ] Accept route-aware CSP: strict default; relaxed variant for `/docs` only
-  - [ ] Wire globally after request-id; tests for `/v1/*` vs `/docs`
-- [ ] Task 7 — `createApp()` composition order (AC: 1, 11, 17)
-  - [ ] Update `apps/api/src/app.ts` — encode plugin order in Dev Notes table; pass `env` into new plugins
-  - [ ] Preserve Story 3.6 middleware chain inside `/v1` group unchanged
-- [ ] Task 8 — Verification gate (AC: 5, 10, 20, 22)
-  - [ ] `bun test packages/config`
-  - [ ] `bun test apps/api`
-  - [ ] `bunx turbo run lint typecheck test build --force`
+- [x] Task 1 — Env schema: `USETAGIH_DOCS_ENABLED` + `OTEL_EXPORTER_OTLP_ENDPOINT` (AC: 3, 6, 16)
+  - [x] Extend `packages/config/src/env/schema.ts` — boolean docs flag with per-environment defaults; optional OTel endpoint URL
+  - [x] Extend `EnvStub` interface + `DEV_ENV_DEFAULTS` if needed
+  - [x] Add tests in `packages/config/src/env/env.test.ts` — dev default true; prod default false; staging requires explicit; OTel optional
+  - [x] Document both vars in `doppler.yaml` comments and SOLUTION-DESIGN §9 table (no secret values)
+- [x] Task 2 — Dependencies (AC: 1, 6, 11)
+  - [x] Pin in `apps/api/package.json`: `@elysiajs/openapi`, `@elysiajs/opentelemetry`, `evlog` (exact versions — match elysia 1.4.29 peer range)
+  - [x] Do **not** add helmet / pino
+- [x] Task 3 — OpenAPI + Scalar plugin (AC: 1–5)
+  - [x] Create `apps/api/src/plugins/openapi-docs.ts` — env-gated; paths `/v1/openapi.json` + `/docs`; merge schema components + route stubs; partial-maturity marker
+  - [x] Resolve components merge: read built `@usetagih/schema` `openapi/components.json` (after `turbo build`) — prefer adding minimal `@usetagih/schema` export if needed vs duplicating generator
+  - [x] When disabled: register no-op or guard returning 404 for both paths
+  - [x] Tests: docs enabled → 200 on both; disabled → 404 on both
+- [x] Task 4 — OTel bootstrap (AC: 6–10)
+  - [x] Create `apps/api/src/telemetry/otel.ts` — init only when `OTEL_EXPORTER_OTLP_ENDPOINT` set; `service.name=usetagih-api`; requestId span attribute hook
+  - [x] Wire in `index.ts` **before** `createApp()`; register shutdown flush on SIGTERM/SIGINT
+  - [x] Tests: boot without endpoint; mock/spy that exporter not called
+- [x] Task 5 — evlog plugin + enrichment (AC: 11–15)
+  - [x] Create `apps/api/src/plugins/evlog.ts` — `initLogger` + `.use(evlog())`; derive hook to `log.set({ requestId, workspaceId })` from context
+  - [x] Replace `console.error` in `v1-error-handler.ts` with evlog error logging
+  - [x] Plugin order: after `createRequestIdPlugin`, before route handlers
+  - [x] Tests: request log includes `requestId`; workspaceId when auth context present
+- [x] Task 6 — Security headers middleware (AC: 17–20)
+  - [x] Create `apps/api/src/middleware/security-headers.ts` — ~20 lines `onAfterHandle`
+  - [x] Accept route-aware CSP: strict default; relaxed variant for `/docs` only
+  - [x] Wire globally after request-id; tests for `/v1/*` vs `/docs`
+- [x] Task 7 — `createApp()` composition order (AC: 1, 11, 17)
+  - [x] Update `apps/api/src/app.ts` — encode plugin order in Dev Notes table; pass `env` into new plugins
+  - [x] Preserve Story 3.6 middleware chain inside `/v1` group unchanged
+- [x] Task 8 — Verification gate (AC: 5, 10, 20, 22)
+  - [x] `bun test packages/config`
+  - [x] `bun test apps/api`
+  - [x] `bunx turbo run lint typecheck test build --force`
 
 ## Dev Notes
 
@@ -337,10 +337,50 @@ Per epics dev notes: SM may split into two stories (docs+headers / otel+evlog) i
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+composer-2.5-fast
 
 ### Debug Log References
 
+- fixed `z.coerce.boolean()` treating string `"false"` as true — use `envBoolean` preprocess in config schema
+- integration tests needed `setDefaultTimeout(15_000)` and quiet `initTestLogger()` after evlog wiring
+- `bunfig.toml` scopes tests to `src/` to avoid stale `dist/` test duplication
+
 ### Completion Notes List
 
+- all 23 ACs satisfied for directive #5 (5a openapi+scalar, 5b otel, 5c evlog, 5e security headers; 5d envelope preserved from story 3.6)
+- env: `USETAGIH_DOCS_ENABLED` (dev true, staging explicit, prod false) + optional `OTEL_EXPORTER_OTLP_ENDPOINT`
+- platform plugin order: request-id → otel requestId attrs → evlog → security headers → openapi docs → routes
+- `bunx turbo run lint typecheck test build --force` green (73 api tests, postgres integration included)
+
 ### File List
+
+- `_bmad-output/implementation-artifacts/3-7-elysia-platform-baseline.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `_bmad-output/planning-artifacts/architecture/architecture-usetagih-2026-07-20/SOLUTION-DESIGN.md`
+- `apps/api/bunfig.toml`
+- `apps/api/package.json`
+- `apps/api/src/app.ts`
+- `apps/api/src/index.ts`
+- `apps/api/src/integration/api-keys.integration.test.ts`
+- `apps/api/src/integration/auth.integration.test.ts`
+- `apps/api/src/integration/session-token.integration.test.ts`
+- `apps/api/src/middleware/security-headers.ts`
+- `apps/api/src/middleware/security-headers.test.ts`
+- `apps/api/src/middleware/v1-error-handler.ts`
+- `apps/api/src/plugins/evlog.ts`
+- `apps/api/src/plugins/evlog.test.ts`
+- `apps/api/src/plugins/openapi-docs.ts`
+- `apps/api/src/plugins/openapi-docs.test.ts`
+- `apps/api/src/routes/v1/session.token.test.ts`
+- `apps/api/src/telemetry/otel.ts`
+- `apps/api/src/telemetry/otel.test.ts`
+- `apps/api/src/test-helpers/evlog.ts`
+- `bun.lock`
+- `doppler.yaml`
+- `packages/config/src/env/env.test.ts`
+- `packages/config/src/env/schema.ts`
+- `packages/schema/src/index.ts`
+
+## Change Log
+
+- 2026-07-20: story 3.7 implementation — openapi/scalar hybrid, env-gated otel, evlog request logging, custom security headers; story marked review
