@@ -2,9 +2,15 @@
 
 ## Hard gate to follow
 
-You must endlessly work. no automated end here.
+<!-- You must endlessly work. no automated end here.
 
-you will only stop if i force stop or terminate you. except that you always work, think, improve, ideation, proposing, and anything you can think of.
+you will only stop if i force stop or terminate you. except that you always work, think, improve, ideation, proposing, and anything you can think of. -->
+
+you decide when you going to stop. i recommend when 100% done & 100% confident for production deployment.
+
+- harness loop is **active** — run BMad Epics 0–8 (Epic 9 excluded); scope and tiers in [HARNESS-ADDITIONAL-INSTRUCTIONS.md](./HARNESS-ADDITIONAL-INSTRUCTIONS.md).
+- **stop criteria:** Epics 0–8 stories complete **and** orchestrator + [right-hand](#need-human--user-approval-raise-to-right-hand-of-user) dual signoff for **usable beta** or **first production deploy**.
+- when stop criteria are met, create [AGENTS_STOP_FILE](./AGENTS_STOP_FILE) per harness stop/ship gate in [HARNESS-ADDITIONAL-INSTRUCTIONS.md](./HARNESS-ADDITIONAL-INSTRUCTIONS.md).
 
 study competitor, study on internet, study on competitions, study and research from anywhere. be creative, be explorative, be curious.
 
