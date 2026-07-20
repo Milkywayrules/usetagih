@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import {
+	API_SCOPES,
 	ROUTE_SCOPE_REQUIREMENTS,
 	SESSION_TOKEN_SCOPES,
 } from "@usetagih/schema";
@@ -10,14 +11,19 @@ import {
 } from "../../auth/session-token.js";
 import { parseApiEnv } from "../../env.js";
 import { createCsrfToken, verifyCsrfToken } from "../../middleware/csrf.js";
+import {
+	createInMemoryApiKeyRepo,
+	createTestApiKey,
+} from "../../test-helpers/api-key.js";
 
 const env = parseApiEnv();
 
 describe("session token scope parity matrix", () => {
 	let app: ReturnType<typeof createApp>;
+	const apiKeyRepo = createInMemoryApiKeyRepo();
 
 	beforeAll(() => {
-		app = createApp({ env });
+		app = createApp({ env, apiKeyRepo });
 	});
 
 	const matrix = [
@@ -54,7 +60,24 @@ describe("session token scope parity matrix", () => {
 			expect(response.status).toBe(501);
 		});
 
-		test.skip(`Story 3.5 API key ${row.method} ${row.route}`, () => {});
+		test(`API key ${row.method} ${row.route} with ${row.scope} → 501`, async () => {
+			const workspaceId = crypto.randomUUID();
+			const { secret } = await createTestApiKey(apiKeyRepo, {
+				workspaceId,
+				scopes: [...API_SCOPES],
+			});
+
+			const response = await app.handle(
+				new Request(`http://localhost${row.route}`, {
+					method: row.method,
+					headers: {
+						Authorization: `Bearer ${secret}`,
+					},
+				}),
+			);
+
+			expect(response.status).toBe(501);
+		});
 	}
 
 	test("ROUTE_SCOPE_REQUIREMENTS aligns with matrix routes", () => {
@@ -88,6 +111,24 @@ describe("session token scope parity matrix", () => {
 		const response = await app.handle(
 			new Request("http://localhost/v1/renders", {
 				headers: { Authorization: `Bearer ${token}` },
+			}),
+		);
+
+		expect(response.status).toBe(403);
+		const body = await response.json();
+		expect(body.error.code).toBe("FORBIDDEN");
+	});
+
+	test("API key with subset scopes missing renders:read → 403 FORBIDDEN on GET /v1/renders", async () => {
+		const workspaceId = crypto.randomUUID();
+		const { secret } = await createTestApiKey(apiKeyRepo, {
+			workspaceId,
+			scopes: ["audit:read"],
+		});
+
+		const response = await app.handle(
+			new Request("http://localhost/v1/renders", {
+				headers: { Authorization: `Bearer ${secret}` },
 			}),
 		);
 
