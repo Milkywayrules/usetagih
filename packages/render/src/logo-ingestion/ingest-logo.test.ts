@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { computeLogoChecksum } from "../render-record.js";
-import { ingestLogoFromUrl } from "./ingest-logo.js";
+import { ingestLogoFromBytes, ingestLogoFromUrl } from "./ingest-logo.js";
 
 const PNG_BYTES = Buffer.from([
 	0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
@@ -79,4 +79,22 @@ test("strips malicious SVG active content and persists sanitized bytes", async (
 		const text = Buffer.from(result.logo.bytes).toString("utf8");
 		expect(text.toLowerCase()).not.toContain("<script");
 	}
+});
+
+test("ingestLogoFromBytes applies same PNG rules as URL ingestion", async () => {
+	const result = await ingestLogoFromBytes(PNG_BYTES, "ws-1");
+
+	expect(result.ok).toBe(true);
+	if (result.ok) {
+		expect(result.logo.logoChecksum).toBe(computeLogoChecksum(PNG_BYTES));
+		expect(result.logo.storageKey).toMatch(/^logos\/ws-1\/[a-f0-9]{64}\.png$/);
+	}
+});
+
+test("ingestLogoFromBytes rejects oversize bytes", async () => {
+	const oversized = Buffer.alloc(2_097_153, 0x00);
+	oversized[0] = 0x89;
+	oversized[1] = 0x50;
+	const result = await ingestLogoFromBytes(oversized, "ws-1");
+	expect(result.ok).toBe(false);
 });

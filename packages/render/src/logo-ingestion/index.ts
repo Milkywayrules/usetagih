@@ -10,7 +10,9 @@ export {
 export {
 	buildLogoStorageKey,
 	type IngestLogoResult,
+	ingestLogoFromBytes,
 	ingestLogoFromUrl,
+	MAX_LOGO_BYTES,
 } from "./ingest-logo.js";
 export {
 	createMemoryLogoBlobStore,
@@ -19,3 +21,4 @@ export {
 export { prepareIngestedLogoForTypst } from "./prepare-ingested-logo-for-typst.js";
 export { isBlockedHostname, isBlockedIpAddress } from "./private-ip.js";
 export { sniffLogoContentType } from "./validate-content.js";
+export { buildWorkspaceUploadedLogoUrl } from "./workspace-logo-url.js";

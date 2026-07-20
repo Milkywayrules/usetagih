@@ -21,6 +21,7 @@ import {
 } from "../../test-helpers/api-key.js";
 import { createInMemoryAuditRepo } from "../../test-helpers/audit.js";
 import { initTestLogger } from "../../test-helpers/evlog.js";
+import { createInMemoryWorkspaceSettingsRepo } from "../../test-helpers/workspace-settings.js";
 
 initTestLogger();
 setDefaultTimeout(15_000);
@@ -60,6 +61,7 @@ describe("session token scope parity matrix", () => {
 			auditRepo,
 			otelEnabled: false,
 			renderRepo: stubRenderRepo,
+			workspaceSettingsRepo: createInMemoryWorkspaceSettingsRepo(),
 			resolveAuditUserId: async () => "00000000-0000-4000-8000-000000000001",
 		});
 	});
@@ -128,12 +130,31 @@ describe("session token scope parity matrix", () => {
 		{ route: "/v1/audit", method: "GET", scope: "audit:read" as const },
 	] as const;
 
+	const settingsMatrix = [
+		{
+			route: "/v1/settings/business",
+			method: "PATCH",
+			scope: "settings:write" as const,
+		},
+		{
+			route: "/v1/settings/branding",
+			method: "PATCH",
+			scope: "settings:write" as const,
+		},
+		{
+			route: "/v1/settings/branding/logo",
+			method: "POST",
+			scope: "settings:write" as const,
+		},
+	] as const;
+
 	const scopeRegistryMatrix = [
 		...stubMatrix,
 		...validateMatrix,
 		...previewMatrix,
 		...rendersRetrievalMatrix,
 		...auditMatrix,
+		...settingsMatrix,
 	] as const;
 
 	for (const row of stubMatrix) {
@@ -366,6 +387,83 @@ describe("session token scope parity matrix", () => {
 					headers: {
 						Authorization: `Bearer ${secret}`,
 					},
+				}),
+			);
+
+			expect(response.status).not.toBe(401);
+			expect(response.status).not.toBe(403);
+		});
+	}
+
+	for (const row of settingsMatrix) {
+		test(`session bearer ${row.method} ${row.route} with ${row.scope} passes scope guard`, async () => {
+			const workspaceId = crypto.randomUUID();
+			const signed = await signSessionBearerToken(
+				{
+					userId: crypto.randomUUID(),
+					workspaceId,
+				},
+				env,
+			);
+
+			const init = await app.handle(
+				new Request(
+					`http://localhost${row.route.replace(/\/logo$/, "/business")}`,
+					{
+						method: "PATCH",
+						headers: {
+							Authorization: `Bearer ${signed.accessToken}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({ name: "Seed" }),
+					},
+				),
+			);
+			expect(init.status).not.toBe(401);
+			expect(init.status).not.toBe(403);
+
+			const headers: Record<string, string> = {
+				Authorization: `Bearer ${signed.accessToken}`,
+			};
+			let body: BodyInit | undefined;
+			if (row.method === "PATCH") {
+				headers["Content-Type"] = "application/json";
+				body = JSON.stringify({ accentColor: "#112233" });
+			}
+
+			const response = await app.handle(
+				new Request(`http://localhost${row.route}`, {
+					method: row.method,
+					headers,
+					body,
+				}),
+			);
+
+			expect(response.status).not.toBe(401);
+			expect(response.status).not.toBe(403);
+		});
+
+		test(`API key ${row.method} ${row.route} with ${row.scope} passes scope guard`, async () => {
+			const workspaceId = crypto.randomUUID();
+			const { secret } = await createTestApiKey(apiKeyRepo, {
+				workspaceId,
+				scopes: [row.scope],
+			});
+
+			const headers: Record<string, string> = {
+				Authorization: `Bearer ${secret}`,
+			};
+			let body: BodyInit | undefined;
+			if (row.method === "PATCH") {
+				headers["Content-Type"] = "application/json";
+				body = JSON.stringify({ name: "Acme" });
+			}
+
+			const response = await app.handle(
+				new Request(`http://localhost${row.route}`, {
+					method: row.method,
+					headers,
+					body,
 				}),
 			);
 

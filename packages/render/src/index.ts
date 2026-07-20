@@ -2,11 +2,14 @@
 export const RENDER_STUB = "usetagih-render-stub" as const;
 
 export {
+	buildWorkspaceUploadedLogoUrl,
 	createMemoryLogoBlobStore,
 	type FetchLogoResult,
 	fetchLogoSsrfSafe,
 	type IngestLogoResult,
+	ingestLogoFromBytes,
 	ingestLogoFromUrl,
+	MAX_LOGO_BYTES,
 	type MemoryLogoBlobStore,
 	prepareIngestedLogoForTypst,
 } from "./logo-ingestion/index.js";
