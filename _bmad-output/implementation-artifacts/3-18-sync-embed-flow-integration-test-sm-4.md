@@ -50,6 +50,7 @@ composer-2.5-fast (implementation subagent)
 - Added end-to-end SM-4 sync embed integration test covering validate → render → idempotent retry → download → public share resolver.
 - Extended `@usetagih/api` test script to include `tests/` directory per story AC path.
 - Verification: turbo 36/36 with postgres + minio + typst stack.
+- Merged via PR #38 (`801420f`).
 
 ### Adversarial code review (2026-07-20)
 
