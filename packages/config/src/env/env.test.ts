@@ -71,6 +71,7 @@ test("dev accepts empty input with defaults", () => {
     BETTER_AUTH_URL: DEV_ENV_DEFAULTS.BETTER_AUTH_URL,
     DATABASE_URL: DEV_ENV_DEFAULTS.DATABASE_URL,
     USETAGIH_API_PUBLIC_URL: DEV_ENV_DEFAULTS.USETAGIH_API_PUBLIC_URL,
+    USETAGIH_DOCS_ENABLED: true,
     USETAGIH_WEB_PUBLIC_URL: DEV_ENV_DEFAULTS.USETAGIH_WEB_PUBLIC_URL,
   });
 });
@@ -82,6 +83,7 @@ test("dev accepts overrides", () => {
       BETTER_AUTH_URL: "http://127.0.0.1:3001/api/auth",
       DATABASE_URL: "postgresql://custom",
       USETAGIH_API_PUBLIC_URL: "http://127.0.0.1:3001",
+      USETAGIH_DOCS_ENABLED: "false",
       USETAGIH_WEB_PUBLIC_URL: "http://127.0.0.1:3000",
     })
   ).toEqual({
@@ -89,6 +91,7 @@ test("dev accepts overrides", () => {
     BETTER_AUTH_URL: "http://127.0.0.1:3001/api/auth",
     DATABASE_URL: "postgresql://custom",
     USETAGIH_API_PUBLIC_URL: "http://127.0.0.1:3001",
+    USETAGIH_DOCS_ENABLED: false,
     USETAGIH_WEB_PUBLIC_URL: "http://127.0.0.1:3000",
   });
 });
@@ -100,4 +103,70 @@ test("dev allows optional github oauth vars", () => {
   });
   expect(env.GITHUB_CLIENT_ID).toBe("test-client");
   expect(env.GITHUB_CLIENT_SECRET).toBe("test-secret");
+});
+
+test("prod defaults USETAGIH_DOCS_ENABLED to false", () => {
+  const env = parseEnv("prod", {
+    BETTER_AUTH_SECRET: "prod-secret-min-32-characters-long",
+    BETTER_AUTH_URL: "https://api.example.com/api/auth",
+    DATABASE_URL: "postgresql://x",
+    GITHUB_CLIENT_ID: "gh-id",
+    GITHUB_CLIENT_SECRET: "gh-secret",
+    USETAGIH_API_PUBLIC_URL: "https://api.example.com",
+    USETAGIH_WEB_PUBLIC_URL: "https://app.example.com",
+  });
+  expect(env.USETAGIH_DOCS_ENABLED).toBe(false);
+});
+
+test("staging requires explicit USETAGIH_DOCS_ENABLED", () => {
+  expect(() =>
+    parseEnv("staging", {
+      BETTER_AUTH_SECRET: "staging-secret-min-32-characters-long",
+      BETTER_AUTH_URL: "https://staging-api.example.com/api/auth",
+      DATABASE_URL: "postgresql://x",
+      GITHUB_CLIENT_ID: "gh-id",
+      GITHUB_CLIENT_SECRET: "gh-secret",
+      USETAGIH_API_PUBLIC_URL: "https://staging-api.example.com",
+      USETAGIH_WEB_PUBLIC_URL: "https://staging.example.com",
+    })
+  ).toThrow();
+});
+
+test("staging accepts explicit USETAGIH_DOCS_ENABLED", () => {
+  const env = parseEnv("staging", {
+    BETTER_AUTH_SECRET: "staging-secret-min-32-characters-long",
+    BETTER_AUTH_URL: "https://staging-api.example.com/api/auth",
+    DATABASE_URL: "postgresql://x",
+    GITHUB_CLIENT_ID: "gh-id",
+    GITHUB_CLIENT_SECRET: "gh-secret",
+    USETAGIH_API_PUBLIC_URL: "https://staging-api.example.com",
+    USETAGIH_DOCS_ENABLED: "true",
+    USETAGIH_WEB_PUBLIC_URL: "https://staging.example.com",
+  });
+  expect(env.USETAGIH_DOCS_ENABLED).toBe(true);
+});
+
+test("OTEL_EXPORTER_OTLP_ENDPOINT is optional in all environments", () => {
+  const dev = parseEnv("dev", {});
+  expect(dev.OTEL_EXPORTER_OTLP_ENDPOINT).toBeUndefined();
+
+  const prod = parseEnv("prod", {
+    BETTER_AUTH_SECRET: "prod-secret-min-32-characters-long",
+    BETTER_AUTH_URL: "https://api.example.com/api/auth",
+    DATABASE_URL: "postgresql://x",
+    GITHUB_CLIENT_ID: "gh-id",
+    GITHUB_CLIENT_SECRET: "gh-secret",
+    USETAGIH_API_PUBLIC_URL: "https://api.example.com",
+    USETAGIH_WEB_PUBLIC_URL: "https://app.example.com",
+  });
+  expect(prod.OTEL_EXPORTER_OTLP_ENDPOINT).toBeUndefined();
+});
+
+test("OTEL_EXPORTER_OTLP_ENDPOINT validates as URL when set", () => {
+  const env = parseEnv("dev", {
+    OTEL_EXPORTER_OTLP_ENDPOINT: "https://otel.example.com/v1/traces",
+  });
+  expect(env.OTEL_EXPORTER_OTLP_ENDPOINT).toBe(
+    "https://otel.example.com/v1/traces"
+  );
 });

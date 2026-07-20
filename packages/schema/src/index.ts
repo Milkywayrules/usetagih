@@ -94,6 +94,7 @@ export {
 	type FixtureExpectedOutcome,
 	type FixturePair,
 } from "./fixtures/runner";
+export { generateOpenApiComponents } from "./openapi/generate.js";
 export {
 	LINE_TOTAL_MISMATCH_CODE,
 	TAX_TOTAL_MISMATCH_CODE,

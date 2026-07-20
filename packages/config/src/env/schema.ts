@@ -17,7 +17,9 @@ export interface EnvStub {
   DATABASE_URL: string;
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
+  OTEL_EXPORTER_OTLP_ENDPOINT?: string;
   USETAGIH_API_PUBLIC_URL: string;
+  USETAGIH_DOCS_ENABLED: boolean;
   USETAGIH_WEB_PUBLIC_URL: string;
 }
 
@@ -38,6 +40,25 @@ const authFieldsStrict = {
   GITHUB_CLIENT_SECRET: z.string().min(1),
 } as const;
 
+const otelFields = {
+  OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().optional(),
+} as const;
+
+/** Doppler and process.env deliver booleans as strings — avoid z.coerce.boolean(). */
+const envBoolean = z.preprocess((value) => {
+  if (value === "true" || value === "1") {
+    return true;
+  }
+  if (value === "false" || value === "0") {
+    return false;
+  }
+  return value;
+}, z.boolean());
+
+const docsEnabledDev = envBoolean.default(true);
+const docsEnabledStaging = envBoolean;
+const docsEnabledProd = envBoolean.default(false);
+
 export function createEnvSchema(environment: DopplerEnvironment) {
   if (environment === "dev") {
     return z.object({
@@ -46,20 +67,34 @@ export function createEnvSchema(environment: DopplerEnvironment) {
         .string()
         .url()
         .default(DEV_ENV_DEFAULTS.USETAGIH_API_PUBLIC_URL),
+      USETAGIH_DOCS_ENABLED: docsEnabledDev,
       USETAGIH_WEB_PUBLIC_URL: z
         .string()
         .url()
         .default(DEV_ENV_DEFAULTS.USETAGIH_WEB_PUBLIC_URL),
       ...authFieldsDev,
+      ...otelFields,
     });
   }
 
-  // staging and prod: strict — no defaults
+  if (environment === "staging") {
+    return z.object({
+      DATABASE_URL: z.string().min(1),
+      USETAGIH_API_PUBLIC_URL: z.string().url(),
+      USETAGIH_DOCS_ENABLED: docsEnabledStaging,
+      USETAGIH_WEB_PUBLIC_URL: z.string().url(),
+      ...authFieldsStrict,
+      ...otelFields,
+    });
+  }
+
   return z.object({
     DATABASE_URL: z.string().min(1),
     USETAGIH_API_PUBLIC_URL: z.string().url(),
+    USETAGIH_DOCS_ENABLED: docsEnabledProd,
     USETAGIH_WEB_PUBLIC_URL: z.string().url(),
     ...authFieldsStrict,
+    ...otelFields,
   });
 }
 

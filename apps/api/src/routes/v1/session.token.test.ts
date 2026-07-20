@@ -1,4 +1,5 @@
-import { beforeAll, describe, expect, test } from "bun:test";
+import { beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { parseEnv } from "@usetagih/config/env";
 import {
 	API_SCOPES,
 	ApiErrorEnvelopeSchema,
@@ -12,21 +13,24 @@ import {
 	signSessionBearerToken,
 	signSessionBearerTokenRaw,
 } from "../../auth/session-token.js";
-import { parseApiEnv } from "../../env.js";
 import { createCsrfToken, verifyCsrfToken } from "../../middleware/csrf.js";
 import {
 	createInMemoryApiKeyRepo,
 	createTestApiKey,
 } from "../../test-helpers/api-key.js";
+import { initTestLogger } from "../../test-helpers/evlog.js";
 
-const env = parseApiEnv();
+initTestLogger();
+setDefaultTimeout(15_000);
+
+const env = parseEnv("dev", { USETAGIH_DOCS_ENABLED: "false" });
 
 describe("session token scope parity matrix", () => {
 	let app: ReturnType<typeof createApp>;
 	const apiKeyRepo = createInMemoryApiKeyRepo();
 
 	beforeAll(() => {
-		app = createApp({ env, apiKeyRepo });
+		app = createApp({ env, apiKeyRepo, otelEnabled: false });
 	});
 
 	const matrix = [

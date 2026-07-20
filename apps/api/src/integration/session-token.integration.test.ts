@@ -23,6 +23,9 @@ import {
 	createCsrfToken,
 	readCsrfCookie,
 } from "../middleware/csrf.js";
+import { initTestLogger } from "../test-helpers/evlog.js";
+
+initTestLogger();
 
 const postgresUp = await probeDb();
 if (postgresUp) setDefaultTimeout(15_000);

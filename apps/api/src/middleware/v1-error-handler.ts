@@ -7,6 +7,7 @@ import {
 	zodPathToJsonPointer,
 } from "@usetagih/schema";
 import { Elysia } from "elysia";
+import { useLogger } from "evlog/elysia";
 import { respondApiError } from "../lib/api-error.js";
 
 type ElysiaValidationIssue = {
@@ -87,7 +88,7 @@ function validationDetails(error: unknown): readonly ApiErrorDetail[] {
 
 export function createV1ErrorHandler() {
 	return new Elysia({ name: "v1-error-handler" })
-		.onError({ as: "global" }, ({ code, error, set, store }) => {
+		.onError({ as: "global" }, ({ code, error, request, set, store }) => {
 			const requestId = (store as { requestId: string }).requestId;
 
 			if (code === "NOT_FOUND") {
@@ -95,6 +96,7 @@ export function createV1ErrorHandler() {
 					set,
 					code: NOT_FOUND_CODE,
 					message: "Route not found",
+					request,
 					requestId,
 				});
 			}
@@ -104,24 +106,34 @@ export function createV1ErrorHandler() {
 					set,
 					code: VALIDATION_FAILED_CODE,
 					message: "Request validation failed",
+					request,
 					requestId,
 					details: validationDetails(error),
 				});
 			}
 
-			console.error(error);
+			try {
+				const log = useLogger();
+				const err = error instanceof Error ? error : new Error(String(error));
+				log.set({ requestId });
+				log.error(err);
+			} catch {
+				// evlog context unavailable outside request scope
+			}
 			return respondApiError({
 				set,
 				code: INTERNAL_ERROR_CODE,
 				message: "An internal error occurred",
+				request,
 				requestId,
 			});
 		})
-		.all("*", ({ set, store }) =>
+		.all("*", ({ request, set, store }) =>
 			respondApiError({
 				set,
 				code: NOT_FOUND_CODE,
 				message: "Route not found",
+				request,
 				requestId: (store as { requestId: string }).requestId,
 			}),
 		);

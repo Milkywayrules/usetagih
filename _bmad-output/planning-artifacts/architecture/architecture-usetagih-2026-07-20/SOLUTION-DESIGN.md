@@ -469,6 +469,8 @@ Prod uses Cloudflare R2 endpoint without path-style forcing.
 | `GITHUB_CLIENT_SECRET` | api | OAuth |
 | `USETAGIH_API_PUBLIC_URL` | api, web, sdk | e.g. `https://api.usetagih.com` |
 | `USETAGIH_WEB_PUBLIC_URL` | api, web | e.g. `https://app.usetagih.com` |
+| `USETAGIH_DOCS_ENABLED` | api | OpenAPI + Scalar (`/v1/openapi.json`, `/docs`); dev default `true`, staging explicit, prod default `false` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | api | Optional OTLP traces URL; unset = no-op |
 | `USETAGIH_SHARE_SIGNING_SECRET` | api | HMAC for share URLs |
 | `USETAGIH_WEBHOOK_SIGNING_SECRET` | api | Default webhook secret pepper |
 | `R2_ENDPOINT` | api | S3-compatible endpoint |
