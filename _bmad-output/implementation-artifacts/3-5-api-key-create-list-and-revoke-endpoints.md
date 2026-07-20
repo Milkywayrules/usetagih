@@ -7,8 +7,6 @@ created: 2026-07-20
 
 Status: review
 
-<!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
-
 ## Story
 
 As an embed integrator (Alex),
@@ -508,7 +506,61 @@ composer-2.5-fast (dev-story subagent)
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
 - `bun.lock`
 
+### Review fix (5ef2f53)
+
+- `apps/api/src/middleware/bearer-auth.ts` — multi-candidate prefix verify loop
+- `packages/core/src/ports/api-key-repo.ts` — `findByPrefix` returns array
+- `packages/db/src/repositories/api-key-repo.ts` — return all prefix matches
+- `apps/api/src/test-helpers/api-key.ts` — in-memory repo alignment
+- `apps/api/src/routes/v1/session.token.test.ts` — prefix collision regression test
+- `packages/db/src/repositories/api-key-repo.test.ts` — multi-row prefix test
+
 ## Change Log
 
 - 2026-07-20 — Story created: API key CRUD, argon2 hash-at-rest, bearer auth extension, scope-parity matrix completion, session-only management policy; status → ready-for-dev.
 - 2026-07-20 — Implementation complete: ApiKeyRepo port/adapter, crypto, bearer extension, `/v1/api-keys` routes, tests, architecture spine bookkeeping; status → review.
+- 2026-07-20 — Code review: prefix-collision fix committed (`5ef2f53`); integration tests blocked (Docker segfault); status remains `review`.
+
+## Code Review
+
+**Reviewer:** adversarial code-review subagent (2026-07-20)
+**Branch:** `feat/story-3-5-api-key-create-list-revoke` (tip `5ef2f53` after review fix)
+**Baseline:** `main` (story prep `e9cbbf7`; implementation `f10732b`, `d564406`, `bedd8c5`)
+
+### Findings
+
+| ID | Severity | Area | Finding | Resolution |
+| --- | --- | --- | --- | --- |
+| CR-1 | **High** | Prefix lookup | `findByPrefix` returned only `rows[0]`; a revoked or wrong-hash first candidate blocked auth for a valid second key sharing the same 16-char prefix | **Fixed** in `5ef2f53`: port returns all candidates; `bearer-auth.ts` loops verify; unit test added |
+| CR-2 | **Blocking** | Integration gate | Docker CLI segfaults (`docker version`, `docker compose up` exit 139); Postgres unreachable; all postgres-gated tests skipped | **Open** — cannot mark story `done` until live Postgres integration runs green |
+| CR-3 | Info | Static review | Argon2 hash-at-rest (`@node-rs/argon2@2.0.2`, OWASP params); verify only after prefix lookup | Pass |
+| CR-4 | Info | Session-only mgmt | API key Bearer → 403 on POST/GET/DELETE `/v1/api-keys` | Pass (unit + integration test present, integration skipped) |
+| CR-5 | Info | Tenant isolation | `findById`/`revoke` filter `workspace_id`; cross-workspace DELETE → 404 | Pass |
+| CR-6 | Info | Show-once | `secret` only in POST 201; never in list response or DB | Pass |
+| CR-7 | Info | Revoke idempotency | Already-revoked returns 200 same `revokedAt`; audit only on first revoke | Pass |
+| CR-8 | Info | Bearer disambiguation | JWT if token contains `.`; else `utk_live_` + length ≥ 40; expiry/revoke before argon2 | Pass |
+| CR-9 | Info | Scope-parity matrix | API-key column live: 5 grant (501) + 1 subset deny (403) + prefix collision | Pass |
+| CR-10 | Info | Architecture spine | `@node-rs/argon2@2.0.2` pinned in stack table | Pass |
+
+### Verification results
+
+| Gate | Result | Notes |
+| --- | --- | --- |
+| `docker info` / `docker compose up -d postgres` | **FAIL** | Segmentation fault (exit 139) — daemon unusable in WSL harness |
+| `bun run --filter @usetagih/db migrate` | **SKIP** | No Postgres |
+| `bun test apps/api` | **53 pass / 46 skip / 0 fail** | Integration suites skipped (`probeDb()` false) |
+| `bun test packages/db` | **0 pass / 9 skip / 0 fail** | All repo tests postgres-gated |
+| `bunx turbo run lint typecheck test build --force` | **36/36 exit 0** | After review fix |
+
+### Commits reviewed
+
+| SHA | Type | Summary | Trailer verify |
+| --- | --- | --- | --- |
+| `f10732b` | feat | api key CRUD and bearer auth | clean (pre-review) |
+| `d564406` | test | api keys and scope parity matrix | clean (pre-review) |
+| `bedd8c5` | docs | mark story review, pin argon2 in spine | clean (pre-review) |
+| `5ef2f53` | fix | verify all prefix-matched api keys | **clean** |
+
+### Outcome
+
+**Status remains `review`.** Static adversarial review passes after CR-1 fix; turbo gate green. Story cannot advance to `done` until Docker/Postgres is available and integration tests (`api-keys.integration.test.ts`, `api-key-repo.test.ts`, session/auth integration) run green — not merely skip.
