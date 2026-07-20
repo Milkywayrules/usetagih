@@ -113,7 +113,7 @@ development_status:
   3-15-audit-log-capture-and-get-v1-audit: done
   3-16-rate-limiting-and-monthly-quota-enforcement: done
   3-17-account-settings-and-branding-endpoints-for-web: done
-  3-18-sync-embed-flow-integration-test-sm-4: backlog
+  3-18-sync-embed-flow-integration-test-sm-4: done
   3-19-workspace-crud-and-active-workspace-selection: backlog
   epic-3-retrospective: optional
 
