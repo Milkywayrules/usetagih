@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.17: Workspace settings and branding endpoints for web
 
-Status: review
+Status: done
 
 ## Story
 
@@ -30,7 +30,7 @@ So that PDFs use my identity (PRD §10.1 branding, UX-DR13).
 - [x] Task 4 — API: PATCH business/branding, POST logo upload; wire in app.ts
 - [x] Task 5 — Tests: settings routes, repo postgres-gated, merge precedence, session scope parity
 - [x] Task 6 — Verification gate: docker postgres + minio + turbo 36/36
-- [ ] Task 7 — PR, merge, adversarial review
+- [x] Task 7 — PR, merge, adversarial review
 
 ## Dev Agent Record
 
@@ -43,6 +43,27 @@ composer-2.5-fast (implementation subagent)
 - Added `settings:write` scope for workspace settings mutations; session tokens inherit all scopes.
 - Logo upload reuses Story 3.10 byte validation via `ingestLogoFromBytes`; stored logoUrl is stable HTTPS path indexed in LogoBlobStore for render re-read without re-fetch.
 - Render merge precedence unchanged in `mergeBranding` / `resolveLogoUseCase` (Story 3.10); settings tests assert payload override > workspace default.
+- Merged via PR #36 (`6cf557b`).
+
+### Adversarial code review (2026-07-20)
+
+**Reviewer:** adversarial code review (Story 3.17 workspace settings + branding endpoints)  
+**Verdict:** no medium+ findings — status → done
+
+| AC | Result | Evidence |
+| --- | --- | --- |
+| 1 | PASS | `PATCH /v1/settings/business` merges `business_identity` jsonb via `WorkspaceSettingsRepo.updateBusinessIdentity` |
+| 2 | PASS | `PATCH /v1/settings/branding` merges branding with `BrandingSchema.partial()` validation |
+| 3 | PASS | `POST /v1/settings/branding/logo` uses `ingestLogoFromBytes` (2MB cap, magic sniff, SVG sanitize); `putWithUrl` + stable HTTPS logoUrl |
+| 4 | PASS | Render/preview routes read workspace branding; `mergeBranding` payload wins (Story 3.10) |
+| 5 | PASS | `settings.test.ts` + `resolve-logo-use-case.test.ts` cover merge precedence |
+| 6 | PASS | turbo 36/36 with postgres + minio stack |
+
+| ID | Severity | Disposition | Finding | Notes |
+| --- | --- | --- | --- | --- |
+| CR-1 | low | defer | Uploaded logoUrl is synthetic HTTPS path without GET handler | Render resolves via `findLogoByUrl` cache; public logo serve deferred to web/CDN story |
+| CR-2 | low | dismiss | `settings:write` not in existing API keys until rotated | New scope additive; session tokens grant all scopes |
+| CR-3 | low | defer | No audit events on settings mutations | MVP scope; Story 3.15 pattern can extend later |
 
 ### File List
 
