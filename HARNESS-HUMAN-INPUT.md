@@ -11,6 +11,10 @@ Cursor's state store lives on C:; when it fills, the chat DB corrupts ("missing 
 - [ ] Optional: Cursor roaming data is 5.6 GB (`C:\Users\user\AppData\Roaming\Cursor`) — old workspaceStorage/Cache can be trimmed from within Cursor or manually
 - [ ] Consider moving the Cursor user-data dir or freeing another ~10 GB headroom so this stops recurring
 
+## FYI — veto window (agent proceeds unless you object)
+
+- [ ] **pino → evlog supersession**: your directive #5c (evlog) conflicts with the ratified architecture spine (pino, Story 8.6). The right-hand board voted unanimously to adopt **evlog** (maturity independently verified: v2.x, first-party Elysia plugin, drain pipeline, OTLP adapter) and amend Story 8.6 + spine accordingly, preserving the exact log field contract and metric names. Veto here if you actually want pino kept.
+
 ## Answered/processed by agent (no action needed)
 
-- (none pending)
+- Directive #5 (elysia: openapi+scalar, otel, evlog, envelope, helmet) — board ratified unanimously; docs exposure = hybrid (dev/staging on, production fail-closed until launch gate, then public unauthenticated); encoded into sprint via correct-course amendment.
