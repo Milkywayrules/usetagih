@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.12: Sync render path — POST /v1/{documentType}/render (≤100 items, ≤10s)
 
-Status: in-progress
+Status: done
 
 ## Story
 
@@ -33,7 +33,7 @@ So that embed flow completes in one request (FR-12 sync, FR-7, NFR-1).
 - [x] Task 5 — Replace stub in `app.ts`; export `getIdempotencyContext`
 - [x] Task 6 — Route unit tests + integration tests (postgres/typst gated)
 - [x] Task 7 — Verification gate: docker postgres + turbo lint typecheck test build
-- [ ] Task 8 — PR, CI, merge, adversarial review
+- [x] Task 8 — PR, CI, merge, adversarial review
 
 ## Dev Agent Record
 
@@ -46,6 +46,19 @@ composer-2.5-fast (implementation subagent)
 - Swapped Story 3.8 stub inner handler for real Typst sync render pipeline without changing idempotency middleware contract.
 - Default share TTL 90 days; trial tier sets `showWatermark: true`.
 - Sync path rejects payloads with >100 line items at validation layer before Typst.
+- Merged via PR #29 (`2d02190`).
+
+### Adversarial code review (2026-07-20)
+
+**Reviewer:** adversarial code review (Story 3.12 sync render path)  
+**Verdict:** no medium+ findings — status → done
+
+| ID | Severity | Disposition | Finding | Notes |
+| --- | --- | --- | --- | --- |
+| CR-1 | low | defer | Typst compile failures propagate as 500 `INTERNAL_ERROR` | Same class as Story 3.11 pre-fix; structured render-stage error mapping deferred |
+| CR-2 | low | dismiss | `rawBody` stored on idempotency context for handler payload parse | Required so Elysia body parser does not consume stream before idempotency hash; minimal middleware extension |
+| CR-3 | low | dismiss | Production uses in-memory artifact store until R2 adapter lands | Story scope; `createMemoryArtifactStore` satisfies AC for tests/CI |
+| CR-4 | low | defer | Artifact upload precedes DB insert without compensating transaction | Acceptable MVP — orphan PDF in memory store is low impact; Epic 4/production R2 can add rollback |
 
 ### File List
 

@@ -107,7 +107,7 @@ development_status:
   3-9-get-v1-schemas-and-post-v1-documenttype-validate: done
   3-10-logo-ingestion-ssrf-hardened-pipeline: done
   3-11-post-v1-documenttype-preview-multi-page-svg-response: done
-  3-12-sync-render-path-post-v1-documenttype-render-100-items-10s: in-progress
+  3-12-sync-render-path-post-v1-documenttype-render-100-items-10s: done
   3-13-render-retrieval-list-and-authenticated-download: backlog
   3-14-signed-share-urls-public-resolver-and-revoke: backlog
   3-15-audit-log-capture-and-get-v1-audit: backlog
