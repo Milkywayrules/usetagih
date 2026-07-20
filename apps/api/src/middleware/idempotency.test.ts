@@ -111,6 +111,24 @@ describe("createIdempotencyMiddleware", () => {
 		expect(response.headers.get(REQUEST_ID_HEADER)).toBe(body.error.requestId);
 	});
 
+	test("returns 400 INVALID_REQUEST when Idempotency-Key has invalid charset", async () => {
+		const { app } = createTestApp();
+		const response = await app.handle(
+			new Request("http://localhost/invoices/render", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"Idempotency-Key": "bad\tkey",
+				},
+				body: "{}",
+			}),
+		);
+
+		expect(response.status).toBe(400);
+		const body = ApiErrorEnvelopeSchema.parse(await response.json());
+		expect(body.error.code).toBe(INVALID_REQUEST_CODE);
+	});
+
 	test("returns cached response on retry without invoking handler twice", async () => {
 		const { app, getHandlerCalls } = createTestApp();
 		const headers = {

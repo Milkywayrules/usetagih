@@ -135,14 +135,45 @@ export function createIdempotencyMiddleware(options: {
 				return;
 			}
 
+			const responseBody = normalizeResponseBody(response);
+
 			await options.idempotencyStore.store({
 				workspaceId,
 				endpoint: routeContext.endpoint,
 				keyHash: routeContext.keyHash,
 				requestHash: routeContext.requestHash,
-				responseBody: normalizeResponseBody(response),
+				responseBody,
 				expiresAt: new Date(Date.now() + IDEMPOTENCY_TTL_MS),
 			});
+
+			const reload = await options.idempotencyStore.lookup({
+				workspaceId,
+				endpoint: routeContext.endpoint,
+				keyHash: routeContext.keyHash,
+			});
+			if (reload.status === "hit") {
+				const winnerBody = normalizeResponseBody(reload.responseBody);
+				const winnerRenderId =
+					typeof winnerBody === "object" &&
+					winnerBody !== null &&
+					"renderId" in winnerBody
+						? (winnerBody as { renderId: unknown }).renderId
+						: undefined;
+				const localRenderId =
+					typeof responseBody === "object" &&
+					responseBody !== null &&
+					"renderId" in responseBody
+						? (responseBody as { renderId: unknown }).renderId
+						: undefined;
+				if (
+					winnerRenderId !== undefined &&
+					localRenderId !== undefined &&
+					winnerRenderId !== localRenderId
+				) {
+					set.status = statusCode;
+					return winnerBody;
+				}
+			}
 		})
 		.post(`/${options.documentTypePath}/render`, options.handler, {
 			authenticated: true,
