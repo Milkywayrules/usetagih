@@ -20,6 +20,9 @@ export const SESSION_TOKEN_SCOPES: readonly ApiScope[] = [...API_SCOPES];
 export const ROUTE_SCOPE_REQUIREMENTS = {
 	"GET /v1/renders": ["renders:read"],
 	"POST /v1/renders": ["renders:write"],
+	"POST /v1/invoices/validate": ["renders:write"],
+	"POST /v1/quotations/validate": ["renders:write"],
+	"POST /v1/receipts/validate": ["renders:write"],
 	"GET /v1/audit": ["audit:read"],
 	"POST /v1/webhooks": ["webhooks:manage"],
 	"GET /v1/webhooks": ["webhooks:manage"],

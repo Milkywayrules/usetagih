@@ -2,22 +2,11 @@
 import type { IdempotencyStore } from "@usetagih/core";
 import { Elysia } from "elysia";
 import type { ApiEnv } from "../../env.js";
+import {
+	DOCUMENT_TYPE_PATHS,
+	PATH_SEGMENT_TO_DOCUMENT_TYPE,
+} from "../../lib/document-type-paths.js";
 import { createIdempotencyMiddleware } from "../../middleware/idempotency.js";
-
-const RENDER_DOCUMENT_TYPE_PATHS = [
-	"invoices",
-	"quotations",
-	"receipts",
-] as const;
-
-const SINGULAR_DOCUMENT_TYPE: Record<
-	(typeof RENDER_DOCUMENT_TYPE_PATHS)[number],
-	string
-> = {
-	invoices: "invoice",
-	quotations: "quotation",
-	receipts: "receipt",
-};
 
 export type RenderByDocumentTypeStubDeps = {
 	idempotencyStore: IdempotencyStore;
@@ -26,7 +15,7 @@ export type RenderByDocumentTypeStubDeps = {
 };
 
 function createRenderStubHandler(
-	documentTypePath: (typeof RENDER_DOCUMENT_TYPE_PATHS)[number],
+	documentTypePath: (typeof DOCUMENT_TYPE_PATHS)[number],
 	deps: RenderByDocumentTypeStubDeps,
 ) {
 	return ({ status }: { status: (code: number, body: unknown) => unknown }) => {
@@ -40,7 +29,7 @@ function createRenderStubHandler(
 			shareUrl: `${webPublicUrl}/share/${shareToken}`,
 			expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
 			schemaVersion: "2026-07-20",
-			documentType: SINGULAR_DOCUMENT_TYPE[documentTypePath],
+			documentType: PATH_SEGMENT_TO_DOCUMENT_TYPE[documentTypePath],
 			template: "modern",
 		});
 	};
@@ -51,7 +40,7 @@ export function createRenderByDocumentTypeStubRoutes(
 ) {
 	let app = new Elysia({ name: "render-by-document-type-stub" });
 
-	for (const documentTypePath of RENDER_DOCUMENT_TYPE_PATHS) {
+	for (const documentTypePath of DOCUMENT_TYPE_PATHS) {
 		app = app.use(
 			createIdempotencyMiddleware({
 				idempotencyStore: deps.idempotencyStore,

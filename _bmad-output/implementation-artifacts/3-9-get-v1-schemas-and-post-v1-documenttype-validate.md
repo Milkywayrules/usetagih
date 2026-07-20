@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.9: GET /v1/schemas and POST /v1/{documentType}/validate
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -34,32 +34,32 @@ so that I can fix payloads before render (FR-3, FR-11, UJ-2).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Shared document-type path constants (AC: 7, 9)
-  - [ ] Create `apps/api/src/lib/document-type-paths.ts` — export `DOCUMENT_TYPE_PATHS`, `pathSegmentToDocumentType()`, `documentTypeToPathSegment()` mirroring render stub mapping (`invoices` → `invoice`, etc.)
-  - [ ] Refactor `render-by-document-type.stub.ts` to import shared constants (DRY — optional but recommended)
-  - [ ] Unit tests in `document-type-paths.test.ts`
-- [ ] Task 2 — GET /v1/schemas route (AC: 1, 2)
-  - [ ] Create `apps/api/src/routes/v1/schemas.ts` — `GET /schemas` handler returns `getSchemaMetadata()` from `@usetagih/schema`
-  - [ ] **No** `authenticated` / `requireScope` macros — public within `/v1` group
-  - [ ] Wire in `apps/api/src/app.ts` before authenticated routes
-  - [ ] Tests: unauthenticated 200 + body shape; optional authenticated 200 identical
-- [ ] Task 3 — Validate route handler + HTTP mapping (AC: 3–6, 8, 9)
-  - [ ] Create `apps/api/src/routes/v1/validate-by-document-type.ts` — POST `/{invoices|quotations|receipts}/validate` with `authenticated: true`, `requireScope: "renders:write"`
-  - [ ] Create `apps/api/src/lib/map-validate-result.ts` — maps `ValidateUseCaseResult` → HTTP status + body or envelope (success flat JSON; failure → `respondApiErrorFromContext`)
-  - [ ] Handler: parse JSON body as `unknown`, map path segment → `DocumentType`, call `validateUseCase`
-  - [ ] Wire in `app.ts` alongside render stub routes
-- [ ] Task 4 — Scope registry + parity tests (AC: 10)
-  - [ ] Extend `packages/schema/src/auth/scopes.ts` `ROUTE_SCOPE_REQUIREMENTS`
-  - [ ] Update `apps/api/src/routes/v1/session.token.test.ts` matrix rows for validate routes
-- [ ] Task 5 — Tests (AC: 11, 12)
-  - [ ] `apps/api/src/routes/v1/schemas.test.ts`
-  - [ ] `apps/api/src/routes/v1/validate-by-document-type.test.ts` — table-driven across three types + failure cases
-  - [ ] `apps/api/src/lib/map-validate-result.test.ts`
-  - [ ] `apps/api/src/integration/validate.integration.test.ts` — postgres-gated E2E for all three types
-- [ ] Task 6 — Verification gate (AC: 13)
-  - [ ] `bun test apps/api`
-  - [ ] `bun test packages/schema` (if scopes.ts changed)
-  - [ ] `bunx turbo run lint typecheck test build --force`
+- [x] Task 1 — Shared document-type path constants (AC: 7, 9)
+  - [x] Create `apps/api/src/lib/document-type-paths.ts` — export `DOCUMENT_TYPE_PATHS`, `pathSegmentToDocumentType()`, `documentTypeToPathSegment()` mirroring render stub mapping (`invoices` → `invoice`, etc.)
+  - [x] Refactor `render-by-document-type.stub.ts` to import shared constants (DRY — optional but recommended)
+  - [x] Unit tests in `document-type-paths.test.ts`
+- [x] Task 2 — GET /v1/schemas route (AC: 1, 2)
+  - [x] Create `apps/api/src/routes/v1/schemas.ts` — `GET /schemas` handler returns `getSchemaMetadata()` from `@usetagih/schema`
+  - [x] **No** `authenticated` / `requireScope` macros — public within `/v1` group
+  - [x] Wire in `apps/api/src/app.ts` before authenticated routes
+  - [x] Tests: unauthenticated 200 + body shape; optional authenticated 200 identical
+- [x] Task 3 — Validate route handler + HTTP mapping (AC: 3–6, 8, 9)
+  - [x] Create `apps/api/src/routes/v1/validate-by-document-type.ts` — POST `/{invoices|quotations|receipts}/validate` with `authenticated: true`, `requireScope: "renders:write"`
+  - [x] Create `apps/api/src/lib/map-validate-result.ts` — maps `ValidateUseCaseResult` → HTTP status + body or envelope (success flat JSON; failure → `respondApiErrorFromContext`)
+  - [x] Handler: parse JSON body as `unknown`, map path segment → `DocumentType`, call `validateUseCase`
+  - [x] Wire in `app.ts` alongside render stub routes
+- [x] Task 4 — Scope registry + parity tests (AC: 10)
+  - [x] Extend `packages/schema/src/auth/scopes.ts` `ROUTE_SCOPE_REQUIREMENTS`
+  - [x] Update `apps/api/src/routes/v1/session.token.test.ts` matrix rows for validate routes
+- [x] Task 5 — Tests (AC: 11, 12)
+  - [x] `apps/api/src/routes/v1/schemas.test.ts`
+  - [x] `apps/api/src/routes/v1/validate-by-document-type.test.ts` — table-driven across three types + failure cases
+  - [x] `apps/api/src/lib/map-validate-result.test.ts`
+  - [x] `apps/api/src/integration/validate.integration.test.ts` — postgres-gated E2E for all three types
+- [x] Task 6 — Verification gate (AC: 13)
+  - [x] `bun test apps/api`
+  - [x] `bun test packages/schema` (if scopes.ts changed)
+  - [x] `bunx turbo run lint typecheck test build --force`
 
 ## Dev Notes
 
@@ -312,13 +312,39 @@ packages/schema/src/auth/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+composer-2.5-fast
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- added public `GET /v1/schemas` returning `getSchemaMetadata()` flat JSON
+- added authenticated `POST /v1/{invoices|quotations|receipts}/validate` wired to `validateUseCase` via `mapValidateResultToResponse`
+- extracted shared `document-type-paths.ts` and refactored render stub to reuse mapping
+- extended `ROUTE_SCOPE_REQUIREMENTS` and session token scope parity tests for validate routes
+- unit + postgres-gated integration tests for all three document types
+- verification: `bunx turbo run lint typecheck test build --force` exit 0; `@usetagih/api` 115 pass
+
 ### File List
+
+- `apps/api/src/lib/document-type-paths.ts` (new)
+- `apps/api/src/lib/document-type-paths.test.ts` (new)
+- `apps/api/src/lib/map-validate-result.ts` (new)
+- `apps/api/src/lib/map-validate-result.test.ts` (new)
+- `apps/api/src/routes/v1/schemas.ts` (new)
+- `apps/api/src/routes/v1/schemas.test.ts` (new)
+- `apps/api/src/routes/v1/validate-by-document-type.ts` (new)
+- `apps/api/src/routes/v1/validate-by-document-type.test.ts` (new)
+- `apps/api/src/integration/validate.integration.test.ts` (new)
+- `apps/api/src/app.ts` (modified)
+- `apps/api/src/routes/v1/render-by-document-type.stub.ts` (modified)
+- `apps/api/src/routes/v1/session.token.test.ts` (modified)
+- `packages/schema/src/auth/scopes.ts` (modified)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (modified)
+
+## Change Log
+
+- 2026-07-20: story 3.9 implementation — schemas discovery + validate-only routes (status → review)
 
 ## Story Validation Record
 

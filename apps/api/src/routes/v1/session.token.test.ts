@@ -33,7 +33,7 @@ describe("session token scope parity matrix", () => {
 		app = createApp({ env, apiKeyRepo, otelEnabled: false });
 	});
 
-	const matrix = [
+	const stubMatrix = [
 		{ route: "/v1/renders", method: "GET", scope: "renders:read" as const },
 		{ route: "/v1/renders", method: "POST", scope: "renders:write" as const },
 		{ route: "/v1/audit", method: "GET", scope: "audit:read" as const },
@@ -45,7 +45,27 @@ describe("session token scope parity matrix", () => {
 		},
 	] as const;
 
-	for (const row of matrix) {
+	const validateMatrix = [
+		{
+			route: "/v1/invoices/validate",
+			method: "POST",
+			scope: "renders:write" as const,
+		},
+		{
+			route: "/v1/quotations/validate",
+			method: "POST",
+			scope: "renders:write" as const,
+		},
+		{
+			route: "/v1/receipts/validate",
+			method: "POST",
+			scope: "renders:write" as const,
+		},
+	] as const;
+
+	const scopeRegistryMatrix = [...stubMatrix, ...validateMatrix] as const;
+
+	for (const row of stubMatrix) {
 		test(`session bearer ${row.method} ${row.route} with ${row.scope} → 501`, async () => {
 			const signed = await signSessionBearerToken(
 				{
@@ -99,8 +119,56 @@ describe("session token scope parity matrix", () => {
 		});
 	}
 
+	for (const row of validateMatrix) {
+		test(`session bearer ${row.method} ${row.route} with ${row.scope} passes scope guard`, async () => {
+			const signed = await signSessionBearerToken(
+				{
+					userId: crypto.randomUUID(),
+					workspaceId: crypto.randomUUID(),
+				},
+				env,
+			);
+
+			const response = await app.handle(
+				new Request(`http://localhost${row.route}`, {
+					method: row.method,
+					headers: {
+						Authorization: `Bearer ${signed.accessToken}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({}),
+				}),
+			);
+
+			expect(response.status).not.toBe(401);
+			expect(response.status).not.toBe(403);
+		});
+
+		test(`API key ${row.method} ${row.route} with ${row.scope} passes scope guard`, async () => {
+			const workspaceId = crypto.randomUUID();
+			const { secret } = await createTestApiKey(apiKeyRepo, {
+				workspaceId,
+				scopes: [row.scope],
+			});
+
+			const response = await app.handle(
+				new Request(`http://localhost${row.route}`, {
+					method: row.method,
+					headers: {
+						Authorization: `Bearer ${secret}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({}),
+				}),
+			);
+
+			expect(response.status).not.toBe(401);
+			expect(response.status).not.toBe(403);
+		});
+	}
+
 	test("ROUTE_SCOPE_REQUIREMENTS aligns with matrix routes", () => {
-		for (const row of matrix) {
+		for (const row of scopeRegistryMatrix) {
 			const key =
 				`${row.method} ${row.route}` as keyof typeof ROUTE_SCOPE_REQUIREMENTS;
 			expect(ROUTE_SCOPE_REQUIREMENTS[key]).toContain(row.scope);

@@ -24,8 +24,10 @@ import { createApiKeysRoutes } from "./routes/v1/api-keys.js";
 import { createAuditStubRoutes } from "./routes/v1/audit.stub.js";
 import { createRenderByDocumentTypeStubRoutes } from "./routes/v1/render-by-document-type.stub.js";
 import { createRendersStubRoutes } from "./routes/v1/renders.stub.js";
+import { createSchemasRoutes } from "./routes/v1/schemas.js";
 import { createSessionCsrfRoute } from "./routes/v1/session.csrf.js";
 import { createSessionTokenRoute } from "./routes/v1/session.token.js";
+import { createValidateByDocumentTypeRoutes } from "./routes/v1/validate-by-document-type.js";
 import { createWebhooksStubRoutes } from "./routes/v1/webhooks.stub.js";
 import { createOtelRequestIdPlugin } from "./telemetry/otel.js";
 
@@ -75,6 +77,8 @@ export function createApp(deps: AppDeps = {}) {
 				.use(createSessionCsrfRoute({ env }))
 				.use(createSessionTokenRoute({ env }))
 				.use(createApiKeysRoutes({ apiKeyRepo, auditRepo }))
+				.use(createSchemasRoutes())
+				.use(createValidateByDocumentTypeRoutes())
 				.use(
 					createRenderByDocumentTypeStubRoutes({
 						idempotencyStore,
