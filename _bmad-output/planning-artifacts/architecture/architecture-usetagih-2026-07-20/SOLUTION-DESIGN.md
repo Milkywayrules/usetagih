@@ -583,7 +583,9 @@ flowchart TB
 
 ## 12. Observability
 
-### 12.1 Structured Logs (pino)
+### 12.1 Structured Logs (evlog)
+
+> **Supersession (2026-07-20):** `evlog` replaces `pino` for request/event logging per approved architecture amendment. Field contract and §12.2 metric names unchanged.
 
 Required fields on render path:
 

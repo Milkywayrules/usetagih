@@ -634,13 +634,53 @@ So that integration is predictable (NFR-7, AD-11, NFR-5).
 **Acceptance Criteria:**
 
 **Given** Elysia middleware chain
-**When** any v1 route errors
-**Then** response matches PRD §10.3 envelope with requestId prefix `req_`
+**When** any v1 route errors — including framework validation errors, unknown routes (`NOT_FOUND`), and internal/unhandled errors
+**Then** response matches PRD §10.3 envelope built exclusively via `@usetagih/schema` helpers `buildApiErrorEnvelope` and `getHttpStatusForErrorCode` — no re-derived error shapes in apps
+**And** every error response includes `requestId` prefix `req_` propagated from request-id middleware (response header + envelope field)
+**And** error bodies never leak stack traces or internal exception messages in production-shaped responses
+**And** inline ad-hoc error envelopes are removed and replaced — auth mount, workspace-guard, and `app.ts` 501 stub included
+**And** success response bodies remain flat per PRD (standardization applies to errors only)
 **And** API key and session token both authenticate via Authorization Bearer
 **And** cross-workspace resource access returns 404 not 403 (NFR-5)
-**And** bun test covers 401/403/404 mapping
+**And** bun test covers 401/403/404 mapping, validation envelope, unknown-route envelope, and internal-error envelope without stack leakage
 
-### Story 3.7: Idempotency middleware for render endpoints
+### Story 3.7: Elysia platform baseline
+
+As an API operator,
+I want OpenAPI docs, telemetry, structured request logging, and security headers wired at the platform layer,
+So that integrators and ops get baseline observability and hardening before feature routes land (NFR-7, NFR-8, AD-11).
+
+**Acceptance Criteria:**
+
+**Given** `@elysiajs/openapi` configured in `apps/api` with explicit paths (not default `/openapi` only)
+**When** `USETAGIH_DOCS_ENABLED=true` (validated in `parseApiEnv` like existing vars; default enabled in dev; explicitly enabled in staging; fail-closed 404 in production until Story 7.4 + Epic 8 launch gate)
+**Then** `GET /v1/openapi.json` serves spec JSON and `/docs` serves Scalar UI — both unauthenticated when enabled; both return 404 when disabled
+**And** pre-Epic-7 spec merges `@usetagih/schema` OpenAPI components with Elysia route stubs and carries explicit partial-maturity marker (`info.description` or `x-usetagih-spec-maturity: partial`)
+**And** bun test asserts docs disabled → 404 on both routes
+
+**Given** `@elysiajs/opentelemetry` initialized before app construction
+**When** `OTEL_EXPORTER_OTLP_ENDPOINT` is unset
+**Then** tracing is a no-op (no export, no startup failure)
+**And** when endpoint is set, traces/spans export with `service.name=usetagih-api`, sensitive attributes redacted, `requestId` propagated as trace attribute (after Story 3.6), and flush on shutdown
+**And** no OTel metrics until post-MVP — log-derived metrics remain primary per SOLUTION-DESIGN §12
+**And** bun test asserts OTel no-op without configuration
+
+**Given** `evlog` with `evlog/elysia` plugin wired in `apps/api`
+**When** any request is handled
+**Then** structured request/event logs emit JSON with ratified field contract: `requestId`, `workspaceId`, `renderId`, `stage`, `durationMs` (via `log.set()` where applicable)
+**And** `requestId` wired to Story 3.6 middleware; redaction, sampling, batching/retry, and flush-on-shutdown per evlog defaults; version pinned in `apps/api/package.json`
+**And** `OTEL_EXPORTER_OTLP_ENDPOINT` and `USETAGIH_DOCS_ENABLED` added to `parseApiEnv` + Doppler stub docs
+
+**Given** thin custom Elysia `onAfterHandle` security-header middleware (~20 lines, no third-party helmet port)
+**When** any JSON API route responds
+**Then** headers include `X-Content-Type-Options`, `X-Frame-Options`/`frame-ancestors`, `Referrer-Policy`, `Cross-Origin-Resource-Policy`, and strict CSP appropriate for JSON
+**And** Scalar `/docs` HTML route alone receives tested CSP relaxation for inline script/style — API-wide CSP is not weakened for the UI
+**And** no app-level HSTS (proxy owns HSTS per Story 8.7)
+**And** bun test asserts required security headers on API routes and correct Scalar-route CSP
+
+**Dev notes:** SM pre-authorized to split into two stories (docs+headers / otel+evlog) if slice exceeds sprint capacity. Code review must enforce open Epic 2 action items: generated-artifact checklist (`turbo.json` outputs + narrow biome exclude), contract-test atomicity (OpenAPI structural tests + runtime Zod), and turbo parallel test timeout budget for typst/render tests. All wiring stays in `apps/api` until a second consumer appears; `@usetagih/schema` components remain in schema package.
+
+### Story 3.8: Idempotency middleware for render endpoints
 
 As an embed integrator,
 I want Idempotency-Key header deduplication per workspace+endpoint 24h,
@@ -655,7 +695,7 @@ So that retries do not double-charge quota or duplicate artifacts (FR-24, AD-5).
 **And** idempotency_keys table stores response snapshot with SHA-256 of key
 **And** bun test covers happy path and conflict case
 
-### Story 3.8: GET /v1/schemas and POST /v1/{documentType}/validate
+### Story 3.9: GET /v1/schemas and POST /v1/{documentType}/validate
 
 As an integrator,
 I want schema discovery and validate-only endpoint,
@@ -670,7 +710,7 @@ So that I can fix payloads before render (FR-3, FR-11, UJ-2).
 **And** path documentType authoritative vs body mismatch → 400 DOCUMENT_TYPE_MISMATCH
 **And** bun test + integration test for all three types
 
-### Story 3.9: Logo ingestion SSRF-hardened pipeline
+### Story 3.10: Logo ingestion SSRF-hardened pipeline
 
 As a security engineer,
 I want logo fetch with SSRF protections and persisted bytes+checksum,
@@ -685,7 +725,7 @@ So that branding is safe and deterministic (AD-7, SOLUTION-DESIGN §4.4).
 **And** bytes + SHA-256 persisted on render record; subsequent renders use persisted bytes only
 **And** bun test uses mock server covering SSRF blocked IPs and determinism re-read
 
-### Story 3.10: POST /v1/{documentType}/preview — multi-page SVG response
+### Story 3.11: POST /v1/{documentType}/preview — multi-page SVG response
 
 As a direct user,
 I want HTML/SVG preview from validated payload without persisting artifact,
@@ -701,7 +741,7 @@ So that I review document before export (FR-10, Story 1.7 contract).
 **And** SVG sanitized; temp files cleaned
 **And** bun test compares pageCount to PDF for pagination fixture
 
-### Story 3.11: Sync render path — POST /v1/{documentType}/render (≤100 items, ≤10s)
+### Story 3.12: Sync render path — POST /v1/{documentType}/render (≤100 items, ≤10s)
 
 As an integrator,
 I want synchronous 201 render for standard payloads,
@@ -718,9 +758,9 @@ So that embed flow completes in one request (FR-12 sync, FR-7, NFR-1).
 **And** validation failure → 422 before Typst invoked
 **And** payloads >500 line items rejected at validation
 **And** integration test asserts P95 target mock ≤2s for basic fixture in CI (NFR-1 smoke)
-**And** structured pino logs include requestId, renderId, durationMs stages (NFR-8 partial)
+**And** structured evlog events include requestId, renderId, durationMs stages (NFR-8 partial; baseline wiring in Story 3.7)
 
-### Story 3.12: Render retrieval, list, and authenticated download
+### Story 3.13: Render retrieval, list, and authenticated download
 
 As an integrator,
 I want GET render metadata, paginated list, and PDF download,
@@ -736,7 +776,7 @@ So that I can retrieve artifacts after render (FR-13, FR-14, FR-15).
 **And** download audit event logged (FR-27)
 **And** cross-workspace renderId returns 404
 
-### Story 3.13: Signed share URLs, public resolver, and revoke
+### Story 3.14: Signed share URLs, public resolver, and revoke
 
 As a document recipient,
 I want share links with TTL and public view/download,
@@ -752,7 +792,7 @@ So that PDFs distribute without API keys (FR-19, AD-6).
 **And** DELETE /v1/renders/{renderId}/share revokes link; no reissue endpoint
 **And** bun test covers sign, verify, expiry, revoke
 
-### Story 3.14: Audit log capture and GET /v1/audit
+### Story 3.15: Audit log capture and GET /v1/audit
 
 As a workspace owner,
 I want append-only audit trail queryable via API,
@@ -767,7 +807,7 @@ So that embed flows are accountable (FR-27, NFR-11, AD-7).
 **And** no DELETE on audit_events at MVP
 **And** bun test verifies append-only behavior
 
-### Story 3.15: Rate limiting and monthly quota enforcement
+### Story 3.16: Rate limiting and monthly quota enforcement
 
 As a platform operator,
 I want per-workspace rate limits and tier quotas,
@@ -782,7 +822,7 @@ So that abuse is controlled (FR-17, NFR-12).
 **And** idempotent retry same key does not double-count quota (FR-24)
 **And** bun test covers limit boundaries per tier enum
 
-### Story 3.16: Workspace settings and branding endpoints for web
+### Story 3.17: Workspace settings and branding endpoints for web
 
 As a direct user,
 I want PATCH business/branding settings and logo upload,
@@ -792,11 +832,11 @@ So that PDFs use my identity (PRD §10.1 branding, UX-DR13).
 
 **Given** authenticated session token or API key scoped to active workspace
 **When** PATCH /v1/settings/business, PATCH /v1/settings/branding, POST /v1/settings/branding/logo
-**Then** workspace_settings updated; logo obeys same SSRF/size rules as Story 3.9
+**Then** workspace_settings updated; logo obeys same SSRF/size rules as Story 3.10
 **And** render merges workspace defaults with payload branding override
 **And** bun test covers merge precedence payload override > workspace default
 
-### Story 3.17: Sync embed flow integration test (SM-4)
+### Story 3.18: Sync embed flow integration test (SM-4)
 
 As a QA engineer,
 I want staging-style integration test validate→render→download→share,
@@ -810,7 +850,7 @@ So that MVP embed path is proven before web (SM-4).
 **And** audit log contains validate, render, download entries
 **And** documents test in `apps/api/tests/embed-sync-flow.test.ts`
 
-### Story 3.18: Workspace CRUD and active workspace selection
+### Story 3.19: Workspace CRUD and active workspace selection
 
 As a user with multiple clients,
 I want to create, list, rename, and switch workspaces,
@@ -1278,19 +1318,20 @@ So that I upgrade SDK when needed (FR-3, AD-12).
 **Then** console.warn or typed warning event documents upgrade path
 **And** bun test mocks version mismatch
 
-### Story 7.4: Publish OpenAPI 3.1 at GET /v1/openapi.json with Spectral CI
+### Story 7.4: Full OpenAPI assembly, Spectral CI, SDK wiring, and production docs activation
 
 As an integrator,
-I want stable OpenAPI URL validated in CI,
-So that codegen stays trustworthy (FR-16, AD-11).
+I want a complete OpenAPI document validated in CI and activated for production integrators,
+So that codegen stays trustworthy through launch (FR-16, AD-11).
 
 **Acceptance Criteria:**
 
-**Given** generated spec from packages/schema at apps/api build
-**When** GET /v1/openapi.json and /openapi.json redirect requested
-**Then** spec includes all MVP endpoints, error envelope, DocumentPayload union
-**And** CI job runs @stoplight/spectral-cli with packages/schema/spectral.yaml — zero severity errors
-**And** bun test smoke fetches spec JSON schema valid
+**Given** generated components from `packages/schema` merged into the full MVP route surface (component serving and Scalar UI wired in Story 3.7)
+**When** OpenAPI document is assembled at build time
+**Then** spec includes all MVP endpoints, error envelope, DocumentPayload union; partial-maturity marker removed
+**And** CI job runs @stoplight/spectral-cli with `packages/schema/spectral.yaml` — zero severity errors
+**And** `@usetagih/sdk` codegen/wiring consumes the assembled spec; bun test smoke validates spec JSON schema
+**And** production docs activation flips `USETAGIH_DOCS_ENABLED` to public at launch (coordinated with Epic 8.8 checklist) — Story 3.7 owns route serving; this story owns document completeness and activation gate
 
 ### Story 7.5: SDK staging integration test all document types
 
@@ -1394,16 +1435,17 @@ So that sign-up/export/share views are measured without API noise (SOLUTION-DESI
 ### Story 8.6: Structured logging and render/webhook metrics
 
 As an operator,
-I want pino logs and basic metrics export,
+I want evlog logs and basic metrics export,
 So that NFR-8 observability baseline exists.
 
 **Acceptance Criteria:**
 
-**Given** API and worker render paths
+**Given** API and worker render paths (worker logging migrated to evlog in the same pass)
 **When** render completes or fails
-**Then** JSON logs include requestId, workspaceId, renderId, stage, durationMs per SOLUTION-DESIGN §12.1
-**And** counters documented: usetagih_renders_total, render_duration_seconds histogram, webhook_deliveries_total, queue_depth gauge
-**And** alert threshold documented queue depth >50 for 5min
+**Then** JSON logs include requestId, workspaceId, renderId, stage, durationMs per SOLUTION-DESIGN §12.1 field contract (logger supersession: evlog replaces pino — observability contract unchanged)
+**And** counters documented verbatim: `usetagih_renders_total`, `usetagih_render_duration_seconds`, `usetagih_webhook_deliveries_total`, `usetagih_queue_depth` per SOLUTION-DESIGN §12.2
+**And** evlog OTLP drain may share the OpenTelemetry collector endpoint from Story 3.7 when configured
+**And** integration tests cover evlog pipeline; alert threshold documented queue depth >50 for 5min
 
 ### Story 8.7: HSTS and HTTPS enforcement
 
@@ -1431,6 +1473,7 @@ So that MVP exit criteria are explicit.
 **Then** includes: golden 100% SM-3, template benchmark SM-1, validation clarity SM-2 sampling plan, embed demo SM-4 link, MCP explicitly out of scope, privacy policy published placeholder (§9.4 assumption)
 **And** launch checklist includes tier limit smoke test per enum and documents payment integration explicitly out of MVP scope
 **And** counter-metrics SM-C1–C3 copy review checklist included
+**And** flip `USETAGIH_DOCS_ENABLED` to public production exposure at launch (Story 3.7 fail-closed default; Story 7.4 owns document completeness)
 
 ---
 

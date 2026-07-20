@@ -149,7 +149,7 @@ flowchart TB
 | Data & formats | Money = decimal string; dates ISO 8601 date; currency ISO 4217; errors JSON Pointer paths |
 | IDs in DB | PostgreSQL `uuid` primary keys; idempotency stored as SHA-256 hash of key |
 | State mutation | Use-cases in `packages/core` own transactions; repos never called from route handlers directly |
-| Logging | Structured JSON via `pino`; fields: `requestId`, `workspaceId`, `renderId`, `stage`, `durationMs` |
+| Logging | Structured JSON via `evlog` (supersedes `pino` per approved architecture amendment 2026-07-20); fields: `requestId`, `workspaceId`, `renderId`, `stage`, `durationMs` |
 | Auth | API: `Authorization: Bearer <api_key>`. Web: better-auth session cookie → `POST /v1/session/token` for short-lived audience-bound Bearer |
 | Config | Doppler project `usetagih`; configs `dev`, `staging`, `prod` — never commit secrets |
 
@@ -161,6 +161,9 @@ flowchart TB
 | Monorepo | turborepo 2.x |
 | Language | TypeScript 5.8+ |
 | API framework | Elysia 1.4.29 (compiled to `dist/`) |
+| OpenAPI docs | `@elysiajs/openapi` (Scalar UI; gated by `USETAGIH_DOCS_ENABLED`) |
+| Telemetry | `@elysiajs/opentelemetry` (traces; env-gated via `OTEL_EXPORTER_OTLP_ENDPOINT`) |
+| Request logging | `evlog` + `evlog/elysia` |
 | Contract | Zod 4.x + `@asteasolutions/zod-to-openapi` |
 | ORM | Drizzle ORM 0.40+ |
 | Database | PostgreSQL 16 |

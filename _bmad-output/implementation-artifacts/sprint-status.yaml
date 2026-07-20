@@ -45,7 +45,7 @@
 # Epic 5 after Epic 1+3 (Story 5.0 first) | Epic 6 after Epic 3+5 | Epic 7 after Epic 3 | Epic 8 last
 
 generated: 2026-07-20
-last_updated: 2026-07-20T08:30:00+07:00
+last_updated: 2026-07-20T12:10:00+07:00
 project: usetagih
 project_key: NOKEY
 tracking_system: file-system
@@ -102,18 +102,19 @@ development_status:
   3-4-post-v1-session-token-short-lived-audience-bound-csrf-protected-bearer: done
   3-5-api-key-create-list-and-revoke-endpoints: backlog
   3-6-auth-middleware-request-id-and-unified-error-envelope: backlog
-  3-7-idempotency-middleware-for-render-endpoints: backlog
-  3-8-get-v1-schemas-and-post-v1-documenttype-validate: backlog
-  3-9-logo-ingestion-ssrf-hardened-pipeline: backlog
-  3-10-post-v1-documenttype-preview-multi-page-svg-response: backlog
-  3-11-sync-render-path-post-v1-documenttype-render-100-items-10s: backlog
-  3-12-render-retrieval-list-and-authenticated-download: backlog
-  3-13-signed-share-urls-public-resolver-and-revoke: backlog
-  3-14-audit-log-capture-and-get-v1-audit: backlog
-  3-15-rate-limiting-and-monthly-quota-enforcement: backlog
-  3-16-account-settings-and-branding-endpoints-for-web: backlog
-  3-17-sync-embed-flow-integration-test-sm-4: backlog
-  3-18-workspace-crud-and-active-workspace-selection: backlog
+  3-7-elysia-platform-baseline: backlog
+  3-8-idempotency-middleware-for-render-endpoints: backlog
+  3-9-get-v1-schemas-and-post-v1-documenttype-validate: backlog
+  3-10-logo-ingestion-ssrf-hardened-pipeline: backlog
+  3-11-post-v1-documenttype-preview-multi-page-svg-response: backlog
+  3-12-sync-render-path-post-v1-documenttype-render-100-items-10s: backlog
+  3-13-render-retrieval-list-and-authenticated-download: backlog
+  3-14-signed-share-urls-public-resolver-and-revoke: backlog
+  3-15-audit-log-capture-and-get-v1-audit: backlog
+  3-16-rate-limiting-and-monthly-quota-enforcement: backlog
+  3-17-account-settings-and-branding-endpoints-for-web: backlog
+  3-18-sync-embed-flow-integration-test-sm-4: backlog
+  3-19-workspace-crud-and-active-workspace-selection: backlog
   epic-3-retrospective: optional
 
   # Epic 4: Async Render Path, Webhooks & Artifact Lifecycle
@@ -215,6 +216,10 @@ action_items:
     status: open
   - epic: 2
     action: "run correct-course amendment for harness directives before epic 3 kickoff"
+    owner: "correct-course"
+    status: done
+  - epic: 3
+    action: "correct-course amendment for directive #5 — elysia platform baseline (openapi, otel, evlog, security headers), story 3.6 envelope ACs, story 7.4/8.6/8.8 scope shifts"
     owner: "correct-course"
     status: done
   - epic: 0
