@@ -11,6 +11,16 @@ export {
 	getRenderUseCase,
 } from "./get-render-use-case.js";
 export {
+	AUDIT_RETENTION_DAYS,
+	type AuditEventMetadata,
+	DEFAULT_AUDIT_PAGE_SIZE,
+	type ListAuditUseCaseInput,
+	type ListAuditUseCaseResult,
+	listAuditUseCase,
+	MAX_AUDIT_PAGE_SIZE,
+	mapAuditEventRecord,
+} from "./list-audit-use-case.js";
+export {
 	DEFAULT_LIST_PAGE_SIZE,
 	type ListRendersUseCaseInput,
 	type ListRendersUseCaseResult,
