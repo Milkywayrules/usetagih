@@ -7,8 +7,6 @@ created: 2026-07-20
 
 Status: ready-for-dev
 
-<!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
-
 ## Story
 
 As an API consumer,
@@ -17,129 +15,144 @@ so that integration is predictable (NFR-7, AD-11, NFR-5).
 
 ## Acceptance Criteria
 
-1. **Given** the Elysia `/v1` middleware chain, **when** any `/v1/*` route is hit, **then** a global request-id middleware runs first — derives `requestId` from inbound `X-Request-Id` when present and valid, otherwise generates a new id with **`req_` prefix** — stores it on request context, sets response header `X-Request-Id`, and makes it available to all downstream handlers and error paths.
-2. **Given** any `/v1/*` error response (auth, scope, validation, not-found, stub 501, internal), **when** the body is JSON, **then** it matches PRD §10.3 / AD-11 shape `{ error: { code, message, requestId, details[] } }` built **exclusively** via `@usetagih/schema` helpers `buildApiErrorEnvelope` and `getHttpStatusForErrorCode` — **no** hand-rolled `{ error: { code, message } }` objects remain in `apps/api`.
-3. **Given** Elysia/Zod route validation failure on a `/v1/*` route, **when** the framework rejects input, **then** HTTP status is **422**, code is `VALIDATION_FAILED`, `details[]` is populated via `zodIssuesToDetails`, and `requestId` matches the middleware value.
-4. **Given** `GET /v1/does-not-exist` (unknown route under `/v1`), **when** no handler matches, **then** HTTP **404**, code `NOT_FOUND`, generic safe message (no path echo leakage beyond what Elysia already exposes), full envelope with `requestId`.
-5. **Given** an unhandled thrown error inside a `/v1/*` handler, **when** `onError` runs, **then** HTTP **500**, code `INTERNAL_ERROR`, message is a stable generic string (never raw `Error.message` / stack in the JSON body), `details` is `[]`, and stack traces are **not** included in the response body.
-6. **Given** production-shaped error responses, **when** inspected, **then** no stack traces or internal exception strings leak in JSON; dev logging may still record the underlying error server-side (Story 3.7 evlog wiring — do not add evlog here).
-7. **Given** inline ad-hoc error returns today, **when** Story 3.6 completes, **then** all are replaced with envelope helpers — **must include**: `apps/api/src/auth/mount.ts`, `apps/api/src/middleware/workspace-guard.ts`, `apps/api/src/middleware/auth-resolver.ts`, `apps/api/src/middleware/scope-guard.ts`, `apps/api/src/middleware/session-management-auth.ts`, `apps/api/src/routes/v1/renders.stub.ts`, `apps/api/src/routes/v1/webhooks.stub.ts`, `apps/api/src/routes/v1/audit.stub.ts`, `apps/api/src/routes/v1/session.token.ts`, `apps/api/src/routes/v1/api-keys.ts`, and validation/auth branches in `apps/api/src/routes/auth/sign-up-with-workspace.ts`.
-8. **Given** successful `/v1/*` responses (201 api-keys, 200 session token, 501 stub success path is still an error — see AC 9), **when** body is success JSON, **then** bodies remain **flat** — no `{ data: ... }` wrapper; standardization applies to **errors only**.
-9. **Given** scope-gated stub routes (`GET|POST /v1/renders`, webhooks, audit stubs), **when** authenticated with valid scope, **then** HTTP **501** with code `NOT_IMPLEMENTED` (added to `@usetagih/schema` `ERROR_CODES` → HTTP **501** mapping), message unchanged from Story 3.3 stubs, full envelope including `requestId` and empty `details`.
-10. **Given** API key Bearer and session Bearer (Story 3.4/3.5 chain), **when** auth middleware runs, **then** both continue to authenticate via `Authorization: Bearer` — this story **does not** change bearer resolution logic, only error shape + requestId propagation.
-11. **Given** cross-workspace resource access (NFR-5), **when** a resource belongs to another workspace, **then** HTTP **404** with code `NOT_FOUND` — not **403**; existing Story 3.5 DELETE `/v1/api-keys/{keyId}` behavior must remain 404 for foreign keys.
-12. **Given** `bun test apps/api`, **when** error-envelope test suite runs, **then** tests prove: 401 `UNAUTHORIZED`, 403 `FORBIDDEN` / `WORKSPACE_REQUIRED`, 404 `NOT_FOUND`, validation envelope with `details`, unknown-route envelope, internal-error envelope without stack/`Error.message` leakage, and `X-Request-Id` header parity with body `error.requestId` on sampled routes.
+1. **Given** request-id middleware runs first on every `apps/api` request, **when** any response is sent (success or error), **then** response includes header `X-Request-Id` with value `req_<uuid>` (generate via `crypto.randomUUID()` — no new dependency); same value appears in every error envelope `error.requestId` field for that request.
+2. **Given** inbound request carries `X-Request-Id` matching `/^req_[0-9a-f-]{36}$/i`, **when** middleware runs, **then** that value is reused (propagation for upstream proxies); malformed or missing values get a freshly generated `req_` id.
+3. **Given** any `/v1/*` route returns an error — macro auth failures, scope guard, validation, stub 501, unknown route, unhandled exception — **when** the response body is JSON, **then** it matches AD-11 / PRD §10.3 shape built **exclusively** via `@usetagih/schema` exports `buildApiErrorEnvelope` and `getHttpStatusForErrorCode` — no inline `{ error: { code, message } }` literals without `requestId` and `details`.
+4. **Given** Elysia/Zod route or body validation fails on a `/v1/*` route, **when** the framework surfaces a validation error, **then** HTTP status is `getHttpStatusForErrorCode("VALIDATION_FAILED")` (422) and envelope uses code `VALIDATION_FAILED` with `details[]` populated from `zodIssuesToDetails` in `@usetagih/schema` (empty `details` only when no issues available).
+5. **Given** request to unknown `/v1/*` path, **when** no route matches, **then** HTTP **404** with code `NOT_FOUND`, message suitable for clients, `details: []`, and full envelope including `requestId`.
+6. **Given** unhandled thrown error inside `/v1/*` handler chain, **when** global error handler runs, **then** HTTP **500** with code `INTERNAL_ERROR`, generic safe message (no stack trace, no raw `Error.message` in production-shaped responses), `details: []`, and full envelope including `requestId`.
+7. **Given** Epic 3 stub routes (`GET|POST /v1/renders`, `GET /v1/audit`, `GET|POST /v1/webhooks`) still return HTTP **501**, **when** auth + scope guards pass, **then** envelope uses new schema code `NOT_IMPLEMENTED` (added in this story) via `buildApiErrorEnvelope` + `getHttpStatusForErrorCode` → **501**; existing scope-parity / integration tests continue to expect status **501** (code string may change from literal to enum constant — update assertions).
+8. **Given** ad-hoc error returns today in auth mount, workspace guard, auth resolver, scope guard, session-management guard, api-keys routes, sign-up-with-workspace, and session.token, **when** this story merges, **then** each uses shared `apps/api` helper(s) that delegate to `buildApiErrorEnvelope` — **no** duplicated envelope assembly in route/macro files.
+9. **Given** successful `/v1/*` responses (201 api-key create, 200 lists, health, session token exchange, sign-up composite), **when** returned, **then** bodies remain **flat** per PRD — success is **not** wrapped in an envelope (standardization applies to errors only).
+10. **Given** API key and session bearer JWT (Story 3.4–3.5), **when** `Authorization: Bearer` is used, **then** existing auth resolution behavior is unchanged — this story only unifies **error shape**, not auth semantics.
+11. **Given** cross-workspace resource access (e.g. `DELETE /v1/api-keys/{keyId}` for another workspace), **when** denied, **then** HTTP **404** `NOT_FOUND` (NFR-5 — not 403) with full envelope.
+12. **Given** `bun test apps/api`, **when** run, **then** tests cover: 401/403/404 mapping with envelope + `requestId`; validation envelope with `details`; unknown-route envelope; internal-error envelope without stack leakage; stub 501 envelope; header `X-Request-Id` present on error responses.
 13. **Given** workspace, **when** `bunx turbo run lint typecheck test build --force` runs from repo root, **then** all tasks exit 0.
-14. **Out of scope (later Epic 3 stories):** OpenAPI publish + Scalar UI (Story 3.7); evlog structured logging + OTel (Story 3.7); rate limits (Story 3.16); `POST /v1/{documentType}/validate` route (Story 3.9); changing bearer/JWT/API-key crypto logic (Stories 3.4–3.5); HSTS (Story 8.7).
+14. **Out of scope (later Epic 3 stories):** OpenAPI publish / Scalar docs (Story 3.7); evlog wiring (Story 3.7); OTel trace attribute propagation (Story 3.7 — depends on request-id from this story); rate limits (Story 3.16); changing success response contracts; better-auth `/api/auth/*` error shapes (non-`/v1` JSON errors may stay plugin-native unless trivial to wrap).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Extend schema for stub 501 code (AC: 2, 9)
-  - [ ] Add `NOT_IMPLEMENTED` to `packages/schema/src/errors/codes.ts` and `ERROR_CODES` array
-  - [ ] Map `NOT_IMPLEMENTED` → **501** in `packages/schema/src/errors/http-status.ts`
-  - [ ] Update `packages/schema/src/errors/codes.test.ts` and `http-status` coverage if present
-  - [ ] Regenerate/export remains via `packages/schema/src/index.ts` (no OpenAPI regen required — Story 7.4)
-- [ ] Task 2 — Request-id middleware (AC: 1)
-  - [ ] Create `apps/api/src/middleware/request-id.ts` — derive or generate `req_*`, set `X-Request-Id`, expose `requestId` on context
-  - [ ] Wire as **first** plugin inside `/v1` group in `apps/api/src/app.ts` (before CORS/workspace/auth)
-- [ ] Task 3 — Central error helpers (AC: 2, 3, 4, 5)
-  - [ ] Create `apps/api/src/lib/api-error.ts` — thin wrappers: `apiError(statusCode, { code, message, requestId, details? })` calling `buildApiErrorEnvelope` + `getHttpStatusForErrorCode` guard
-  - [ ] Create `apps/api/src/middleware/error-envelope.ts` — Elysia plugin with `.onError` for `/v1` group: map validation → 422, not found → 404, unknown → 500 envelope
-  - [ ] Map Zod validation issues via `zodIssuesToDetails` from `@usetagih/schema`
-- [ ] Task 4 — Replace ad-hoc errors across middleware/routes (AC: 6, 7, 10, 11)
-  - [ ] Refactor listed files to use `apiError` helper with `requestId` from context
-  - [ ] Ensure macro `status()` returns use helper — avoid duplicate envelope assembly
-  - [ ] Preserve existing HTTP status semantics (401/403/404/501) — only shape changes
-- [ ] Task 5 — Update integration/unit tests (AC: 12)
-  - [ ] Create `apps/api/src/middleware/error-envelope.test.ts` — unit cases for validation mapping, generic internal message
-  - [ ] Extend `apps/api/src/integration/auth.integration.test.ts` — assert `error.requestId`, `error.details`, header parity on 401/403/501
-  - [ ] Update `session.token.test.ts`, `api-keys.integration.test.ts`, `session-token.integration.test.ts` — envelope fields on error assertions (keep behavioral expectations)
-  - [ ] Add unknown-route test: `GET /v1/__missing__` → 404 envelope
-  - [ ] Add internal-error test via controlled throw route in test file only (not production route)
-- [ ] Task 6 — Verification gate (AC: 13)
+- [ ] Task 1 — Schema: `NOT_IMPLEMENTED` code (AC: 7, 3)
+  - [ ] Add `NOT_IMPLEMENTED` to `packages/schema/src/errors/codes.ts` + `ERROR_CODES` array
+  - [ ] Map `NOT_IMPLEMENTED → 501` in `packages/schema/src/errors/http-status.ts`
+  - [ ] Update `codes.test.ts` / `envelope.test.ts` / OpenAPI structural tests if they enumerate codes (Epic 2 action item: contract changes atomic)
+  - [ ] Export constant from `packages/schema/src/index.ts` if other constants are exported
+- [ ] Task 2 — Request-id middleware (AC: 1, 2)
+  - [ ] Create `apps/api/src/middleware/request-id.ts` — derive/store `requestId` on context; set `X-Request-Id` on response via `onAfterHandle` or equivalent
+  - [ ] Wire as **first** plugin in `createApp()` (before health/auth/v1 group) so all routes inherit
+  - [ ] Unit tests: generates `req_` prefix; reuses valid inbound header; rejects malformed inbound
+- [ ] Task 3 — Central API error helper (AC: 3, 8)
+  - [ ] Create `apps/api/src/lib/api-error.ts` — `respondApiError({ code, message, requestId, details?, set })` calling `buildApiErrorEnvelope` + `getHttpStatusForErrorCode` + `set.status`
+  - [ ] Optional thin wrapper `respondApiErrorFromContext(ctx, …)` reading `requestId` from Elysia context store
+  - [ ] **Do not** re-export schema types — import from `@usetagih/schema` at call sites only through this helper
+- [ ] Task 4 — Global `/v1` error handling (AC: 4, 5, 6)
+  - [ ] Add Elysia `onError` (or scoped plugin on `/v1` group) mapping: `NOT_FOUND` → 404 envelope; Zod/validation → 422 + `zodIssuesToDetails`; unknown → `INTERNAL_ERROR` 500
+  - [ ] Ensure `error.message` for 500 is constant generic string (e.g. `"An internal error occurred"`) — log real error server-side only (console or placeholder until Story 3.7 evlog)
+  - [ ] Register catch-all unknown route handler on `/v1` group **after** all routes for explicit 404 envelope (if framework default bypasses `onError`)
+- [ ] Task 5 — Replace ad-hoc envelopes (AC: 8, 11)
+  - [ ] `apps/api/src/auth/mount.ts` — `auth` macro 401
+  - [ ] `apps/api/src/middleware/workspace-guard.ts` — 401/403
+  - [ ] `apps/api/src/middleware/auth-resolver.ts` — 401/403
+  - [ ] `apps/api/src/middleware/scope-guard.ts` — 401/403
+  - [ ] `apps/api/src/middleware/session-management-auth.ts` — 403
+  - [ ] `apps/api/src/routes/v1/api-keys.ts` — validation + NOT_FOUND + FORBIDDEN paths
+  - [ ] `apps/api/src/routes/auth/sign-up-with-workspace.ts` — error catch paths (map better-auth codes to schema codes where possible; never leak raw plugin codes in envelope)
+  - [ ] `apps/api/src/routes/v1/session.token.ts` — CSRF/auth errors
+  - [ ] Stub files: `renders.stub.ts`, `audit.stub.ts`, `webhooks.stub.ts` — 501 via helper + `NOT_IMPLEMENTED`
+- [ ] Task 6 — Tests (AC: 12)
+  - [ ] `apps/api/src/middleware/error-envelope.test.ts` — unit-level helper + validation mapping
+  - [ ] Extend `apps/api/src/integration/auth.integration.test.ts` — assert `error.requestId`, `error.details`, `X-Request-Id` header on 401
+  - [ ] Extend `apps/api/src/integration/api-keys.integration.test.ts` — 404 envelope fields
+  - [ ] Add cases: `GET /v1/does-not-exist` → 404 envelope; forced 500 path (test-only route or mock throw) → no stack in body
+  - [ ] Update stub assertions: `NOT_IMPLEMENTED` code + envelope shape; keep status 501
+  - [ ] Update `session.token.test.ts` scope-parity rows if body shape assertions added
+- [ ] Task 7 — Verification gate (AC: 13)
   - [ ] `bun test apps/api`
-  - [ ] `bun test packages/schema`
+  - [ ] `bun test packages/schema` (after NOT_IMPLEMENTED)
   - [ ] `bunx turbo run lint typecheck test build --force`
 
 ## Dev Notes
 
 ### Goal
 
-Wire **global request-id** and **AD-11 unified error envelope** on every `/v1/*` route. Story 3.4/3.5 delivered bearer auth, scope guards, and API keys with minimal `{ error: { code, message } }` shapes — this story centralizes envelope assembly so Story 3.7 (OpenAPI, evlog, OTel) and Story 3.9+ feature routes inherit one pattern.
+Wire **request-id** propagation and replace every ad-hoc API error object in `apps/api` with the canonical AD-11 envelope from `@usetagih/schema`. Auth behavior from Stories 3.3–3.5 stays intact; only error transport standardizes. Success bodies stay flat.
 
 ### Binding ratified sources
 
 | Ref | Requirement for 3.6 |
 | --- | --- |
-| **NFR-7** | Unified error envelope on all endpoints |
-| **NFR-5** | Cross-workspace access → **404** not 403 |
 | **AD-11** | `{ error: { code, message, requestId, details[] } }`; one code → one HTTP status |
+| **NFR-7** | Predictable client error handling; no bare string errors |
+| **NFR-5** | Cross-workspace denial → 404 `NOT_FOUND` |
 | **PRD §10.3** | Envelope shape + HTTP mapping table |
-| **ARCHITECTURE-SPINE** | `requestId` prefix `req_`; naming conventions |
-| **SOLUTION-DESIGN §6** | `apps/api/src/middleware/request-id` placement |
-| **correct-course directive #5** | Strengthened Story 3.6 ACs — framework validation, unknown routes, internal errors via schema builders; replace auth mount / workspace-guard / stub envelopes |
-| **Story 3.5** | Bearer + scope chain complete; envelope deferred explicitly |
-| **Story 2.3** | `buildApiErrorEnvelope`, `getHttpStatusForErrorCode`, `zodIssuesToDetails`, `ApiErrorEnvelopeSchema` |
+| **correct-course directive #5** | Strengthened ACs: framework validation, unknown routes, internal errors all use envelope; consume schema builders; replace auth mount, workspace-guard, stub 501 shapes |
+| **Story 3.5** | Bearer chain (JWT + API key) complete — unify errors only |
+| **Story 2.3** | `buildApiErrorEnvelope`, `getHttpStatusForErrorCode`, `zodIssuesToDetails` — **reuse, do not duplicate** |
 
-### Scope boundary: 3.6 vs 3.7 vs 3.9
+### Scope boundary: 3.6 vs 3.7 vs 3.8
 
 | Capability | Owner | 3.6 delivers |
 | --- | --- | --- |
-| Request-id middleware + `X-Request-Id` | **3.6** | First middleware in `/v1` group |
-| Unified error envelope on `/v1/*` | **3.6** | All errors via schema builders |
-| Replace ad-hoc `{ error: { code, message } }` | **3.6** | Listed middleware + routes |
-| `NOT_IMPLEMENTED` → 501 for stubs | **3.6** | Schema enum extension |
-| evlog / OTel / OpenAPI platform baseline | **3.7** | Do not add deps or plugins |
-| Validate/render HTTP routes | **3.9+** | Only envelope plumbing |
+| `requestId` generation + header | **3.6** | Middleware + envelope field |
+| Unified error envelope on `/v1/*` | **3.6** | All error paths |
+| `NOT_IMPLEMENTED` schema code + 501 stubs | **3.6** | Extend ERROR_CODES |
+| OpenAPI / Scalar / OTel / evlog | **3.7** | Do not add deps |
+| `POST /v1/{documentType}/validate` route | **3.8–3.9** | Do not implement |
+| Success body wrapping | **never** | Flat JSON per PRD |
 
-### Current state (baseline `740a720`) — files with ad-hoc errors
+### Evidence-based decisions (no human loop)
 
-Every `/v1` error today omits `requestId` and `details`:
-
-| File | Current pattern | Target codes |
+| Decision | Choice | Rationale |
 | --- | --- | --- |
-| `middleware/auth-resolver.ts` | `status(401\|403, { error: { code, message } })` | `UNAUTHORIZED`, `WORKSPACE_REQUIRED` |
-| `middleware/workspace-guard.ts` | same | `UNAUTHORIZED`, `WORKSPACE_REQUIRED` |
-| `middleware/scope-guard.ts` | `FORBIDDEN` insufficient scope | `FORBIDDEN` |
-| `middleware/session-management-auth.ts` | `FORBIDDEN` session-only | `FORBIDDEN` |
-| `auth/mount.ts` | `UNAUTHORIZED` on auth macro | `UNAUTHORIZED` |
-| `routes/v1/*.stub.ts` | `NOT_IMPLEMENTED` literal (not in schema yet) | `NOT_IMPLEMENTED` + 501 |
-| `routes/v1/session.token.ts` | ad-hoc CSRF/auth errors | `FORBIDDEN`, `UNAUTHORIZED` |
-| `routes/v1/api-keys.ts` | ad-hoc validation/not-found | `VALIDATION_FAILED`, `NOT_FOUND`, etc. |
-| `routes/auth/sign-up-with-workspace.ts` | Zod + better-auth API errors | map to envelope |
+| Request ID format | `req_${crypto.randomUUID()}` | ARCHITECTURE-SPINE `req_` prefix; no ulid package in monorepo; UUID acceptable at MVP |
+| Response header | `X-Request-Id` | Industry standard; epics require header + envelope — name not specified elsewhere |
+| Inbound propagation | Reuse valid `req_<uuid>` | Supports future proxy/tracing; generate if absent/invalid |
+| `NOT_IMPLEMENTED` code | Add to `@usetagih/schema` with HTTP 501 | Stubs require 501 + `buildApiErrorEnvelope`; literal string violates AD-11; PRD table silent on 501 — intentional Epic 3 stub extension |
+| Internal error message | Fixed generic string | AC forbids stack/internal message leakage in production-shaped responses |
+| better-auth `/api/auth/*` errors | Out of scope unless trivial | Epics target `/v1` + listed files; plugin HTML/redirect errors differ |
+| Central helper location | `apps/api/src/lib/api-error.ts` | Single assembly point; macros/routes call helper — schema stays transport-agnostic |
+| Logging real 500 cause | `console.error` until 3.7 | evlog not wired yet; must not appear in response body |
 
-**Preserve:** HTTP status codes and business messages already asserted in integration tests unless AC requires generic internal messages only for 500.
+**Board-awareness flag (non-blocking):** `NOT_IMPLEMENTED` + HTTP 501 extends PRD §10.3 table for Epic 3 stub routes only; remove or repurpose when stubs replaced by real handlers.
+
+### Current state — files with ad-hoc `{ error: { code, message } }` (must migrate)
+
+| File | Error codes used today | Notes |
+| --- | --- | --- |
+| `apps/api/src/auth/mount.ts` | `UNAUTHORIZED` | better-auth plugin macro |
+| `apps/api/src/middleware/workspace-guard.ts` | `UNAUTHORIZED`, `WORKSPACE_REQUIRED` | session-only macro |
+| `apps/api/src/middleware/auth-resolver.ts` | `UNAUTHORIZED`, `WORKSPACE_REQUIRED` | bearer + session |
+| `apps/api/src/middleware/scope-guard.ts` | `UNAUTHORIZED`, `FORBIDDEN` | scope macro |
+| `apps/api/src/middleware/session-management-auth.ts` | `FORBIDDEN` | api-key blocked from key CRUD |
+| `apps/api/src/routes/v1/api-keys.ts` | `VALIDATION_FAILED`, `FORBIDDEN`, `NOT_FOUND` | includes local `validationFailed()` |
+| `apps/api/src/routes/auth/sign-up-with-workspace.ts` | `IDEMPOTENCY_CONFLICT`, dynamic better-auth codes | map plugin codes to schema codes |
+| `apps/api/src/routes/v1/session.token.ts` | `FORBIDDEN`, `UNAUTHORIZED` | CSRF failures |
+| `apps/api/src/routes/v1/renders.stub.ts` | `NOT_IMPLEMENTED` (non-schema literal) | HTTP 501 |
+| `apps/api/src/routes/v1/audit.stub.ts` | `NOT_IMPLEMENTED` | HTTP 501 |
+| `apps/api/src/routes/v1/webhooks.stub.ts` | `NOT_IMPLEMENTED` | HTTP 501 |
+
+**Preserve:** route mounting order in `apps/api/src/app.ts` — api-keys before stubs; middleware order inside `/v1`: cors → workspace → auth → scope → routes.
 
 ### Request-id middleware (encode exactly)
 
+**File:** `apps/api/src/middleware/request-id.ts`
+
 ```typescript
-// apps/api/src/middleware/request-id.ts (sketch — implement cleanly)
-const REQUEST_ID_HEADER = "x-request-id";
-const REQUEST_ID_PREFIX = "req_";
+const REQUEST_ID_HEADER = "X-Request-Id";
+const REQUEST_ID_PATTERN = /^req_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export function generateRequestId(): string {
-  return `${REQUEST_ID_PREFIX}${crypto.randomUUID()}`;
+export function createRequestId() {
+  return `req_${crypto.randomUUID()}`;
 }
 
-export function normalizeInboundRequestId(value: string | null): string | null {
-  if (!value) return null;
-  const trimmed = value.trim();
-  if (!trimmed.startsWith(REQUEST_ID_PREFIX) || trimmed.length > 128) return null;
-  return trimmed;
-}
+// Elysia plugin: derive requestId → store on context → set response header on all responses
 ```
 
-**Behavior:**
+Wire with `.use(createRequestIdPlugin())` as **first** `.use()` on root `Elysia` in `createApp`.
 
-- Read `X-Request-Id` (case-insensitive per fetch/HTTP conventions).
-- Accept inbound only when it already has `req_` prefix (prevent log injection / unbounded values).
-- Otherwise generate fresh id.
-- Set response header `X-Request-Id` on every `/v1` response (success and error).
-- Store as `requestId` on Elysia context for macros/handlers.
+### API error helper (encode exactly)
 
-**Do not** add a new ULID dependency — `req_${crypto.randomUUID()}` satisfies prefix AC; Story 3.7 may upgrade format when evlog correlation lands.
-
-### Central error helper (encode exactly)
+**File:** `apps/api/src/lib/api-error.ts`
 
 ```typescript
 import {
@@ -149,131 +162,147 @@ import {
   type ErrorCode,
 } from "@usetagih/schema";
 
-export function apiError(
-  requestId: string,
-  code: ErrorCode,
-  message: string,
-  details: readonly ApiErrorDetail[] = [],
-) {
-  const status = getHttpStatusForErrorCode(code);
-  const body = buildApiErrorEnvelope({ code, message, requestId, details });
-  return { status, body };
+export function respondApiError(options: {
+  set: { status?: number | string };
+  code: ErrorCode;
+  message: string;
+  requestId: string;
+  details?: readonly ApiErrorDetail[];
+}) {
+  const status = getHttpStatusForErrorCode(options.code);
+  options.set.status = status;
+  return buildApiErrorEnvelope({
+    code: options.code,
+    message: options.message,
+    requestId: options.requestId,
+    details: options.details,
+  });
 }
 ```
 
-Use with Elysia `set.status = status; return body` or macro `status(status, body)`.
+Macros receiving `status(code, body)` from Elysia should migrate to `respondApiError` + `return` pattern, or a wrapper `statusApiError(statusFn, …)` that preserves macro ergonomics.
 
-**Forbidden:** constructing `{ error: { ... } }` literals in route/middleware files except inside `api-error.ts` / `error-envelope.ts`.
+### Validation error mapping (encode exactly)
 
-### Elysia `/v1` middleware order (after this story)
-
-```
-/v1 group:
-  1. request-id          ← NEW (Story 3.6)
-  2. error-envelope      ← NEW onError handler scoped to /v1
-  3. v1-cors             (existing)
-  4. workspace-guard     (existing)
-  5. auth-resolver       (existing — Bearer + session)
-  6. scope-guard         (existing)
-  7. routes…
-```
-
-`error-envelope` plugin should register `onError` to catch validation/not-found/unhandled errors for routes in the group.
-
-**Validation mapping:** when Elysia surfaces Zod/type validation failure, map to:
+On Zod/Elysia validation failure:
 
 ```typescript
-apiError(requestId, VALIDATION_FAILED_CODE, "Payload failed schema validation", zodIssuesToDetails(zodError));
+import { VALIDATION_FAILED_CODE, zodIssuesToDetails } from "@usetagih/schema";
+
+// zodError instanceof ZodError →
+respondApiError({
+  code: VALIDATION_FAILED_CODE,
+  message: "Request validation failed",
+  requestId,
+  details: zodIssuesToDetails(zodError),
+  set,
+});
 ```
 
-Use the PRD §10.3 exemplar message for top-level validation failures.
+Use `getHttpStatusForErrorCode(VALIDATION_FAILED_CODE)` → 422.
 
-**Internal errors:** return message `"An internal error occurred"` (or existing project constant) — never forward `error.message` from caught exceptions to clients.
-
-### NOT_IMPLEMENTED schema extension
-
-Story 3.3 introduced stub routes returning literal `"NOT_IMPLEMENTED"` string **outside** `ERROR_CODES`. Add it now:
+### Stub 501 pattern (encode exactly)
 
 ```typescript
-// codes.ts
-export const NOT_IMPLEMENTED_CODE = "NOT_IMPLEMENTED" as const;
-// append to ERROR_CODES array
+import { NOT_IMPLEMENTED_CODE } from "@usetagih/schema";
 
-// http-status.ts
-NOT_IMPLEMENTED: 501,
+return respondApiError({
+  code: NOT_IMPLEMENTED_CODE,
+  message: "Render list lands in Story 3.12", // keep story-specific message
+  requestId,
+  set,
+});
+// status 501 from getHttpStatusForErrorCode(NOT_IMPLEMENTED_CODE)
 ```
 
-Update OpenAPI structural tests only if they assert exhaustive enum — run `bun test packages/schema`.
+### Internal / unknown route (encode exactly)
 
-### Success body shape (do not change)
-
-Examples that must stay flat:
-
-- `POST /v1/api-keys` 201 → `{ id, name, prefix, secret, scopes, ... }`
-- `POST /v1/session/token` 200 → `{ accessToken, tokenType, expiresIn, scopes, workspaceId }`
-- `GET /v1/api-keys` 200 → `{ keys: [...] }`
-
-Only error responses use the envelope.
-
-### NFR-5 cross-workspace
-
-Story 3.5 already returns 404 for foreign `keyId`. Verify envelope wraps same behavior — **do not** downgrade to 403. Add regression assertion in api-keys integration test if missing `requestId` checks.
+| Case | Code | HTTP | Message | details |
+| --- | --- | --- | --- | --- |
+| No matching `/v1` route | `NOT_FOUND` | 404 | e.g. `"Route not found"` | `[]` |
+| Unhandled exception | `INTERNAL_ERROR` | 500 | `"An internal error occurred"` (fixed) | `[]` |
 
 ### Previous story intelligence (3.5)
 
-- Integration harness: `createApp({ db })`, `probeDb()` skip pattern, `extractCookies`, sign-up-with-workspace helper — reuse for envelope tests.
-- Scope-parity matrix in `session.token.test.ts` — update error assertions to include `requestId` + `details: []` without changing grant/deny matrix logic.
-- `@node-rs/argon2`, `bearer-auth.ts` JWT-vs-api-key disambiguation — **do not modify** in 3.6.
-- Story 3.5 explicitly deferred envelope — replacing ad-hoc shapes is **in scope now**.
+- Bearer disambiguation: JWT if token contains `.`, else API key — **do not change**
+- Session-only guard on `/v1/api-keys` — **do not change**; only error shape
+- Scope-parity matrix: 5 stub routes return 501 when scoped — tests assert status only today; add envelope assertions
+- Integration tests use `probeDb()` skip when postgres unavailable — preserve pattern
+- `@ts-nocheck` on stub route files due to Elysia macro inference — may remain
+- Epic 2 open action items apply: OpenAPI structural tests must update atomically with `NOT_IMPLEMENTED` code addition
 
-### Git intelligence (recent Epic 3 commits)
+### Git intelligence (baseline 740a720)
 
-| Commit | Relevance |
-| --- | --- |
-| `740a720` | Story 3.5 merged — api-keys routes, bearer extension, scope matrix |
-| `3bf4ed8` | Story 3.5 done — current middleware chain stable |
-| `feat/story-3-4-*` | Session token + CSRF + scope guard macros |
+Recent Epic 3 commits merged API key CRUD (#4), session bearer (#3), better-auth (#2). Patterns established:
+
+- `createApp(deps)` factory with injectable repos/env for tests
+- Middleware as named Elysia plugins (`createAuthResolver`, `createScopeGuard`, …)
+- Integration tests under `apps/api/src/integration/`
+- Schema constants imported from `@usetagih/schema` (e.g. `WORKSPACE_REQUIRED_CODE`)
+
+### Project structure notes
+
+```
+apps/api/src/
+├── lib/
+│   └── api-error.ts          # NEW — envelope helper
+├── middleware/
+│   ├── request-id.ts         # NEW
+│   ├── auth-resolver.ts      # UPDATE — use helper
+│   ├── workspace-guard.ts    # UPDATE
+│   ├── scope-guard.ts        # UPDATE
+│   └── session-management-auth.ts  # UPDATE
+├── auth/
+│   └── mount.ts              # UPDATE
+└── routes/
+    ├── auth/sign-up-with-workspace.ts  # UPDATE
+    └── v1/
+        ├── api-keys.ts       # UPDATE
+        ├── session.token.ts  # UPDATE
+        ├── *.stub.ts         # UPDATE
+
+packages/schema/src/errors/
+├── codes.ts                  # UPDATE — NOT_IMPLEMENTED
+└── http-status.ts            # UPDATE — 501 mapping
+```
 
 ### Testing requirements
 
 **Unit (`apps/api/src/middleware/error-envelope.test.ts`):**
 
-- `buildApiErrorEnvelope` output validates against `ApiErrorEnvelopeSchema`
-- Validation error maps to 422 + non-empty `details[].path`
-- Internal handler returns 500 without stack keys in JSON
+- `respondApiError` returns strict envelope parseable by `ApiErrorEnvelopeSchema`
+- `getHttpStatusForErrorCode` used for status — no hardcoded magic numbers in helper
+- Validation mapping produces non-empty `details` for invalid JSON body
 
 **Integration (extend existing files + new cases):**
 
-- 401 on `GET /v1/renders` → `error.requestId` matches `X-Request-Id` header
-- 403 `WORKSPACE_REQUIRED` → full envelope
-- 501 stub → `NOT_IMPLEMENTED` + `requestId`
-- `GET /v1/unknown-path-xyz` → 404 `NOT_FOUND`
-- Trigger controlled 500 via test-only plugin route inside test file
+- 401 on unauthenticated `GET /v1/renders`: `body.error.requestId` matches header `X-Request-Id`; `body.error.details` is array (possibly empty)
+- 404 cross-workspace api-key delete: full envelope
+- `GET /v1/unknown-route-xyz`: 404 `NOT_FOUND`
+- Authenticated `GET /v1/renders`: still 501; `error.code === "NOT_IMPLEMENTED"`; envelope complete
+- Internal error: use test-only plugin or mock — response body must not contain `"stack"` or `Error.stack` substring
 
-**Do not** weaken existing auth/session/api-key behavioral tests — add envelope field assertions.
+**Schema (`packages/schema`):**
+
+- `NOT_IMPLEMENTED` in `ERROR_CODES`; `getHttpStatusForErrorCode("NOT_IMPLEMENTED") === 501`
+- OpenAPI/code enumeration tests updated if present
 
 ### Verification (required)
 
 - Unit tests: `bun test apps/api` and `bun test packages/schema`
 - Workspace gate: `bunx turbo run lint typecheck test build --force` from repo root (always `--force`)
-- Postgres optional: integration tests skip via `probeDb()` when compose unavailable
-
-### Project Structure Notes
-
-- New files under `apps/api/src/middleware/` and `apps/api/src/lib/` per SOLUTION-DESIGN layout
-- Schema change confined to `packages/schema/src/errors/` — no changes to document payload validators
-- No new npm dependencies expected
+- Generated artifacts: if OpenAPI generation emits outputs, update `turbo.json` outputs + biome exclude per Epic 2 action items
 
 ### References
 
-- [Source: `_bmad-output/planning-artifacts/epics.md` — Story 3.6]
-- [Source: `_bmad-output/planning-artifacts/architecture/architecture-usetagih-2026-07-20/ARCHITECTURE-SPINE.md` — AD-11, naming]
-- [Source: `_bmad-output/planning-artifacts/prds/prd-usetagih-2026-07-20/prd.md` — §10.3]
+- [Source: `_bmad-output/planning-artifacts/epics.md` — Story 3.6 ACs (post directive #5)]
+- [Source: `_bmad-output/planning-artifacts/architecture/architecture-usetagih-2026-07-20/ARCHITECTURE-SPINE.md` — AD-11, naming conventions]
+- [Source: `_bmad-output/planning-artifacts/prds/prd-usetagih-2026-07-20/prd.md` — §10.3 Error envelope]
 - [Source: `packages/schema/src/errors/envelope.ts` — `buildApiErrorEnvelope`]
 - [Source: `packages/schema/src/errors/http-status.ts` — `getHttpStatusForErrorCode`]
 - [Source: `packages/schema/src/errors/detail.ts` — `zodIssuesToDetails`]
-- [Source: `_bmad-output/implementation-artifacts/3-5-api-key-create-list-and-revoke-endpoints.md` — deferred envelope note]
-- [Source: `_bmad-output/implementation-artifacts/3-4-post-v1-session-token-short-lived-audience-bound-csrf-protected-bearer.md` — middleware order baseline]
+- [Source: `_bmad-output/implementation-artifacts/3-5-api-key-create-list-and-revoke-endpoints.md` — auth chain, deferred envelope note]
+- [Source: `_bmad-output/implementation-artifacts/2-3-error-codes-enum-and-api-error-envelope-types.md` — schema error module layout]
 
 ## Dev Agent Record
 
