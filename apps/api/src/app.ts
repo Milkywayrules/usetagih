@@ -3,6 +3,7 @@ import {
 	createApiKeyRepo,
 	createAuditRepo,
 	createIdempotencyStore,
+	createRenderRepo,
 	createWorkspaceSettingsRepo,
 	type Db,
 	getDb,
@@ -13,6 +14,8 @@ import { createBetterAuthPlugin } from "./auth/mount.js";
 import { parseApiEnv } from "./env.js";
 import type { PreviewRuntimeDeps } from "./lib/preview-deps.js";
 import { createPreviewRuntimeDeps } from "./lib/preview-deps.js";
+import type { RenderRuntimeDeps } from "./lib/render-deps.js";
+import { createRenderRuntimeDeps } from "./lib/render-deps.js";
 import { createAuthResolver } from "./middleware/auth-resolver.js";
 import { createRequestIdPlugin } from "./middleware/request-id.js";
 import { createScopeGuard } from "./middleware/scope-guard.js";
@@ -27,7 +30,7 @@ import { createHealthRoutes } from "./routes/health.js";
 import { createApiKeysRoutes } from "./routes/v1/api-keys.js";
 import { createAuditStubRoutes } from "./routes/v1/audit.stub.js";
 import { createPreviewByDocumentTypeRoutes } from "./routes/v1/preview-by-document-type.js";
-import { createRenderByDocumentTypeStubRoutes } from "./routes/v1/render-by-document-type.stub.js";
+import { createRenderByDocumentTypeRoutes } from "./routes/v1/render-by-document-type.js";
 import { createRendersStubRoutes } from "./routes/v1/renders.stub.js";
 import { createSchemasRoutes } from "./routes/v1/schemas.js";
 import { createSessionCsrfRoute } from "./routes/v1/session.csrf.js";
@@ -43,8 +46,9 @@ export type AppDeps = {
 	idempotencyStore?: IdempotencyStore;
 	env?: ReturnType<typeof parseApiEnv>;
 	otelEnabled?: boolean;
-	onRenderStubInvoked?: () => void;
+	onRenderInvoked?: () => void;
 	previewRuntime?: PreviewRuntimeDeps;
+	renderRuntime?: RenderRuntimeDeps;
 	workspaceSettingsRepo?: WorkspaceSettingsRepo;
 };
 
@@ -59,6 +63,8 @@ export function createApp(deps: AppDeps = {}) {
 	const workspaceSettingsRepo =
 		deps.workspaceSettingsRepo ?? createWorkspaceSettingsRepo(db);
 	const previewRuntime = deps.previewRuntime ?? createPreviewRuntimeDeps();
+	const renderRepo = createRenderRepo(db);
+	const renderRuntime = deps.renderRuntime ?? createRenderRuntimeDeps();
 
 	const betterAuth = createBetterAuthPlugin({
 		apiPublicUrl: env.USETAGIH_API_PUBLIC_URL,
@@ -96,10 +102,13 @@ export function createApp(deps: AppDeps = {}) {
 					}),
 				)
 				.use(
-					createRenderByDocumentTypeStubRoutes({
+					createRenderByDocumentTypeRoutes({
 						idempotencyStore,
 						env,
-						onRenderStubInvoked: deps.onRenderStubInvoked,
+						renderRepo,
+						workspaceSettingsRepo,
+						renderRuntime,
+						onRenderInvoked: deps.onRenderInvoked,
 					}),
 				)
 				.use(createRendersStubRoutes())

@@ -23,6 +23,11 @@ export {
 	renderPreviewFromPayload,
 } from "./preview-from-payload.js";
 export { buildPreviewHtml } from "./preview-html.js";
+export {
+	type RenderPdfFromPayloadInput,
+	type RenderPdfFromPayloadResult,
+	renderPdfFromPayload,
+} from "./render-pdf-from-payload.js";
 export { sanitizeTypstOutputSvg } from "./svg-output-sanitize";
 export {
 	documentTemplateExists,

@@ -6,7 +6,11 @@ import { renders } from "../schema/renders.js";
 export function createRenderRepo(db: Db): RenderRepo {
 	return {
 		async insert(input: NewRenderRecord): Promise<RenderRecord> {
-			const [row] = await db.insert(renders).values(input).returning();
+			const { id, ...rest } = input;
+			const [row] = await db
+				.insert(renders)
+				.values(id ? { id, ...rest } : rest)
+				.returning();
 			if (!row) {
 				throw new Error("render insert returned no row");
 			}

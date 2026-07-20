@@ -20,12 +20,25 @@ type IdempotencyRouteContext = {
 	requestHash: string;
 	endpoint: string;
 	cacheHit: boolean;
+	rawBody: string;
 };
 
 const idempotencyContextByRequest = new WeakMap<
 	Request,
 	IdempotencyRouteContext
 >();
+
+const rawBodyByRequest = new WeakMap<Request, string>();
+
+async function readRawRequestBody(request: Request): Promise<string> {
+	const cached = rawBodyByRequest.get(request);
+	if (cached !== undefined) {
+		return cached;
+	}
+	const rawBody = await request.clone().text();
+	rawBodyByRequest.set(request, rawBody);
+	return rawBody;
+}
 
 function normalizeResponseBody(response: unknown): unknown {
 	if (
@@ -42,6 +55,12 @@ type RenderRouteHandler = (context: {
 	status: (code: number, body: unknown) => unknown;
 }) => unknown;
 
+export function getIdempotencyContext(
+	request: Request,
+): IdempotencyRouteContext | undefined {
+	return idempotencyContextByRequest.get(request);
+}
+
 export function createIdempotencyMiddleware(options: {
 	idempotencyStore: IdempotencyStore;
 	documentTypePath: string;
@@ -55,7 +74,7 @@ export function createIdempotencyMiddleware(options: {
 			const set = ctx.set;
 			const workspaceId = ctx.workspaceId as string | undefined;
 			const requestId = getRequestId(request);
-			const rawBody = await request.clone().text();
+			const rawBody = await readRawRequestBody(request);
 			const requestHash = await hashRequestBody(rawBody);
 
 			const keyValidation = validateIdempotencyKeyHeader(
@@ -107,6 +126,7 @@ export function createIdempotencyMiddleware(options: {
 					requestHash,
 					endpoint,
 					cacheHit: true,
+					rawBody,
 				});
 				return normalizeResponseBody(lookup.responseBody);
 			}
@@ -116,6 +136,7 @@ export function createIdempotencyMiddleware(options: {
 				requestHash,
 				endpoint,
 				cacheHit: false,
+				rawBody,
 			});
 		})
 		.onAfterHandle(async (ctx) => {
