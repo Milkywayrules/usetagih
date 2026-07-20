@@ -109,7 +109,7 @@ development_status:
   3-11-post-v1-documenttype-preview-multi-page-svg-response: done
   3-12-sync-render-path-post-v1-documenttype-render-100-items-10s: done
   3-13-render-retrieval-list-and-authenticated-download: done
-  3-14-signed-share-urls-public-resolver-and-revoke: in-progress
+  3-14-signed-share-urls-public-resolver-and-revoke: done
   3-15-audit-log-capture-and-get-v1-audit: backlog
   3-16-rate-limiting-and-monthly-quota-enforcement: backlog
   3-17-account-settings-and-branding-endpoints-for-web: backlog
