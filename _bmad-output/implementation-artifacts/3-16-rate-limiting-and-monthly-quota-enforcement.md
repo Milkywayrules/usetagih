@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.16: Rate limiting and monthly quota enforcement
 
-Status: review
+Status: done
 
 ## Story
 
@@ -29,7 +29,7 @@ So that abuse is controlled (FR-17, NFR-12).
 - [x] Task 3 — API: wire limits into idempotency middleware on render POST; skip on cache hit
 - [x] Task 4 — Unit tests: service + route 429/402/idempotency quota parity
 - [x] Task 5 — Verification gate: docker postgres + turbo 36/36
-- [ ] Task 6 — PR, merge, adversarial review
+- [x] Task 6 — PR, merge, adversarial review
 
 ## Dev Agent Record
 
@@ -42,6 +42,27 @@ composer-2.5-fast (implementation subagent)
 - Per-tier limits from pricing hypothesis addendum: trial 100/mo @ 30/min through business 10k/mo @ 300/min.
 - Rate limit uses in-memory sliding window per workspace (single-instance MVP); monthly quota persists in `usage_counters`.
 - Idempotency cache hits bypass both checks and post-success increment.
+- Merged via PR #34 (`4e346a3`).
+
+### Adversarial code review (2026-07-20)
+
+**Reviewer:** adversarial code review (Story 3.16 rate limits + quota)  
+**Verdict:** no medium+ findings — status → done
+
+| AC | Result | Evidence |
+| --- | --- | --- |
+| 1 | PASS | `UsageCounterRepo.tryIncrementRenderCount` atomically increments on successful render |
+| 2 | PASS | 429 `RATE_LIMITED` + `Retry-After` header on render route when trial 30/min exceeded |
+| 3 | PASS | 402 `QUOTA_EXCEEDED` message + `/tier` and `/nextTier` details |
+| 4 | PASS | Idempotency cache hit skips `recordSuccessfulRender`; retry test asserts count stays 1 |
+| 5 | PASS | `tier-limits.test.ts`, `render-limits-service.test.ts`, route limit tests per tier enum |
+| 6 | PASS | turbo 36/36 with postgres + minio stack |
+
+| ID | Severity | Disposition | Finding | Notes |
+| --- | --- | --- | --- | --- |
+| CR-1 | low | defer | In-memory rate limiter not shared across API replicas | MVP single-instance; Redis/Postgres bucket deferred to scale story |
+| CR-2 | low | dismiss | Quota pre-check read + post-success increment allows rare boundary race | Acceptable MVP; atomic increment catches overrun on write |
+| CR-3 | low | defer | `USETAGIH_RATE_LIMIT_RENDERS_PER_MIN` env not wired | Tier table is authoritative per addendum; env override deferred |
 
 ### File List
 
