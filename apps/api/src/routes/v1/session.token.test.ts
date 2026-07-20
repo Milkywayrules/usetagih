@@ -1,0 +1,216 @@
+import { beforeAll, describe, expect, test } from "bun:test";
+import {
+	ROUTE_SCOPE_REQUIREMENTS,
+	SESSION_TOKEN_SCOPES,
+} from "@usetagih/schema";
+import { createApp } from "../../app.js";
+import {
+	signSessionBearerToken,
+	signSessionBearerTokenRaw,
+} from "../../auth/session-token.js";
+import { parseApiEnv } from "../../env.js";
+import { createCsrfToken, verifyCsrfToken } from "../../middleware/csrf.js";
+
+const env = parseApiEnv();
+
+describe("session token scope parity matrix", () => {
+	let app: ReturnType<typeof createApp>;
+
+	beforeAll(() => {
+		app = createApp({ env });
+	});
+
+	const matrix = [
+		{ route: "/v1/renders", method: "GET", scope: "renders:read" as const },
+		{ route: "/v1/renders", method: "POST", scope: "renders:write" as const },
+		{ route: "/v1/audit", method: "GET", scope: "audit:read" as const },
+		{ route: "/v1/webhooks", method: "GET", scope: "webhooks:manage" as const },
+		{
+			route: "/v1/webhooks",
+			method: "POST",
+			scope: "webhooks:manage" as const,
+		},
+	] as const;
+
+	for (const row of matrix) {
+		test(`session bearer ${row.method} ${row.route} with ${row.scope} → 501`, async () => {
+			const signed = await signSessionBearerToken(
+				{
+					userId: crypto.randomUUID(),
+					workspaceId: crypto.randomUUID(),
+				},
+				env,
+			);
+
+			const response = await app.handle(
+				new Request(`http://localhost${row.route}`, {
+					method: row.method,
+					headers: {
+						Authorization: `Bearer ${signed.accessToken}`,
+					},
+				}),
+			);
+
+			expect(response.status).toBe(501);
+		});
+
+		test.skip(`Story 3.5 API key ${row.method} ${row.route}`, () => {});
+	}
+
+	test("ROUTE_SCOPE_REQUIREMENTS aligns with matrix routes", () => {
+		for (const row of matrix) {
+			const key =
+				`${row.method} ${row.route}` as keyof typeof ROUTE_SCOPE_REQUIREMENTS;
+			expect(ROUTE_SCOPE_REQUIREMENTS[key]).toContain(row.scope);
+		}
+	});
+
+	test("JWT with subset scp missing renders:read → 403 FORBIDDEN on GET /v1/renders", async () => {
+		const userId = crypto.randomUUID();
+		const workspaceId = crypto.randomUUID();
+		const now = Math.floor(Date.now() / 1000);
+		const token = await signSessionBearerTokenRaw(
+			{
+				sub: userId,
+				wid: workspaceId,
+				scp: ["audit:read"],
+				azp: env.USETAGIH_WEB_PUBLIC_URL,
+				typ: "session_bearer",
+				jti: crypto.randomUUID(),
+				iat: now,
+				exp: now + 900,
+				aud: env.USETAGIH_API_PUBLIC_URL,
+				iss: env.USETAGIH_API_PUBLIC_URL,
+			},
+			env,
+		);
+
+		const response = await app.handle(
+			new Request("http://localhost/v1/renders", {
+				headers: { Authorization: `Bearer ${token}` },
+			}),
+		);
+
+		expect(response.status).toBe(403);
+		const body = await response.json();
+		expect(body.error.code).toBe("FORBIDDEN");
+	});
+
+	test("wrong algorithm token → 401", async () => {
+		const now = Math.floor(Date.now() / 1000);
+		const token = await signSessionBearerTokenRaw(
+			{
+				sub: crypto.randomUUID(),
+				wid: crypto.randomUUID(),
+				scp: [...SESSION_TOKEN_SCOPES],
+				azp: env.USETAGIH_WEB_PUBLIC_URL,
+				typ: "session_bearer",
+				jti: crypto.randomUUID(),
+				iat: now,
+				exp: now + 900,
+				aud: env.USETAGIH_API_PUBLIC_URL,
+				iss: env.USETAGIH_API_PUBLIC_URL,
+			},
+			env,
+			{ algorithm: "HS384" },
+		);
+
+		const response = await app.handle(
+			new Request("http://localhost/v1/renders", {
+				headers: { Authorization: `Bearer ${token}` },
+			}),
+		);
+
+		expect(response.status).toBe(401);
+	});
+
+	test("missing typ claim → 401", async () => {
+		const now = Math.floor(Date.now() / 1000);
+		const token = await signSessionBearerTokenRaw(
+			{
+				sub: crypto.randomUUID(),
+				wid: crypto.randomUUID(),
+				scp: [...SESSION_TOKEN_SCOPES],
+				azp: env.USETAGIH_WEB_PUBLIC_URL,
+				jti: crypto.randomUUID(),
+				iat: now,
+				exp: now + 900,
+				aud: env.USETAGIH_API_PUBLIC_URL,
+				iss: env.USETAGIH_API_PUBLIC_URL,
+			},
+			env,
+			{ omitClaims: ["typ"] },
+		);
+
+		const response = await app.handle(
+			new Request("http://localhost/v1/renders", {
+				headers: { Authorization: `Bearer ${token}` },
+			}),
+		);
+
+		expect(response.status).toBe(401);
+	});
+
+	test("future iat → 401", async () => {
+		const future = Math.floor(Date.now() / 1000) + 600;
+		const token = await signSessionBearerTokenRaw(
+			{
+				sub: crypto.randomUUID(),
+				wid: crypto.randomUUID(),
+				scp: [...SESSION_TOKEN_SCOPES],
+				azp: env.USETAGIH_WEB_PUBLIC_URL,
+				typ: "session_bearer",
+				jti: crypto.randomUUID(),
+				iat: future,
+				exp: future + 900,
+				aud: env.USETAGIH_API_PUBLIC_URL,
+				iss: env.USETAGIH_API_PUBLIC_URL,
+			},
+			env,
+		);
+
+		const response = await app.handle(
+			new Request("http://localhost/v1/renders", {
+				headers: { Authorization: `Bearer ${token}` },
+			}),
+		);
+
+		expect(response.status).toBe(401);
+	});
+
+	test("malformed scp → 401", async () => {
+		const now = Math.floor(Date.now() / 1000);
+		const token = await signSessionBearerTokenRaw(
+			{
+				sub: crypto.randomUUID(),
+				wid: crypto.randomUUID(),
+				scp: ["not-a-real-scope"],
+				azp: env.USETAGIH_WEB_PUBLIC_URL,
+				typ: "session_bearer",
+				jti: crypto.randomUUID(),
+				iat: now,
+				exp: now + 900,
+				aud: env.USETAGIH_API_PUBLIC_URL,
+				iss: env.USETAGIH_API_PUBLIC_URL,
+			},
+			env,
+		);
+
+		const response = await app.handle(
+			new Request("http://localhost/v1/renders", {
+				headers: { Authorization: `Bearer ${token}` },
+			}),
+		);
+
+		expect(response.status).toBe(401);
+	});
+
+	test("session-bound CSRF rejection helper", () => {
+		const sessionA = crypto.randomUUID();
+		const sessionB = crypto.randomUUID();
+		const tokenForA = createCsrfToken(env.BETTER_AUTH_SECRET, sessionA);
+		expect(verifyCsrfToken(env.BETTER_AUTH_SECRET, sessionB, tokenForA)).toBe(
+			false,
+		);
+	});
+});

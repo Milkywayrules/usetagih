@@ -1,3 +1,11 @@
+export type { ApiScope } from "./auth/scopes";
+export {
+	API_SCOPES,
+	ApiScopeArraySchema,
+	ApiScopeSchema,
+	ROUTE_SCOPE_REQUIREMENTS,
+	SESSION_TOKEN_SCOPES,
+} from "./auth/scopes";
 export type { Address } from "./document/address";
 export { AddressSchema } from "./document/address";
 export type { BaseDocumentPayload } from "./document/base-document-payload";

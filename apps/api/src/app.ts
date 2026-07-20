@@ -3,9 +3,17 @@ import { createAuditRepo, type Db, getDb } from "@usetagih/db";
 import { Elysia } from "elysia";
 import { createBetterAuthPlugin } from "./auth/mount.js";
 import { parseApiEnv } from "./env.js";
+import { createAuthResolver } from "./middleware/auth-resolver.js";
+import { createScopeGuard } from "./middleware/scope-guard.js";
+import { createV1Cors } from "./middleware/v1-cors.js";
 import { createWorkspaceGuard } from "./middleware/workspace-guard.js";
 import { createSignUpWithWorkspaceRoute } from "./routes/auth/sign-up-with-workspace.js";
 import { createHealthRoutes } from "./routes/health.js";
+import { createAuditStubRoutes } from "./routes/v1/audit.stub.js";
+import { createRendersStubRoutes } from "./routes/v1/renders.stub.js";
+import { createSessionCsrfRoute } from "./routes/v1/session.csrf.js";
+import { createSessionTokenRoute } from "./routes/v1/session.token.js";
+import { createWebhooksStubRoutes } from "./routes/v1/webhooks.stub.js";
 
 export type AppDeps = {
 	db?: Db;
@@ -20,26 +28,27 @@ export function createApp(deps: AppDeps = {}) {
 
 	const betterAuth = createBetterAuthPlugin({
 		apiPublicUrl: env.USETAGIH_API_PUBLIC_URL,
+		webPublicUrl: env.USETAGIH_WEB_PUBLIC_URL,
 	});
 	const workspaceGuard = createWorkspaceGuard();
+	const authResolver = createAuthResolver({ env });
+	const scopeGuard = createScopeGuard();
+	const v1Cors = createV1Cors({ webPublicUrl: env.USETAGIH_WEB_PUBLIC_URL });
 
 	return new Elysia()
 		.use(createHealthRoutes())
-		.use(createSignUpWithWorkspaceRoute({ auditRepo }))
+		.use(createSignUpWithWorkspaceRoute({ auditRepo, env }))
 		.use(betterAuth)
 		.group("/v1", (app) =>
-			app.use(workspaceGuard).get(
-				"/renders",
-				({ set }) => {
-					set.status = 501;
-					return {
-						error: {
-							code: "NOT_IMPLEMENTED",
-							message: "Render list lands in Story 3.12",
-						},
-					};
-				},
-				{ workspace: true },
-			),
+			app
+				.use(v1Cors)
+				.use(workspaceGuard)
+				.use(authResolver)
+				.use(scopeGuard)
+				.use(createSessionCsrfRoute({ env }))
+				.use(createSessionTokenRoute({ env }))
+				.use(createRendersStubRoutes())
+				.use(createAuditStubRoutes())
+				.use(createWebhooksStubRoutes()),
 		);
 }

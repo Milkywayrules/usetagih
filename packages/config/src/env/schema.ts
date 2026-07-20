@@ -8,6 +8,7 @@ export const DEV_ENV_DEFAULTS = {
   BETTER_AUTH_URL: "http://localhost:3001/api/auth",
   DATABASE_URL: "postgresql://usetagih:usetagih_dev@localhost:5432/usetagih",
   USETAGIH_API_PUBLIC_URL: "http://localhost:3001",
+  USETAGIH_WEB_PUBLIC_URL: "http://localhost:3000",
 } as const;
 
 export interface EnvStub {
@@ -17,6 +18,7 @@ export interface EnvStub {
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
   USETAGIH_API_PUBLIC_URL: string;
+  USETAGIH_WEB_PUBLIC_URL: string;
 }
 
 const authFieldsDev = {
@@ -44,6 +46,10 @@ export function createEnvSchema(environment: DopplerEnvironment) {
         .string()
         .url()
         .default(DEV_ENV_DEFAULTS.USETAGIH_API_PUBLIC_URL),
+      USETAGIH_WEB_PUBLIC_URL: z
+        .string()
+        .url()
+        .default(DEV_ENV_DEFAULTS.USETAGIH_WEB_PUBLIC_URL),
       ...authFieldsDev,
     });
   }
@@ -52,6 +58,7 @@ export function createEnvSchema(environment: DopplerEnvironment) {
   return z.object({
     DATABASE_URL: z.string().min(1),
     USETAGIH_API_PUBLIC_URL: z.string().url(),
+    USETAGIH_WEB_PUBLIC_URL: z.string().url(),
     ...authFieldsStrict,
   });
 }
