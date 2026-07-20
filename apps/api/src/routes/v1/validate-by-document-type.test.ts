@@ -12,6 +12,7 @@ import {
 	createInMemoryApiKeyRepo,
 	createTestApiKey,
 } from "../../test-helpers/api-key.js";
+import { createInMemoryAuditRepo } from "../../test-helpers/audit.js";
 import { initTestLogger } from "../../test-helpers/evlog.js";
 
 initTestLogger();
@@ -39,9 +40,16 @@ const validateCases = [
 describe("POST /v1/{documentType}/validate", () => {
 	let app: ReturnType<typeof createApp>;
 	const apiKeyRepo = createInMemoryApiKeyRepo();
+	const auditRepo = createInMemoryAuditRepo();
 
 	beforeAll(() => {
-		app = createApp({ env, apiKeyRepo, otelEnabled: false });
+		app = createApp({
+			env,
+			apiKeyRepo,
+			auditRepo,
+			otelEnabled: false,
+			resolveAuditUserId: async () => "00000000-0000-4000-8000-000000000001",
+		});
 	});
 
 	async function bearerWithScope(scope: "renders:write" | "audit:read") {
@@ -217,5 +225,31 @@ describe("POST /v1/{documentType}/validate", () => {
 		expect(response.status).toBe(403);
 		const envelope = ApiErrorEnvelopeSchema.parse(await response.json());
 		expect(envelope.error.code).toBe("FORBIDDEN");
+	});
+
+	test("successful validate appends audit event", async () => {
+		const workspaceId = crypto.randomUUID();
+		const { secret } = await createTestApiKey(apiKeyRepo, {
+			workspaceId,
+			scopes: ["renders:write"],
+		});
+		auditRepo.events.length = 0;
+
+		const response = await app.handle(
+			new Request("http://localhost/v1/invoices/validate", {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${secret}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(invoiceMinimal),
+			}),
+		);
+
+		expect(response.status).toBe(200);
+		expect(auditRepo.events).toHaveLength(1);
+		expect(auditRepo.events[0]?.action).toBe("validate");
+		expect(auditRepo.events[0]?.workspaceId).toBe(workspaceId);
+		expect(auditRepo.events[0]?.outcome).toBe("success");
 	});
 });

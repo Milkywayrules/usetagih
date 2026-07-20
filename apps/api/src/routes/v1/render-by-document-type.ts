@@ -1,5 +1,5 @@
 // @ts-nocheck — Elysia macros from composed plugins are runtime-valid but not inferred on child instances.
-import type { IdempotencyStore, RenderRepo } from "@usetagih/core";
+import type { AuditRepo, IdempotencyStore, RenderRepo } from "@usetagih/core";
 import { renderUseCase } from "@usetagih/core";
 import type { WorkspaceSettingsRepo } from "@usetagih/db";
 import { Elysia } from "elysia";
@@ -15,12 +15,25 @@ import {
 	getIdempotencyContext,
 } from "../../middleware/idempotency.js";
 
+function clientIp(request: Request): string | null {
+	return (
+		request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+		request.headers.get("x-real-ip") ??
+		null
+	);
+}
+
 export type RenderByDocumentTypeDeps = {
 	idempotencyStore: IdempotencyStore;
 	env: ApiEnv;
 	renderRepo: RenderRepo;
 	workspaceSettingsRepo: WorkspaceSettingsRepo;
 	renderRuntime: RenderRuntimeDeps;
+	auditRepo: AuditRepo;
+	resolveAuditUserId?: (
+		workspaceId: string,
+		userId?: string,
+	) => Promise<string | null>;
 	onRenderInvoked?: () => void;
 };
 
@@ -36,6 +49,7 @@ function createRenderHandler(
 		requestId,
 		set,
 		authContext,
+		userId,
 		log,
 	}: {
 		request: Request;
@@ -44,7 +58,12 @@ function createRenderHandler(
 			status?: number | string;
 			headers?: Record<string, string | number | undefined>;
 		};
-		authContext: { workspaceId: string };
+		authContext: {
+			workspaceId: string;
+			authType: "session" | "session_bearer" | "api_key";
+			apiKeyId?: string;
+		};
+		userId?: string;
 		log: {
 			set: (fields: Record<string, unknown>) => void;
 			info: (message: string) => void;
@@ -82,6 +101,27 @@ function createRenderHandler(
 
 		if (result.ok) {
 			deps.onRenderInvoked?.();
+			const auditUserId =
+				userId ??
+				(await deps.resolveAuditUserId?.(authContext.workspaceId, userId)) ??
+				null;
+			if (auditUserId) {
+				await deps.auditRepo.append({
+					workspaceId: authContext.workspaceId,
+					userId: auditUserId,
+					action: "render",
+					resourceType: "render",
+					resourceId: result.renderId,
+					outcome: "success",
+					ip: clientIp(request),
+					metadata: {
+						documentType: result.documentType,
+						template: result.template,
+						authType: authContext.authType,
+						...(authContext.apiKeyId ? { apiKeyId: authContext.apiKeyId } : {}),
+					},
+				});
+			}
 			log.set({
 				renderId: result.renderId,
 				documentType: result.documentType,

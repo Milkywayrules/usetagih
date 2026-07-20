@@ -187,7 +187,15 @@ export function createRendersRoutes(deps: {
 		)
 		.delete(
 			"/renders/:renderId/share",
-			async ({ params, request, status, set, workspaceId }) => {
+			async ({
+				params,
+				request,
+				status,
+				set,
+				workspaceId,
+				userId,
+				authContext,
+			}) => {
 				const requestId = getRequestId(request);
 				const parsedParams = RenderIdParamSchema.safeParse(params);
 				if (!parsedParams.success) {
@@ -212,6 +220,30 @@ export function createRendersRoutes(deps: {
 						message: "Render not found",
 						requestId,
 					});
+				}
+
+				if (result.revoked) {
+					const auditUserId =
+						userId ??
+						(await deps.resolveAuditUserId?.(workspaceId, userId)) ??
+						null;
+					if (auditUserId) {
+						await deps.auditRepo.append({
+							workspaceId,
+							userId: auditUserId,
+							action: "share.revoke",
+							resourceType: "render",
+							resourceId: parsedParams.data.renderId,
+							outcome: "success",
+							ip: clientIp(request),
+							metadata: {
+								authType: authContext.authType,
+								...(authContext.apiKeyId
+									? { apiKeyId: authContext.apiKeyId }
+									: {}),
+							},
+						});
+					}
 				}
 
 				return { renderId: result.renderId, revoked: result.revoked };

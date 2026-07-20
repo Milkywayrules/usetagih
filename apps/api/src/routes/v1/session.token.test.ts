@@ -19,6 +19,7 @@ import {
 	createInMemoryApiKeyRepo,
 	createTestApiKey,
 } from "../../test-helpers/api-key.js";
+import { createInMemoryAuditRepo } from "../../test-helpers/audit.js";
 import { initTestLogger } from "../../test-helpers/evlog.js";
 
 initTestLogger();
@@ -50,11 +51,13 @@ const stubRenderRepo: RenderRepo = {
 describe("session token scope parity matrix", () => {
 	let app: ReturnType<typeof createApp>;
 	const apiKeyRepo = createInMemoryApiKeyRepo();
+	const auditRepo = createInMemoryAuditRepo();
 
 	beforeAll(() => {
 		app = createApp({
 			env,
 			apiKeyRepo,
+			auditRepo,
 			otelEnabled: false,
 			renderRepo: stubRenderRepo,
 			resolveAuditUserId: async () => "00000000-0000-4000-8000-000000000001",
@@ -63,7 +66,6 @@ describe("session token scope parity matrix", () => {
 
 	const stubMatrix = [
 		{ route: "/v1/renders", method: "POST", scope: "renders:write" as const },
-		{ route: "/v1/audit", method: "GET", scope: "audit:read" as const },
 		{ route: "/v1/webhooks", method: "GET", scope: "webhooks:manage" as const },
 		{
 			route: "/v1/webhooks",
@@ -122,11 +124,16 @@ describe("session token scope parity matrix", () => {
 		},
 	] as const;
 
+	const auditMatrix = [
+		{ route: "/v1/audit", method: "GET", scope: "audit:read" as const },
+	] as const;
+
 	const scopeRegistryMatrix = [
 		...stubMatrix,
 		...validateMatrix,
 		...previewMatrix,
 		...rendersRetrievalMatrix,
+		...auditMatrix,
 	] as const;
 
 	for (const row of stubMatrix) {
@@ -280,6 +287,50 @@ describe("session token scope parity matrix", () => {
 	}
 
 	for (const row of rendersRetrievalMatrix) {
+		test(`session bearer ${row.method} ${row.route} with ${row.scope} passes scope guard`, async () => {
+			const signed = await signSessionBearerToken(
+				{
+					userId: crypto.randomUUID(),
+					workspaceId: crypto.randomUUID(),
+				},
+				env,
+			);
+
+			const response = await app.handle(
+				new Request(`http://localhost${row.route}`, {
+					method: row.method,
+					headers: {
+						Authorization: `Bearer ${signed.accessToken}`,
+					},
+				}),
+			);
+
+			expect(response.status).not.toBe(401);
+			expect(response.status).not.toBe(403);
+		});
+
+		test(`API key ${row.method} ${row.route} with ${row.scope} passes scope guard`, async () => {
+			const workspaceId = crypto.randomUUID();
+			const { secret } = await createTestApiKey(apiKeyRepo, {
+				workspaceId,
+				scopes: [row.scope],
+			});
+
+			const response = await app.handle(
+				new Request(`http://localhost${row.route}`, {
+					method: row.method,
+					headers: {
+						Authorization: `Bearer ${secret}`,
+					},
+				}),
+			);
+
+			expect(response.status).not.toBe(401);
+			expect(response.status).not.toBe(403);
+		});
+	}
+
+	for (const row of auditMatrix) {
 		test(`session bearer ${row.method} ${row.route} with ${row.scope} passes scope guard`, async () => {
 			const signed = await signSessionBearerToken(
 				{

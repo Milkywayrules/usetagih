@@ -1,11 +1,6 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { parseEnv } from "@usetagih/config/env";
 import type { RenderUseCaseDeps } from "@usetagih/core";
-import {
-	buildShareUrl,
-	computeShareExpiresAt,
-	createShareToken,
-} from "@usetagih/core";
 import { ApiErrorEnvelopeSchema } from "@usetagih/schema";
 import missingBuyerInvoice from "../../../../../packages/schema/__fixtures__/invalid/structural/missing-buyer-invoice.json";
 import invoiceMinimal from "../../../../../packages/schema/__fixtures__/valid/invoice-minimal.json";
@@ -16,6 +11,7 @@ import {
 	createInMemoryApiKeyRepo,
 	createTestApiKey,
 } from "../../test-helpers/api-key.js";
+import { createInMemoryAuditRepo } from "../../test-helpers/audit.js";
 import { initTestLogger } from "../../test-helpers/evlog.js";
 import { createMemoryIdempotencyStore } from "../../test-helpers/idempotency-store.js";
 
@@ -99,15 +95,18 @@ function createMockRenderRuntime(
 describe("POST /v1/{documentType}/render", () => {
 	let app: ReturnType<typeof createApp>;
 	const apiKeyRepo = createInMemoryApiKeyRepo();
+	const auditRepo = createInMemoryAuditRepo();
 
 	beforeAll(() => {
 		app = createApp({
 			env,
 			apiKeyRepo,
+			auditRepo,
 			otelEnabled: false,
 			idempotencyStore: createMemoryIdempotencyStore(),
 			renderRuntime: createMockRenderRuntime(),
 			workspaceSettingsRepo: trialWorkspaceSettingsRepo,
+			resolveAuditUserId: async () => "00000000-0000-4000-8000-000000000001",
 		});
 	});
 
@@ -153,6 +152,9 @@ describe("POST /v1/{documentType}/render", () => {
 		expect(body.template).toBe("modern");
 		expect(body.shareUrl).toContain("/share/");
 		expect(body.shareUrl.split("/share/")[1]).toContain(".");
+		expect(auditRepo.events.some((event) => event.action === "render")).toBe(
+			true,
+		);
 	});
 
 	test("missing Idempotency-Key → 400 INVALID_REQUEST", async () => {

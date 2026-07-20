@@ -166,6 +166,9 @@ describe("GET /v1/renders routes", () => {
 			});
 			return { id: crypto.randomUUID() };
 		},
+		async listByWorkspacePaginated() {
+			return { items: [], total: 0 };
+		},
 	};
 
 	beforeAll(() => {
@@ -270,6 +273,9 @@ describe("GET /v1/renders routes", () => {
 		};
 		expect(revokeBody.renderId).toBe(API_RENDER_ID);
 		expect(revokeBody.revoked).toBe(true);
+		expect(auditEvents.some((event) => event.action === "share.revoke")).toBe(
+			true,
+		);
 
 		const readSecret = await bearerWithScope("renders:read");
 		const metadataResponse = await app.handle(

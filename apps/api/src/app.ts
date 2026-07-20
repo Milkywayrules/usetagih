@@ -35,7 +35,7 @@ import { createOpenapiDocsPlugin } from "./plugins/openapi-docs.js";
 import { createSignUpWithWorkspaceRoute } from "./routes/auth/sign-up-with-workspace.js";
 import { createHealthRoutes } from "./routes/health.js";
 import { createApiKeysRoutes } from "./routes/v1/api-keys.js";
-import { createAuditStubRoutes } from "./routes/v1/audit.stub.js";
+import { createAuditRoutes } from "./routes/v1/audit.js";
 import { createPreviewByDocumentTypeRoutes } from "./routes/v1/preview-by-document-type.js";
 import { createRenderByDocumentTypeRoutes } from "./routes/v1/render-by-document-type.js";
 import { createRendersRoutes } from "./routes/v1/renders.js";
@@ -87,6 +87,19 @@ export function createApp(deps: AppDeps = {}) {
 	const authResolver = createAuthResolver({ env, apiKeyRepo });
 	const scopeGuard = createScopeGuard();
 	const v1Cors = createV1Cors({ webPublicUrl: env.USETAGIH_WEB_PUBLIC_URL });
+	const resolveAuditUserId =
+		deps.resolveAuditUserId ??
+		(async (workspaceId: string, userId?: string) => {
+			if (userId) {
+				return userId;
+			}
+			const [memberRow] = await db
+				.select({ userId: schema.member.userId })
+				.from(schema.member)
+				.where(eq(schema.member.organizationId, workspaceId))
+				.limit(1);
+			return memberRow?.userId ?? null;
+		});
 
 	return new Elysia()
 		.use(createRequestIdPlugin())
@@ -107,7 +120,12 @@ export function createApp(deps: AppDeps = {}) {
 				.use(createSessionTokenRoute({ env }))
 				.use(createApiKeysRoutes({ apiKeyRepo, auditRepo }))
 				.use(createSchemasRoutes())
-				.use(createValidateByDocumentTypeRoutes())
+				.use(
+					createValidateByDocumentTypeRoutes({
+						auditRepo,
+						resolveAuditUserId,
+					}),
+				)
 				.use(
 					createPreviewByDocumentTypeRoutes({
 						workspaceSettingsRepo,
@@ -121,6 +139,8 @@ export function createApp(deps: AppDeps = {}) {
 						renderRepo,
 						workspaceSettingsRepo,
 						renderRuntime,
+						auditRepo,
+						resolveAuditUserId,
 						onRenderInvoked: deps.onRenderInvoked,
 					}),
 				)
@@ -130,19 +150,7 @@ export function createApp(deps: AppDeps = {}) {
 						artifactStore: renderRuntime.artifactStore,
 						auditRepo,
 						webPublicUrl: env.USETAGIH_WEB_PUBLIC_URL,
-						resolveAuditUserId:
-							deps.resolveAuditUserId ??
-							(async (workspaceId, userId) => {
-								if (userId) {
-									return userId;
-								}
-								const [memberRow] = await db
-									.select({ userId: schema.member.userId })
-									.from(schema.member)
-									.where(eq(schema.member.organizationId, workspaceId))
-									.limit(1);
-								return memberRow?.userId ?? null;
-							}),
+						resolveAuditUserId,
 					}),
 				)
 				.use(
@@ -152,7 +160,7 @@ export function createApp(deps: AppDeps = {}) {
 						shareSigningSecret: env.USETAGIH_SHARE_SIGNING_SECRET,
 					}),
 				)
-				.use(createAuditStubRoutes())
+				.use(createAuditRoutes({ auditRepo }))
 				.use(createWebhooksStubRoutes())
 				.use(createV1ErrorHandler()),
 		);
