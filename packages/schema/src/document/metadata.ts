@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "../zod.js";
 
 export const MetadataSchema = z
 	.record(z.string().max(64), z.string().max(256))

@@ -1,5 +1,5 @@
-import { z } from "zod";
 import type { BusinessRuleFinding } from "../validation/finding";
+import { z } from "../zod.js";
 import { ERROR_CODES, VALIDATION_FAILED_CODE } from "./codes";
 
 export const ApiErrorDetailSchema = z

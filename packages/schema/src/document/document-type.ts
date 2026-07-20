@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import type { z } from "../zod.js";
 import { documentTypeSchema } from "./primitives";
 
 export const DocumentTypeSchema = documentTypeSchema;

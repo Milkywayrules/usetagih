@@ -1,8 +1,8 @@
-import type { z } from "zod";
 import type { DocumentPayload } from "../document/document-payload";
 import { DocumentPayloadSchema } from "../document/document-payload";
 import type { UnsupportedSchemaVersionResult } from "../version/assert-schema-version";
 import { normalizePayloadSchemaVersion } from "../version/assert-schema-version";
+import type { z } from "../zod.js";
 import type { BusinessRuleFinding } from "./finding";
 import { validateDocumentPayloadArithmetic } from "./validate-arithmetic";
 
