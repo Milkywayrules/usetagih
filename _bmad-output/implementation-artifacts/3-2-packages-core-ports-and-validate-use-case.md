@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.2: packages/core ports and validate use-case
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -30,36 +30,36 @@ so that route handlers stay thin (AD-1, FR-11).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Replace core stub with package layout (AC: 1, 5)
-  - [ ] Remove `CORE_STUB` / `coreSchemaRef` from `packages/core/src/index.ts`
-  - [ ] Create `src/ports/index.ts` re-exporting all four port interfaces + domain record types
-  - [ ] Create `src/use-cases/index.ts` exporting `validateUseCase` + result types
-  - [ ] Update `packages/core/src/index.ts` public exports
-- [ ] Task 2 — Port interfaces (AC: 1, 10)
-  - [ ] Implement `src/ports/render-repo.ts` per Dev Notes §RenderRepo
-  - [ ] Implement `src/ports/artifact-store.ts` per Dev Notes §ArtifactStore
-  - [ ] Implement `src/ports/audit-repo.ts` per Dev Notes §AuditRepo
-  - [ ] Implement `src/ports/idempotency-store.ts` per Dev Notes §IdempotencyStore
-  - [ ] Add `src/ports/domain-types.ts` for shared record shapes (no Drizzle imports)
-- [ ] Task 3 — ValidateUseCase (AC: 2, 3, 4)
-  - [ ] Implement `src/use-cases/validate-use-case.ts` with signature + return types in Dev Notes §ValidateUseCase
-  - [ ] Implement `mapValidateFailureToDetails()` using schema helpers only
-  - [ ] Export types from `src/use-cases/validate-use-case.ts`
-- [ ] Task 4 — Dependency-graph guard (AC: 5, 6)
-  - [ ] Create `src/guard/dependency-graph.test.ts` per Dev Notes §Dependency-graph guard
-  - [ ] Replace stub `src/index.test.ts` with meaningful smoke test or remove if covered elsewhere
-- [ ] Task 5 — ValidateUseCase fixture tests (AC: 7)
-  - [ ] Create `src/use-cases/validate-use-case.test.ts` driving all schema fixture sidecar pairs
-  - [ ] Add document-type-mismatch cases via `checkDocumentTypeMismatch` sidecars
-- [ ] Task 6 — Db RenderRepo alignment (AC: 8)
-  - [ ] Add `@usetagih/core` workspace dependency to `packages/db/package.json`
-  - [ ] Refactor `createRenderRepo` to `satisfies RenderRepo` (import port from `@usetagih/core`)
-  - [ ] Remove db-local `export type RenderRepo = ReturnType<...>` — re-export core port type from db index OR keep factory-only export (prefer re-export `RenderRepo` from `@usetagih/core` in db index for backward compat)
-  - [ ] Verify existing `bun test packages/db` still passes unchanged behavior
-- [ ] Task 7 — Verification gate (AC: 9)
-  - [ ] `bun test packages/core`
-  - [ ] `bun test packages/db`
-  - [ ] `bunx turbo run lint typecheck test build --force`
+- [x] Task 1 — Replace core stub with package layout (AC: 1, 5)
+  - [x] Remove `CORE_STUB` / `coreSchemaRef` from `packages/core/src/index.ts`
+  - [x] Create `src/ports/index.ts` re-exporting all four port interfaces + domain record types
+  - [x] Create `src/use-cases/index.ts` exporting `validateUseCase` + result types
+  - [x] Update `packages/core/src/index.ts` public exports
+- [x] Task 2 — Port interfaces (AC: 1, 10)
+  - [x] Implement `src/ports/render-repo.ts` per Dev Notes §RenderRepo
+  - [x] Implement `src/ports/artifact-store.ts` per Dev Notes §ArtifactStore
+  - [x] Implement `src/ports/audit-repo.ts` per Dev Notes §AuditRepo
+  - [x] Implement `src/ports/idempotency-store.ts` per Dev Notes §IdempotencyStore
+  - [x] Add `src/ports/domain-types.ts` for shared record shapes (no Drizzle imports)
+- [x] Task 3 — ValidateUseCase (AC: 2, 3, 4)
+  - [x] Implement `src/use-cases/validate-use-case.ts` with signature + return types in Dev Notes §ValidateUseCase
+  - [x] Implement `mapValidateFailureToDetails()` using schema helpers only
+  - [x] Export types from `src/use-cases/validate-use-case.ts`
+- [x] Task 4 — Dependency-graph guard (AC: 5, 6)
+  - [x] Create `src/guard/dependency-graph.test.ts` per Dev Notes §Dependency-graph guard
+  - [x] Replace stub `src/index.test.ts` with meaningful smoke test or remove if covered elsewhere
+- [x] Task 5 — ValidateUseCase fixture tests (AC: 7)
+  - [x] Create `src/use-cases/validate-use-case.test.ts` driving all schema fixture sidecar pairs
+  - [x] Add document-type-mismatch cases via `checkDocumentTypeMismatch` sidecars
+- [x] Task 6 — Db RenderRepo alignment (AC: 8)
+  - [x] Add `@usetagih/core` workspace dependency to `packages/db/package.json`
+  - [x] Refactor `createRenderRepo` to `satisfies RenderRepo` (import port from `@usetagih/core`)
+  - [x] Remove db-local `export type RenderRepo = ReturnType<...>` — re-export core port type from db index OR keep factory-only export (prefer re-export `RenderRepo` from `@usetagih/core` in db index for backward compat)
+  - [x] Verify existing `bun test packages/db` still passes unchanged behavior
+- [x] Task 7 — Verification gate (AC: 9)
+  - [x] `bun test packages/core`
+  - [x] `bun test packages/db`
+  - [x] `bunx turbo run lint typecheck test build --force`
 
 ## Dev Notes
 
@@ -460,13 +460,48 @@ for (const pair of discoverFixturePairs(fixturesRoot)) {
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Composer 2.5 Fast (headless subagent)
 
 ### Debug Log References
 
+- removed direct `zod` import from `validate-use-case.ts` after `no-duplicate-zod` guard failure; uses structural `ZodIssueLike` instead
+- excluded `*.test.ts` from core `typecheck`/`build` via `tsconfig.build.json` (cross-package fixture import stays test-only)
+
 ### Completion Notes List
 
+- hexagonal ports (`RenderRepo`, `ArtifactStore`, `AuditRepo`, `IdempotencyStore`) exported from `packages/core/src/ports/` with workspace-scoped tenant methods
+- `validateUseCase` composes `checkDocumentTypeMismatch` → `validateDocumentPayload`; maps failures via schema error vocabulary only
+- dependency-graph guard enforces `@usetagih/schema`-only runtime deps and forbidden adapter imports in non-test src
+- fixture suite (25 sidecar pairs) drives `validate-use-case.test.ts` against Story 2.6 corpus
+- `packages/db` `createRenderRepo` implements core `RenderRepo`; db index re-exports port type from `@usetagih/core`
+- verification: `bun test packages/core` 6 pass; `bun test packages/db` 5 pass; turbo `--force` 36/36 green
+
 ### File List
+
+- `packages/core/package.json`
+- `packages/core/tsconfig.build.json`
+- `packages/core/src/index.ts`
+- `packages/core/src/index.test.ts`
+- `packages/core/src/ports/domain-types.ts`
+- `packages/core/src/ports/render-repo.ts`
+- `packages/core/src/ports/artifact-store.ts`
+- `packages/core/src/ports/audit-repo.ts`
+- `packages/core/src/ports/idempotency-store.ts`
+- `packages/core/src/ports/index.ts`
+- `packages/core/src/use-cases/validate-use-case.ts`
+- `packages/core/src/use-cases/validate-use-case.test.ts`
+- `packages/core/src/use-cases/index.ts`
+- `packages/core/src/guard/dependency-graph.test.ts`
+- `packages/db/package.json`
+- `packages/db/src/repositories/render-repo.ts`
+- `packages/db/src/index.ts`
+- `bun.lock`
+- `_bmad-output/implementation-artifacts/3-2-packages-core-ports-and-validate-use-case.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+## Change Log
+
+- 2026-07-20: Story 3.2 — core hexagonal ports, validate use-case, db RenderRepo alignment
 
 ## Story Validation Record
 

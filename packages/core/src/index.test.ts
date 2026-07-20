@@ -1,8 +1,14 @@
 import { expect, test } from "bun:test";
-import { DocumentPayloadSchema } from "@usetagih/schema";
-import { CORE_STUB, coreSchemaRef } from "./index";
+import { type RenderRepo, validateUseCase } from "./index.js";
 
-test("core stub re-exports schema", () => {
-	expect(CORE_STUB).toBe("usetagih-core-stub");
-	expect(coreSchemaRef).toBe(DocumentPayloadSchema);
+test("public exports include ports and validateUseCase", () => {
+	expect(typeof validateUseCase).toBe("function");
+	const renderRepoShape: RenderRepo = {
+		insert: async () => {
+			throw new Error("stub");
+		},
+		getByIdAndWorkspace: async () => null,
+		listByWorkspace: async () => [],
+	};
+	expect(renderRepoShape).toBeDefined();
 });

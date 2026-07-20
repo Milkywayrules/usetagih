@@ -13,9 +13,9 @@
 	},
 	"scripts": {
 		"lint": "biome check .",
-		"typecheck": "tsc --noEmit",
+		"typecheck": "tsc --project tsconfig.build.json --noEmit",
 		"test": "bun test",
-		"build": "tsc --outDir dist"
+		"build": "tsc --project tsconfig.build.json --outDir dist"
 	},
 	"dependencies": {
 		"@usetagih/schema": "workspace:*"

@@ -21,6 +21,7 @@
 		"migrate": "drizzle-kit migrate"
 	},
 	"dependencies": {
+		"@usetagih/core": "workspace:*",
 		"@usetagih/config": "workspace:*",
 		"better-auth": "1.6.23",
 		"drizzle-orm": "0.45.2",

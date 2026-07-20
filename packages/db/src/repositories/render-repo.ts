@@ -1,10 +1,11 @@
+import type { NewRenderRecord, RenderRecord, RenderRepo } from "@usetagih/core";
 import { and, desc, eq } from "drizzle-orm";
 import type { Db } from "../client.js";
-import { type NewRender, type Render, renders } from "../schema/renders.js";
+import { renders } from "../schema/renders.js";
 
-export function createRenderRepo(db: Db) {
+export function createRenderRepo(db: Db): RenderRepo {
 	return {
-		async insert(input: NewRender): Promise<Render> {
+		async insert(input: NewRenderRecord): Promise<RenderRecord> {
 			const [row] = await db.insert(renders).values(input).returning();
 			if (!row) {
 				throw new Error("render insert returned no row");
@@ -15,7 +16,7 @@ export function createRenderRepo(db: Db) {
 		async getByIdAndWorkspace(
 			renderId: string,
 			workspaceId: string,
-		): Promise<Render | null> {
+		): Promise<RenderRecord | null> {
 			const [row] = await db
 				.select()
 				.from(renders)
@@ -26,7 +27,10 @@ export function createRenderRepo(db: Db) {
 			return row ?? null;
 		},
 
-		async listByWorkspace(workspaceId: string, limit = 50): Promise<Render[]> {
+		async listByWorkspace(
+			workspaceId: string,
+			limit = 50,
+		): Promise<RenderRecord[]> {
 			return db
 				.select()
 				.from(renders)
@@ -36,5 +40,3 @@ export function createRenderRepo(db: Db) {
 		},
 	};
 }
-
-export type RenderRepo = ReturnType<typeof createRenderRepo>;
