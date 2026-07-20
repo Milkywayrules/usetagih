@@ -20,7 +20,7 @@ dumb / dead-ass simple task (like commit, push, github-related, wording, explore
 
 ## Need human / user approval? Raise to [right-hand] of user
 
-spawn subagents of: `cursor-grok-4.5-high`, `claude-4.6-opus-medium`, and `composer-2.5-fast` for decision maker.
+spawn subagents of: `cursor-grok-4.5-medium`, `claude-4.6-opus-medium`, and `composer-2.5-fast` for decision maker.
 
 verbatim output format for [right-hand]:
 
