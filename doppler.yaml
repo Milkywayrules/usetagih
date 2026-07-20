@@ -7,6 +7,9 @@
 #   1. Create Doppler project "usetagih"
 #   2. Create configs: dev, staging, prod
 #   3. Populate secrets per SOLUTION-DESIGN §9 variable table (no values in git — NFR-4)
+#      Platform observability (Story 3.7):
+#        USETAGIH_DOCS_ENABLED — dev default true; staging explicit boolean; prod default false
+#        OTEL_EXPORTER_OTLP_ENDPOINT — optional OTLP traces URL; unset = no-op tracing
 #   4. doppler login && doppler setup --no-interactive
 #
 # Usage:
