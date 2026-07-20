@@ -99,7 +99,7 @@ export function createV1ErrorHandler() {
 				});
 			}
 
-			if (code === "VALIDATION") {
+			if (code === "VALIDATION" || code === "PARSE") {
 				return respondApiError({
 					set,
 					code: VALIDATION_FAILED_CODE,
