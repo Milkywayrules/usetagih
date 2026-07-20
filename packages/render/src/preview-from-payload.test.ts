@@ -24,7 +24,7 @@ if (!typstAvailable) {
 
 previewTest(
 	"renderPreviewFromPayload pagination matches manifest PDF page count",
-	() => {
+	async () => {
 		const manifest = loadManifest(`${PACKAGE_ROOT}/manifest.json`);
 		const entry = manifest.fixtures.find((f) => f.id === PAGINATION_FIXTURE);
 		if (!entry) {
@@ -32,7 +32,7 @@ previewTest(
 		}
 
 		const payload = JSON.parse(
-			Bun.file(`${PACKAGE_ROOT}/${entry.payload}`).text(),
+			await Bun.file(`${PACKAGE_ROOT}/${entry.payload}`).text(),
 		) as DocumentPayload;
 
 		const manifestPreview = renderPreviewFromManifest(

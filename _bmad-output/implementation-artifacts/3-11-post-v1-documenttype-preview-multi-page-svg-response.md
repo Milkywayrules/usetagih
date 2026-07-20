@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.11: POST /v1/{documentType}/preview — multi-page SVG response
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 

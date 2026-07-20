@@ -106,7 +106,7 @@ development_status:
   3-8-idempotency-middleware-for-render-endpoints: done
   3-9-get-v1-schemas-and-post-v1-documenttype-validate: done
   3-10-logo-ingestion-ssrf-hardened-pipeline: done
-  3-11-post-v1-documenttype-preview-multi-page-svg-response: ready-for-dev
+  3-11-post-v1-documenttype-preview-multi-page-svg-response: review
   3-12-sync-render-path-post-v1-documenttype-render-100-items-10s: backlog
   3-13-render-retrieval-list-and-authenticated-download: backlog
   3-14-signed-share-urls-public-resolver-and-revoke: backlog

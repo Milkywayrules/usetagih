@@ -7,6 +7,7 @@ export {
 	fetchLogoSsrfSafe,
 	type IngestLogoResult,
 	ingestLogoFromUrl,
+	type MemoryLogoBlobStore,
 	prepareIngestedLogoForTypst,
 } from "./logo-ingestion/index.js";
 export {

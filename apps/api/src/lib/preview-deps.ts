@@ -3,17 +3,18 @@ import {
 	createMemoryLogoBlobStore,
 	documentTemplateExists,
 	ingestLogoFromUrl,
-	type MemoryLogoBlobStore,
 	renderPreviewFromPayload,
 } from "@usetagih/render";
 
+type LogoBlobStoreInstance = ReturnType<typeof createMemoryLogoBlobStore>;
+
 export type PreviewRuntimeDeps = {
-	logoBlobStore: MemoryLogoBlobStore;
+	logoBlobStore: LogoBlobStoreInstance;
 	createPreviewUseCaseDeps: (workspaceId: string) => PreviewUseCaseDeps;
 };
 
 function createResolveLogoDeps(
-	logoBlobStore: MemoryLogoBlobStore,
+	logoBlobStore: LogoBlobStoreInstance,
 	workspaceId: string,
 ): ResolveLogoDeps {
 	return {
@@ -45,7 +46,7 @@ function createResolveLogoDeps(
 }
 
 export function createPreviewRuntimeDeps(
-	logoBlobStore: MemoryLogoBlobStore = createMemoryLogoBlobStore(),
+	logoBlobStore: LogoBlobStoreInstance = createMemoryLogoBlobStore(),
 ): PreviewRuntimeDeps {
 	return {
 		logoBlobStore,

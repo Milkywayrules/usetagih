@@ -14,7 +14,7 @@ import {
 import { existsSync } from "node:fs";
 import { createDb, probeDb } from "@usetagih/db";
 import { resolveTypstBinaryPath } from "@usetagih/render";
-import invoiceMinimal from "../../../../packages/schema/__fixtures__/valid/invoice-minimal.json";
+import invoiceModernBasic from "../../../../packages/render/__fixtures__/payloads/invoice-modern-basic.json";
 import { createApp } from "../app.js";
 import { initTestLogger } from "../test-helpers/evlog.js";
 
@@ -115,7 +115,7 @@ describeIntegration("preview integration", () => {
 					Authorization: `Bearer ${apiKey}`,
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify(invoiceMinimal),
+				body: JSON.stringify(invoiceModernBasic),
 			});
 
 			expect(response.status).toBe(200);
