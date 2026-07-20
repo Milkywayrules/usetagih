@@ -1,4 +1,7 @@
 export type {
+	ApiKeyCreateInput,
+	ApiKeyRecord,
+	ApiKeyRepo,
 	ArtifactStore,
 	AuditAppendInput,
 	AuditRepo,

@@ -169,6 +169,7 @@ flowchart TB
 | Database | PostgreSQL 16 |
 | Auth | better-auth 1.x |
 | JWT (session bearer) | jose 6.2.3 |
+| API key hash (at rest) | `@node-rs/argon2` 2.0.2 |
 | Web | Next.js 15.x (latest maintained patch pinned), React 19, Mantine 8.x |
 | PDF engine | Typst 0.15.x (exact patch in `packages/render/typst-version.txt`; binary checksum + container digest) |
 | Object storage | Cloudflare R2 (S3 API) |
