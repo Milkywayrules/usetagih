@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.4: POST /v1/session/token — short-lived audience-bound CSRF-protected Bearer
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -473,7 +473,8 @@ composer-2.5-fast (implementation subagent)
 
 - Implemented `POST /v1/session/token` + `GET /v1/session/csrf` with board-ratified HKDF signing, aud/azp split, session-bound CSRF HMAC, and `/v1` CORS for web origin
 - Bearer auth chain: `auth-resolver` (session cookie or JWT) + `requireScope` macro on stub routes
-- Verification: `bun test apps/api` 42 pass / 5 skip; schema 63 pass; config 10 pass; turbo 36/36 tasks green
+- Verification: `bun test apps/api` 63 pass / 10 skip (src+dist); schema 63 pass; config 10 pass; turbo 36/36 tasks green
+- Code review (2026-07-20): added expired/wrong-aud/wrong-azp JWT negative tests and unauthenticated CSRF integration probe; `@ts-nocheck` on v1 route plugins deferred to Epic 2 action item (tsconfig.build exclude)
 
 ### File List
 
@@ -508,3 +509,4 @@ composer-2.5-fast (implementation subagent)
 
 - 2026-07-20 — Board ratification 2–1: HKDF key derivation, session-bound CSRF HMAC, aud/azp semantics correction, verification hardening, CORS web-origin fix, post-logout residual validity risk acceptance, expanded negative test matrix. Dissent on better-auth-plugin reuse recorded but overruled by majority.
 - 2026-07-20 — Implementation complete: session bearer exchange, scope enum, middleware chain, parity matrix + integration tests; status → review.
+- 2026-07-20 — Code review approved with fixes: negative JWT tests (expired, wrong aud/azp), CSRF auth probe; status → done.
