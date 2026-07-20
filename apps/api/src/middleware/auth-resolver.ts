@@ -2,12 +2,15 @@ import type { ApiKeyRepo } from "@usetagih/core";
 import { auth } from "@usetagih/db";
 import {
 	SESSION_TOKEN_SCOPES,
+	UNAUTHORIZED_CODE,
 	WORKSPACE_REQUIRED_CODE,
 } from "@usetagih/schema";
 import { Elysia } from "elysia";
 import type { ApiEnv } from "../env.js";
+import { statusApiError } from "../lib/api-error.js";
 import type { AuthContext } from "./auth-context.js";
 import { resolveBearerAuth } from "./bearer-auth.js";
+import { getRequestId } from "./request-id.js";
 
 export function createAuthResolver(options: {
 	env: ApiEnv;
@@ -15,7 +18,16 @@ export function createAuthResolver(options: {
 }) {
 	return new Elysia({ name: "auth-resolver" }).macro({
 		authenticated: {
-			async resolve({ request: { headers }, status }) {
+			async resolve({
+				request,
+				status,
+				set,
+			}: {
+				request: Request;
+				status: (code: number, body: unknown) => unknown;
+				set: { headers?: Record<string, unknown> };
+			}) {
+				const { headers } = request;
 				const authorization = headers.get("authorization");
 				if (authorization?.startsWith("Bearer ")) {
 					const authContext = await resolveBearerAuth(
@@ -24,12 +36,11 @@ export function createAuthResolver(options: {
 						options.apiKeyRepo,
 					);
 					if (!authContext) {
-						return status(401, {
-							error: {
-								code: "UNAUTHORIZED",
-								message: "Authentication required",
-							},
-						});
+						return statusApiError(status, set, {
+							code: UNAUTHORIZED_CODE,
+							message: "Authentication required",
+							requestId: getRequestId(request),
+						}) as never;
 					}
 
 					return {
@@ -41,35 +52,32 @@ export function createAuthResolver(options: {
 
 				const session = await auth.api.getSession({ headers });
 				if (!session) {
-					return status(401, {
-						error: {
-							code: "UNAUTHORIZED",
-							message: "Authentication required",
-						},
-					});
+					return statusApiError(status, set, {
+						code: UNAUTHORIZED_CODE,
+						message: "Authentication required",
+						requestId: getRequestId(request),
+					}) as never;
 				}
 
 				const organizations = await auth.api.listOrganizations({ headers });
 				const activeOrganizationId = session.session.activeOrganizationId;
 				if (organizations.length === 0 || !activeOrganizationId) {
-					return status(403, {
-						error: {
-							code: WORKSPACE_REQUIRED_CODE,
-							message: "Active workspace required",
-						},
-					});
+					return statusApiError(status, set, {
+						code: WORKSPACE_REQUIRED_CODE,
+						message: "Active workspace required",
+						requestId: getRequestId(request),
+					}) as never;
 				}
 
 				const ownsActiveWorkspace = organizations.some(
 					(org) => org.id === activeOrganizationId,
 				);
 				if (!ownsActiveWorkspace) {
-					return status(403, {
-						error: {
-							code: WORKSPACE_REQUIRED_CODE,
-							message: "Active workspace required",
-						},
-					});
+					return statusApiError(status, set, {
+						code: WORKSPACE_REQUIRED_CODE,
+						message: "Active workspace required",
+						requestId: getRequestId(request),
+					}) as never;
 				}
 
 				const authContext: AuthContext = {
@@ -88,5 +96,5 @@ export function createAuthResolver(options: {
 				};
 			},
 		},
-	});
+	} as never);
 }

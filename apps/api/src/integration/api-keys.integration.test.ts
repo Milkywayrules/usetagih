@@ -11,7 +11,7 @@ import {
 	test,
 } from "bun:test";
 import { createDb, probeDb, schema } from "@usetagih/db";
-import { API_SCOPES } from "@usetagih/schema";
+import { API_SCOPES, ApiErrorEnvelopeSchema } from "@usetagih/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { createApp } from "../app.js";
 
@@ -209,7 +209,12 @@ describeIntegration("api keys integration", () => {
 			headers: jar.headers(),
 		});
 		expect(crossDelete.status).toBe(404);
-		const body = await crossDelete.json();
+		const body = ApiErrorEnvelopeSchema.parse(await crossDelete.json());
 		expect(body.error.code).toBe("NOT_FOUND");
+		const requestIdHeader = crossDelete.headers.get("X-Request-Id");
+		expect(requestIdHeader).not.toBeNull();
+		if (!requestIdHeader) throw new Error("expected X-Request-Id header");
+		expect(body.error.requestId).toBe(requestIdHeader);
+		expect(body.error.details).toEqual([]);
 	});
 });

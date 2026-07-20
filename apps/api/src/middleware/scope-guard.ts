@@ -1,6 +1,9 @@
 import type { ApiScope } from "@usetagih/schema";
+import { FORBIDDEN_CODE, UNAUTHORIZED_CODE } from "@usetagih/schema";
 import { Elysia } from "elysia";
+import { statusApiError } from "../lib/api-error.js";
 import { type AuthContext, hasRequiredScopes } from "./auth-context.js";
+import { getRequestId } from "./request-id.js";
 
 export function createScopeGuard() {
 	return new Elysia({ name: "scope-guard" }).macro({
@@ -8,31 +11,33 @@ export function createScopeGuard() {
 			const scopes = Array.isArray(required) ? required : [required];
 			return {
 				async resolve({
+					request,
 					authContext,
 					status,
+					set,
 				}: {
+					request: Request;
 					authContext?: AuthContext;
 					status: (code: number, body: unknown) => unknown;
+					set: { headers?: Record<string, unknown> };
 				}) {
 					if (!authContext) {
-						return status(401, {
-							error: {
-								code: "UNAUTHORIZED",
-								message: "Authentication required",
-							},
-						});
+						return statusApiError(status, set, {
+							code: UNAUTHORIZED_CODE,
+							message: "Authentication required",
+							requestId: getRequestId(request),
+						}) as never;
 					}
 
 					if (!hasRequiredScopes(authContext, scopes)) {
 						const missing = scopes.find(
 							(scope) => !authContext.scopes.includes(scope),
 						);
-						return status(403, {
-							error: {
-								code: "FORBIDDEN",
-								message: `Insufficient scope: requires ${missing ?? scopes[0]}`,
-							},
-						});
+						return statusApiError(status, set, {
+							code: FORBIDDEN_CODE,
+							message: `Insufficient scope: requires ${missing ?? scopes[0]}`,
+							requestId: getRequestId(request),
+						}) as never;
 					}
 
 					return {} as Record<string, never>;

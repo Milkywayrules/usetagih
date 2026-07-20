@@ -1,10 +1,18 @@
 import type { AuditRepo } from "@usetagih/core";
 import { auth } from "@usetagih/db";
+import {
+	IDEMPOTENCY_CONFLICT_CODE,
+	INVALID_REQUEST_CODE,
+	UNAUTHORIZED_CODE,
+	zodIssuesToDetails,
+} from "@usetagih/schema";
 import { isAPIError } from "better-auth/api";
 import { Elysia } from "elysia";
 import { z } from "zod";
 import type { ApiEnv } from "../../env.js";
+import { respondApiErrorFromContext } from "../../lib/api-error.js";
 import { appendCsrfCookie } from "../../middleware/csrf.js";
+import { getRequestId } from "../../middleware/request-id.js";
 
 const signUpWithWorkspaceBody = z.object({
 	email: z.email(),
@@ -76,15 +84,17 @@ export function createSignUpWithWorkspaceRoute(deps: {
 	return new Elysia().post(
 		"/api/auth/sign-up-with-workspace",
 		async ({ body, request, set }) => {
+			const requestId = getRequestId(request);
 			const parsed = signUpWithWorkspaceBody.safeParse(body);
 			if (!parsed.success) {
-				set.status = 400;
-				return {
-					error: {
-						code: "INVALID_REQUEST",
-						message: parsed.error.issues[0]?.message ?? "Invalid request body",
+				return respondApiErrorFromContext(
+					{ set, requestId },
+					{
+						code: INVALID_REQUEST_CODE,
+						message: "Invalid request body",
+						details: zodIssuesToDetails(parsed.error),
 					},
-				};
+				);
 			}
 
 			const { email, password, name, workspaceName, workspaceSlug } =
@@ -152,21 +162,21 @@ export function createSignUpWithWorkspaceRoute(deps: {
 						message.includes("already exists") ||
 						message.includes("unique")
 					) {
-						set.status = 409;
-						return {
-							error: {
-								code: "IDEMPOTENCY_CONFLICT",
+						return respondApiErrorFromContext(
+							{ set, requestId },
+							{
+								code: IDEMPOTENCY_CONFLICT_CODE,
 								message: "Workspace slug already taken",
 							},
-						};
+						);
 					}
-					set.status = error.statusCode;
-					return {
-						error: {
-							code: error.status,
-							message: error.message,
+					return respondApiErrorFromContext(
+						{ set, requestId },
+						{
+							code: UNAUTHORIZED_CODE,
+							message: "Sign-up failed",
 						},
-					};
+					);
 				}
 
 				throw error;

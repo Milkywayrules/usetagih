@@ -4,8 +4,12 @@
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { auth, createDb, probeDb, schema } from "@usetagih/db";
+import { ApiErrorEnvelopeSchema } from "@usetagih/schema";
 import { eq } from "drizzle-orm";
+import { Elysia } from "elysia";
 import { createApp } from "../app.js";
+import { createRequestIdPlugin } from "../middleware/request-id.js";
+import { createV1ErrorHandler } from "../middleware/v1-error-handler.js";
 
 const postgresUp = await probeDb();
 const describeIntegration = postgresUp ? describe : describe.skip;
@@ -99,6 +103,10 @@ describeIntegration("auth integration", () => {
 		expect(response.status).toBe(401);
 		const body = await response.json();
 		expect(body.error.code).toBe("UNAUTHORIZED");
+		const requestId = response.headers.get("X-Request-Id");
+		expect(requestId).toBeTruthy();
+		expect(body.error.requestId).toBe(requestId);
+		expect(Array.isArray(body.error.details)).toBe(true);
 	});
 
 	test("GET /v1/renders authenticated without active org → 403 WORKSPACE_REQUIRED", async () => {
@@ -138,9 +146,55 @@ describeIntegration("auth integration", () => {
 			headers: { cookie },
 		});
 		expect(response.status).toBe(501);
-		const body = await response.json();
+		const body = ApiErrorEnvelopeSchema.parse(await response.json());
 		expect(body.error.code).toBe("NOT_IMPLEMENTED");
 		expect(body.error.message).toBe("Render list lands in Story 3.12");
+		const requestIdHeader = response.headers.get("X-Request-Id");
+		expect(requestIdHeader).not.toBeNull();
+		if (!requestIdHeader) throw new Error("expected X-Request-Id header");
+		expect(body.error.requestId).toBe(requestIdHeader);
+		expect(Array.isArray(body.error.details)).toBe(true);
+	});
+
+	test("GET /v1/unknown-route-xyz → 404 NOT_FOUND envelope", async () => {
+		const response = await fetch(`${base}/v1/unknown-route-xyz`);
+		expect(response.status).toBe(404);
+		const body = ApiErrorEnvelopeSchema.parse(await response.json());
+		expect(body.error.code).toBe("NOT_FOUND");
+		expect(body.error.message).toBe("Route not found");
+		expect(body.error.details).toEqual([]);
+		const requestIdHeader = response.headers.get("X-Request-Id");
+		expect(requestIdHeader).not.toBeNull();
+		if (!requestIdHeader) throw new Error("expected X-Request-Id header");
+		expect(body.error.requestId).toBe(requestIdHeader);
+	});
+
+	test("unhandled /v1 error → 500 INTERNAL_ERROR without stack leakage", async () => {
+		const throwApp = new Elysia().group("/v1", (group) =>
+			group
+				.use(createRequestIdPlugin())
+				.use(createV1ErrorHandler())
+				.get("/__test/throw", () => {
+					throw new Error("secret internal stack trace detail");
+				}),
+		);
+		throwApp.listen(0);
+		const throwPort = throwApp.server?.port ?? 0;
+		const throwBase = `http://127.0.0.1:${throwPort}`;
+
+		try {
+			const response = await fetch(`${throwBase}/v1/__test/throw`);
+			expect(response.status).toBe(500);
+			const text = await response.text();
+			expect(text).not.toContain("stack");
+			expect(text).not.toContain("secret internal");
+			const body = ApiErrorEnvelopeSchema.parse(JSON.parse(text));
+			expect(body.error.code).toBe("INTERNAL_ERROR");
+			expect(body.error.message).toBe("An internal error occurred");
+			expect(body.error.requestId).toMatch(/^req_/);
+		} finally {
+			throwApp.stop();
+		}
 	});
 
 	test("failed sign-in does not append login audit row", async () => {
