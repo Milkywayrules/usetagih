@@ -10,13 +10,16 @@ import {
 	setDefaultTimeout,
 	test,
 } from "bun:test";
+import type { RenderUseCaseDeps } from "@usetagih/core";
 import { createDb, probeDb } from "@usetagih/db";
 import {
 	ApiErrorEnvelopeSchema,
 	IDEMPOTENCY_CONFLICT_CODE,
 	INVALID_REQUEST_CODE,
 } from "@usetagih/schema";
+import invoiceMinimal from "../../../../packages/schema/__fixtures__/valid/invoice-minimal.json";
 import { createApp } from "../app.js";
+import type { RenderRuntimeDeps } from "../lib/render-deps.js";
 import { initTestLogger } from "../test-helpers/evlog.js";
 
 initTestLogger();
@@ -53,19 +56,71 @@ function suffix() {
 	return crypto.randomUUID().slice(0, 8);
 }
 
+function createMockRenderRuntime(onInvoked?: () => void): RenderRuntimeDeps {
+	const baseDeps: RenderUseCaseDeps = {
+		resolveLogoDeps: {
+			ingestFromUrl: async () => {
+				throw new Error("unexpected logo fetch");
+			},
+			getStoredLogo: async () => null,
+			storeLogo: async () => {},
+		},
+		templateExists: () => true,
+		renderPdfFromPayload: () => ({
+			pdfBytes: new Uint8Array([1, 2, 3]),
+			sha256: "mocksha256",
+			byteSize: 3,
+		}),
+		renderRepo: {
+			async insert(input) {
+				onInvoked?.();
+				return {
+					...input,
+					id: input.id ?? crypto.randomUUID(),
+					createdAt: new Date(),
+					updatedAt: new Date(),
+				};
+			},
+			async getByIdAndWorkspace() {
+				return null;
+			},
+			async listByWorkspace() {
+				return [];
+			},
+		},
+		artifactStore: {
+			async put({ body }) {
+				return { sha256: "mocksha256", byteSize: body.byteLength };
+			},
+			async get() {
+				return null;
+			},
+			async delete() {},
+		},
+		generateRenderId: () => crypto.randomUUID(),
+		generateShareToken: () => crypto.randomUUID(),
+	};
+
+	return {
+		logoBlobStore: {} as RenderRuntimeDeps["logoBlobStore"],
+		artifactStore: baseDeps.artifactStore,
+		createRenderUseCaseDeps: () => baseDeps,
+	};
+}
+
 describeIntegration("idempotency integration", () => {
 	let app: ReturnType<typeof createApp>;
 	let base: string;
-	let stubInvocations = 0;
+	let renderInvocations = 0;
 	const { db, sql } = createDb();
 	const jar = new AuthCookieJar();
 
 	beforeAll(() => {
 		app = createApp({
 			db,
-			onRenderStubInvoked: () => {
-				stubInvocations += 1;
-			},
+			renderRuntime: createMockRenderRuntime(() => {
+				renderInvocations += 1;
+			}),
 		});
 		app.listen(0);
 		const port = app.server?.port ?? 0;
@@ -115,7 +170,7 @@ describeIntegration("idempotency integration", () => {
 				Authorization: `Bearer ${apiKey}`,
 				"Content-Type": "application/json",
 			},
-			body: JSON.stringify({ template: "modern" }),
+			body: JSON.stringify(invoiceMinimal),
 		});
 
 		expect(response.status).toBe(400);
@@ -123,18 +178,18 @@ describeIntegration("idempotency integration", () => {
 		expect(envelope.error.code).toBe(INVALID_REQUEST_CODE);
 	});
 
-	test("retry with same key and body returns identical renderId without double stub invocation", async () => {
+	test("retry with same key and body returns identical renderId without double render invocation", async () => {
 		const id = suffix();
 		const apiKey = await signUpAndCreateApiKey(id);
 		const idempotencyKey = `render-retry-${id}`;
-		const body = JSON.stringify({ template: "modern" });
+		const body = JSON.stringify(invoiceMinimal);
 		const headers = {
 			Authorization: `Bearer ${apiKey}`,
 			"Content-Type": "application/json",
 			"Idempotency-Key": idempotencyKey,
 		};
 
-		stubInvocations = 0;
+		renderInvocations = 0;
 
 		const first = await fetch(`${base}/v1/invoices/render`, {
 			method: "POST",
@@ -159,7 +214,7 @@ describeIntegration("idempotency integration", () => {
 		});
 		expect(second.status).toBe(201);
 		expect(await second.json()).toEqual(firstJson);
-		expect(stubInvocations).toBe(1);
+		expect(renderInvocations).toBe(1);
 	});
 
 	test("same key with different body returns 409 IDEMPOTENCY_CONFLICT", async () => {
@@ -172,24 +227,27 @@ describeIntegration("idempotency integration", () => {
 			"Idempotency-Key": idempotencyKey,
 		};
 
-		stubInvocations = 0;
+		renderInvocations = 0;
 
 		const first = await fetch(`${base}/v1/invoices/render`, {
 			method: "POST",
 			headers,
-			body: JSON.stringify({ template: "modern" }),
+			body: JSON.stringify(invoiceMinimal),
 		});
 		expect(first.status).toBe(201);
 
 		const conflict = await fetch(`${base}/v1/invoices/render`, {
 			method: "POST",
 			headers,
-			body: JSON.stringify({ template: "classic" }),
+			body: JSON.stringify({
+				...invoiceMinimal,
+				documentNumber: "INV-CONFLICT",
+			}),
 		});
 		expect(conflict.status).toBe(409);
 		const envelope = ApiErrorEnvelopeSchema.parse(await conflict.json());
 		expect(envelope.error.code).toBe(IDEMPOTENCY_CONFLICT_CODE);
 		expect(envelope.error.details).toEqual([]);
-		expect(stubInvocations).toBe(1);
+		expect(renderInvocations).toBe(1);
 	});
 });

@@ -2,6 +2,7 @@ export type WorkspaceTier = "trial" | "starter" | "pro" | "business";
 export type RenderStatus = "processing" | "completed" | "failed";
 
 export type NewRenderRecord = {
+	id?: string;
 	workspaceId: string;
 	documentType: string;
 	template: string;

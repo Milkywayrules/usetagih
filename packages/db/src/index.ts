@@ -4,6 +4,7 @@ export { createDb, type Db, getDb, probeDb } from "./client.js";
 export { createApiKeyRepo } from "./repositories/api-key-repo.js";
 export { createAuditRepo } from "./repositories/audit-repo.js";
 export { createIdempotencyStore } from "./repositories/idempotency-store.js";
+export { createMemoryArtifactStore } from "./repositories/memory-artifact-store.js";
 export { createRenderRepo } from "./repositories/render-repo.js";
 export {
 	createWorkspaceSettingsRepo,
