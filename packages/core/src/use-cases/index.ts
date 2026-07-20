@@ -18,7 +18,6 @@ export {
 	MAX_LIST_PAGE_SIZE,
 } from "./list-renders-use-case.js";
 export {
-	type PreviewRenderResult,
 	type PreviewUseCaseDeps,
 	type PreviewUseCaseFailure,
 	type PreviewUseCaseInput,
@@ -53,6 +52,26 @@ export {
 	resolveLogoUseCase,
 	resolveLogoUseCaseFromStorage,
 } from "./resolve-logo-use-case.js";
+export {
+	type DownloadShareUseCaseFailure,
+	type DownloadShareUseCaseInput,
+	type DownloadShareUseCaseResult,
+	type DownloadShareUseCaseSuccess,
+	downloadShareUseCase,
+	type ResolveShareUseCaseFailure,
+	type ResolveShareUseCaseInput,
+	type ResolveShareUseCaseResult,
+	type ResolveShareUseCaseSuccess,
+	resolveShareUseCase,
+	type SharePublicMetadata,
+} from "./resolve-share-use-case.js";
+export {
+	type RevokeShareUseCaseFailure,
+	type RevokeShareUseCaseInput,
+	type RevokeShareUseCaseResult,
+	type RevokeShareUseCaseSuccess,
+	revokeShareUseCase,
+} from "./revoke-share-use-case.js";
 export {
 	mapValidateFailureToDetails,
 	type ValidateUseCaseFailure,

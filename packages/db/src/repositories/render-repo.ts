@@ -41,6 +41,15 @@ export function createRenderRepo(db: Db): RenderRepo {
 			return row;
 		},
 
+		async getById(renderId: string): Promise<RenderRecord | null> {
+			const [row] = await db
+				.select()
+				.from(renders)
+				.where(eq(renders.id, renderId))
+				.limit(1);
+			return row ?? null;
+		},
+
 		async getByIdAndWorkspace(
 			renderId: string,
 			workspaceId: string,
@@ -52,6 +61,17 @@ export function createRenderRepo(db: Db): RenderRepo {
 					and(eq(renders.id, renderId), eq(renders.workspaceId, workspaceId)),
 				)
 				.limit(1);
+			return row ?? null;
+		},
+
+		async revokeShare(renderId: string, workspaceId: string) {
+			const [row] = await db
+				.update(renders)
+				.set({ shareToken: null, shareExpiresAt: null })
+				.where(
+					and(eq(renders.id, renderId), eq(renders.workspaceId, workspaceId)),
+				)
+				.returning();
 			return row ?? null;
 		},
 

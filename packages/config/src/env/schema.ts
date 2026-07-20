@@ -8,6 +8,7 @@ export const DEV_ENV_DEFAULTS = {
   BETTER_AUTH_URL: "http://localhost:3001/api/auth",
   DATABASE_URL: "postgresql://usetagih:usetagih_dev@localhost:5432/usetagih",
   USETAGIH_API_PUBLIC_URL: "http://localhost:3001",
+  USETAGIH_SHARE_SIGNING_SECRET: "dev-only-share-signing-secret-min-32-chars",
   USETAGIH_WEB_PUBLIC_URL: "http://localhost:3000",
 } as const;
 
@@ -20,6 +21,7 @@ export interface EnvStub {
   OTEL_EXPORTER_OTLP_ENDPOINT?: string;
   USETAGIH_API_PUBLIC_URL: string;
   USETAGIH_DOCS_ENABLED: boolean;
+  USETAGIH_SHARE_SIGNING_SECRET: string;
   USETAGIH_WEB_PUBLIC_URL: string;
 }
 
@@ -68,6 +70,10 @@ export function createEnvSchema(environment: DopplerEnvironment) {
         .url()
         .default(DEV_ENV_DEFAULTS.USETAGIH_API_PUBLIC_URL),
       USETAGIH_DOCS_ENABLED: docsEnabledDev,
+      USETAGIH_SHARE_SIGNING_SECRET: z
+        .string()
+        .min(32)
+        .default(DEV_ENV_DEFAULTS.USETAGIH_SHARE_SIGNING_SECRET),
       USETAGIH_WEB_PUBLIC_URL: z
         .string()
         .url()
@@ -82,6 +88,7 @@ export function createEnvSchema(environment: DopplerEnvironment) {
       DATABASE_URL: z.string().min(1),
       USETAGIH_API_PUBLIC_URL: z.string().url(),
       USETAGIH_DOCS_ENABLED: docsEnabledStaging,
+      USETAGIH_SHARE_SIGNING_SECRET: z.string().min(32),
       USETAGIH_WEB_PUBLIC_URL: z.string().url(),
       ...authFieldsStrict,
       ...otelFields,
@@ -92,6 +99,7 @@ export function createEnvSchema(environment: DopplerEnvironment) {
     DATABASE_URL: z.string().min(1),
     USETAGIH_API_PUBLIC_URL: z.string().url(),
     USETAGIH_DOCS_ENABLED: docsEnabledProd,
+    USETAGIH_SHARE_SIGNING_SECRET: z.string().min(32),
     USETAGIH_WEB_PUBLIC_URL: z.string().url(),
     ...authFieldsStrict,
     ...otelFields,

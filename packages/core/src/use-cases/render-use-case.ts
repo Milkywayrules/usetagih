@@ -12,6 +12,12 @@ import type {
 } from "../ports/index.js";
 import type { IngestedLogo } from "../ports/logo-blob-store.js";
 import {
+	buildShareUrl,
+	computeShareExpiresAt,
+	createShareToken,
+	resolveShareTtlDays,
+} from "../share-token.js";
+import {
 	type MergedBranding,
 	type ResolveLogoDeps,
 	resolveLogoUseCase,
@@ -78,7 +84,8 @@ export type RenderUseCaseDeps = {
 	renderRepo: RenderRepo;
 	artifactStore: ArtifactStore;
 	generateRenderId?: () => string;
-	generateShareToken?: () => string;
+	generateShareNonce?: () => string;
+	shareSigningSecret: string;
 	now?: () => Date;
 };
 
@@ -201,17 +208,18 @@ export async function renderUseCase(
 	});
 	const uploadMs = Date.now() - uploadStarted;
 
-	const shareToken = deps.generateShareToken?.() ?? randomUUID();
 	const now = deps.now?.() ?? new Date();
-	const shareExpiresAt = new Date(now);
-	shareExpiresAt.setUTCDate(
-		shareExpiresAt.getUTCDate() + DEFAULT_SHARE_TTL_DAYS,
-	);
+	const shareTtlDays = resolveShareTtlDays(payload.shareTtlDays);
+	const shareExpiresAt = computeShareExpiresAt(now, shareTtlDays);
+	const shareToken = createShareToken({
+		renderId: renderUuid,
+		expiresAt: shareExpiresAt,
+		secret: deps.shareSigningSecret,
+		nonce: deps.generateShareNonce?.(),
+	});
 
 	const resolvedTier = input.workspaceTier;
 	const showWatermark = resolvedTier === "trial";
-	const webPublicUrl = input.webPublicUrl.replace(/\/$/, "");
-
 	const persistStarted = Date.now();
 	await deps.renderRepo.insert({
 		id: renderUuid,
@@ -238,7 +246,7 @@ export async function renderUseCase(
 		ok: true,
 		renderId: apiRenderId,
 		status: "completed",
-		shareUrl: `${webPublicUrl}/share/${shareToken}`,
+		shareUrl: buildShareUrl(input.webPublicUrl, shareToken),
 		expiresAt: shareExpiresAt.toISOString(),
 		schemaVersion: payload.schemaVersion,
 		documentType: payload.documentType,

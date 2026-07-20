@@ -1,6 +1,11 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { parseEnv } from "@usetagih/config/env";
 import type { RenderUseCaseDeps } from "@usetagih/core";
+import {
+	buildShareUrl,
+	computeShareExpiresAt,
+	createShareToken,
+} from "@usetagih/core";
 import { ApiErrorEnvelopeSchema } from "@usetagih/schema";
 import missingBuyerInvoice from "../../../../../packages/schema/__fixtures__/invalid/structural/missing-buyer-invoice.json";
 import invoiceMinimal from "../../../../../packages/schema/__fixtures__/valid/invoice-minimal.json";
@@ -55,6 +60,12 @@ function createMockRenderRuntime(
 			async getByIdAndWorkspace() {
 				return null;
 			},
+			async getById() {
+				return null;
+			},
+			async revokeShare() {
+				return null;
+			},
 			async listByWorkspace() {
 				return [];
 			},
@@ -71,8 +82,9 @@ function createMockRenderRuntime(
 			},
 			async delete() {},
 		},
+		shareSigningSecret: env.USETAGIH_SHARE_SIGNING_SECRET,
 		generateRenderId: () => "00000000-0000-4000-8000-000000000099",
-		generateShareToken: () => "share-token-test",
+		generateShareNonce: () => "share-token-test",
 		now: () => new Date("2026-07-20T00:00:00.000Z"),
 		...overrides,
 	};
@@ -139,7 +151,8 @@ describe("POST /v1/{documentType}/render", () => {
 		expect(body.status).toBe("completed");
 		expect(body.documentType).toBe("invoice");
 		expect(body.template).toBe("modern");
-		expect(body.shareUrl).toContain("/share/share-token-test");
+		expect(body.shareUrl).toContain("/share/");
+		expect(body.shareUrl.split("/share/")[1]).toContain(".");
 	});
 
 	test("missing Idempotency-Key → 400 INVALID_REQUEST", async () => {

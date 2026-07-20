@@ -4,6 +4,7 @@ import {
 	downloadRenderUseCase,
 	getRenderUseCase,
 	listRendersUseCase,
+	revokeShareUseCase,
 } from "@usetagih/core";
 import {
 	INTERNAL_ERROR_CODE,
@@ -183,6 +184,39 @@ export function createRendersRoutes(deps: {
 				return result.pdfBytes;
 			},
 			{ authenticated: true, requireScope: "renders:read" } as never,
+		)
+		.delete(
+			"/renders/:renderId/share",
+			async ({ params, request, status, set, workspaceId }) => {
+				const requestId = getRequestId(request);
+				const parsedParams = RenderIdParamSchema.safeParse(params);
+				if (!parsedParams.success) {
+					return statusApiError(status, set, {
+						code: NOT_FOUND_CODE,
+						message: "Render not found",
+						requestId,
+					});
+				}
+
+				const result = await revokeShareUseCase(
+					{
+						apiRenderId: parsedParams.data.renderId,
+						workspaceId,
+					},
+					deps.renderRepo,
+				);
+
+				if (!result.ok) {
+					return statusApiError(status, set, {
+						code: NOT_FOUND_CODE,
+						message: "Render not found",
+						requestId,
+					});
+				}
+
+				return { renderId: result.renderId, revoked: result.revoked };
+			},
+			{ authenticated: true, requireScope: "renders:write" } as never,
 		)
 		.post(
 			"/renders",

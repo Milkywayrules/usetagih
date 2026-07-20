@@ -9,6 +9,7 @@ test("prod rejects missing DATABASE_URL", () => {
       GITHUB_CLIENT_ID: "gh-id",
       GITHUB_CLIENT_SECRET: "gh-secret",
       USETAGIH_API_PUBLIC_URL: "https://api.example.com",
+      USETAGIH_SHARE_SIGNING_SECRET: "prod-share-signing-secret-min-32-chars",
       USETAGIH_WEB_PUBLIC_URL: "https://app.example.com",
     })
   ).toThrow();
@@ -72,6 +73,8 @@ test("dev accepts empty input with defaults", () => {
     DATABASE_URL: DEV_ENV_DEFAULTS.DATABASE_URL,
     USETAGIH_API_PUBLIC_URL: DEV_ENV_DEFAULTS.USETAGIH_API_PUBLIC_URL,
     USETAGIH_DOCS_ENABLED: true,
+    USETAGIH_SHARE_SIGNING_SECRET:
+      DEV_ENV_DEFAULTS.USETAGIH_SHARE_SIGNING_SECRET,
     USETAGIH_WEB_PUBLIC_URL: DEV_ENV_DEFAULTS.USETAGIH_WEB_PUBLIC_URL,
   });
 });
@@ -92,6 +95,8 @@ test("dev accepts overrides", () => {
     DATABASE_URL: "postgresql://custom",
     USETAGIH_API_PUBLIC_URL: "http://127.0.0.1:3001",
     USETAGIH_DOCS_ENABLED: false,
+    USETAGIH_SHARE_SIGNING_SECRET:
+      DEV_ENV_DEFAULTS.USETAGIH_SHARE_SIGNING_SECRET,
     USETAGIH_WEB_PUBLIC_URL: "http://127.0.0.1:3000",
   });
 });
@@ -113,6 +118,7 @@ test("prod defaults USETAGIH_DOCS_ENABLED to false", () => {
     GITHUB_CLIENT_ID: "gh-id",
     GITHUB_CLIENT_SECRET: "gh-secret",
     USETAGIH_API_PUBLIC_URL: "https://api.example.com",
+    USETAGIH_SHARE_SIGNING_SECRET: "prod-share-signing-secret-min-32-chars",
     USETAGIH_WEB_PUBLIC_URL: "https://app.example.com",
   });
   expect(env.USETAGIH_DOCS_ENABLED).toBe(false);
@@ -141,6 +147,7 @@ test("staging accepts explicit USETAGIH_DOCS_ENABLED", () => {
     GITHUB_CLIENT_SECRET: "gh-secret",
     USETAGIH_API_PUBLIC_URL: "https://staging-api.example.com",
     USETAGIH_DOCS_ENABLED: "true",
+    USETAGIH_SHARE_SIGNING_SECRET: "staging-share-signing-secret-min-32",
     USETAGIH_WEB_PUBLIC_URL: "https://staging.example.com",
   });
   expect(env.USETAGIH_DOCS_ENABLED).toBe(true);
@@ -157,6 +164,7 @@ test("OTEL_EXPORTER_OTLP_ENDPOINT is optional in all environments", () => {
     GITHUB_CLIENT_ID: "gh-id",
     GITHUB_CLIENT_SECRET: "gh-secret",
     USETAGIH_API_PUBLIC_URL: "https://api.example.com",
+    USETAGIH_SHARE_SIGNING_SECRET: "prod-share-signing-secret-min-32-chars",
     USETAGIH_WEB_PUBLIC_URL: "https://app.example.com",
   });
   expect(prod.OTEL_EXPORTER_OTLP_ENDPOINT).toBeUndefined();

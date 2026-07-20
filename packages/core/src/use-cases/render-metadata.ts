@@ -1,5 +1,6 @@
 import type { RenderRecord } from "../ports/index.js";
 import { formatRenderId } from "../render-id.js";
+import { buildShareUrl } from "../share-token.js";
 
 export type RenderMetadata = {
 	renderId: string;
@@ -18,9 +19,10 @@ export function mapRenderRecordToMetadata(
 	record: RenderRecord,
 	webPublicUrl: string,
 ): RenderMetadata {
-	const baseUrl = webPublicUrl.replace(/\/$/, "");
 	const shareUrl =
-		record.shareToken != null ? `${baseUrl}/share/${record.shareToken}` : null;
+		record.shareToken != null
+			? buildShareUrl(webPublicUrl, record.shareToken)
+			: null;
 
 	return {
 		renderId: formatRenderId(record.id),

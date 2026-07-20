@@ -84,6 +84,12 @@ function createMockRenderRuntime(onInvoked?: () => void): RenderRuntimeDeps {
 			async getByIdAndWorkspace() {
 				return null;
 			},
+			async getById() {
+				return null;
+			},
+			async revokeShare() {
+				return null;
+			},
 			async listByWorkspace() {
 				return [];
 			},
@@ -100,8 +106,8 @@ function createMockRenderRuntime(onInvoked?: () => void): RenderRuntimeDeps {
 			},
 			async delete() {},
 		},
+		shareSigningSecret: "dev-only-share-signing-secret-min-32-chars",
 		generateRenderId: () => crypto.randomUUID(),
-		generateShareToken: () => crypto.randomUUID(),
 	};
 
 	return {
