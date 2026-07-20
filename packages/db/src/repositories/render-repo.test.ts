@@ -98,13 +98,27 @@ describe.skipIf(!dbAvailable)("workspace isolation", () => {
 	});
 
 	test("getByIdAndWorkspace returns null for cross-workspace lookup", async () => {
-		const cross = await renderRepo.getByIdAndWorkspace(renderAId, orgBId);
-		expect(cross).toBeNull();
+		const crossA = await renderRepo.getByIdAndWorkspace(renderAId, orgBId);
+		const crossB = await renderRepo.getByIdAndWorkspace(renderBId, orgAId);
+		expect(crossA).toBeNull();
+		expect(crossB).toBeNull();
+	});
+
+	test("getByIdAndWorkspace returns row for same-workspace lookup", async () => {
+		const sameA = await renderRepo.getByIdAndWorkspace(renderAId, orgAId);
+		const sameB = await renderRepo.getByIdAndWorkspace(renderBId, orgBId);
+		expect(sameA?.id).toBe(renderAId);
+		expect(sameB?.id).toBe(renderBId);
 	});
 
 	test("listByWorkspace returns only workspace-scoped renders", async () => {
 		const listA = await renderRepo.listByWorkspace(orgAId);
 		const listB = await renderRepo.listByWorkspace(orgBId);
+
+		expect(listA).toHaveLength(1);
+		expect(listB).toHaveLength(1);
+		expect(listA[0]?.id).toBe(renderAId);
+		expect(listB[0]?.id).toBe(renderBId);
 
 		expect(listA.some((r) => r.id === renderAId)).toBe(true);
 		expect(listA.some((r) => r.id === renderBId)).toBe(false);
