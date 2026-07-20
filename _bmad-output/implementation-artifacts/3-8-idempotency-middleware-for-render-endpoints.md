@@ -312,13 +312,13 @@ Composer 2.5 Fast
 ### Change Log
 
 - 2026-07-20: Story 3.8 — idempotency middleware, db adapter, render stub routes, tests; status → review
-- 2026-07-20: adversarial code review — all 13 ACs pass; no code fixes required; status → done
+- 2026-07-20: adversarial code review — post-store re-lookup for insert race; status → done
 
 ## Code Review (2026-07-20)
 
 **Reviewer:** adversarial code review (Story 3.8 idempotency)  
-**Merged:** `main` @ `feb4f7b` (PR #13)  
-**Verdict:** **PASS** — all 13 ACs satisfied; no blocking fixes
+**Implementation:** PR #13 @ `feb4f7b`; review fix `ed71b36`  
+**Verdict:** **PASS** — all 13 ACs satisfied after one medium fix
 
 ### AC checklist (13/13)
 
@@ -342,13 +342,11 @@ Composer 2.5 Fast
 
 | ID | Sev | Bucket | Title | Resolution |
 | --- | --- | --- | --- | --- |
-| CR-1 | info | dismiss | SHA-256 key/body hashing + printable ASCII validation | Pass — `idempotency-crypto.ts` + unit tests |
-| CR-2 | info | dismiss | Drizzle adapter expiry filter + workspace isolation + unique-violation swallow on store race | Pass — `idempotency-store.ts` + postgres tests |
-| CR-3 | info | dismiss | Middleware hit short-circuit, conflict 409, post-store re-read on insert race | Pass — `idempotency.ts` + unit/integration tests |
-| CR-4 | low | defer | Concurrent duplicate POST can invoke inner handler twice before first store completes | Accepted per story decision table (DB unique + post-store lookup); response consistency preserved; Story 3.12 real render should add handler-level dedup or advisory lock |
-| CR-5 | low | dismiss | `@ts-nocheck` on Elysia macro route wiring | Accepted — same pattern as Stories 3.4/3.7; runtime-valid per integration tests |
-| CR-6 | info | dismiss | Integration tests cover `invoices/render` only | Pass — AC 11 requires at least one document type; unit wiring registers all three paths |
-| CR-7 | info | dismiss | HTTP status not persisted in `response_body`; cache hit hardcodes 201 | Pass for sync stub — AC 4 notes 201 for sync path; Story 3.12 can extend snapshot if async statuses needed |
+| CR-1 | **medium** | **patch** | Concurrent first POST race could return duplicate `renderId` when store unique violation swallowed | Post-store re-lookup in `onAfterHandle` returns persisted winner body when `renderId` differs (`ed71b36`) |
+| CR-2 | low | defer | Concurrent duplicate POST can still invoke inner handler twice before first store | Accepted per story decision table; response consistency preserved; Story 3.12 should add handler-level dedup or advisory lock |
+| CR-3 | low | dismiss | `@ts-nocheck` on Elysia macro route wiring | Accepted — same pattern as Stories 3.4/3.7; runtime-valid per integration tests |
+| CR-4 | info | dismiss | Integration tests cover `invoices/render` only | Pass — AC 11 requires at least one document type; unit wiring registers all three paths |
+| CR-5 | low | dismiss | HTTP status not persisted in `response_body`; cache hit hardcodes 201 | Pass for sync stub — AC 4 notes 201 for sync path; Story 3.12 can extend snapshot if async statuses needed |
 
 ### Verification run
 
@@ -356,6 +354,6 @@ Composer 2.5 Fast
 | --- | --- | --- |
 | `docker compose -f docker/compose.yml up -d postgres` | **PASS** | Container healthy |
 | `bun run --filter @usetagih/db migrate` | **PASS** | Migrations applied |
-| `bun test apps/api` | **85 pass / 0 fail** | Integration idempotency suite ran (3 tests) |
+| `bun test apps/api` | **86 pass / 0 fail** | Includes idempotency unit + integration (3) |
 | `bun test packages/db` | **9 pass / 0 fail** | Idempotency store adapter tests included |
 | `bunx turbo run lint typecheck test build --force` | **36/36 exit 0** | Full workspace gate |
