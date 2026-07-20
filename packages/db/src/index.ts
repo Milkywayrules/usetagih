@@ -1,2 +1,14 @@
-/** Placeholder db export — Drizzle schema lands in Epic 3. */
-export const DB_STUB = "usetagih-db-stub" as const;
+export { createDb, type Db, getDb, probeDb } from "./client.js";
+export {
+	createRenderRepo,
+	type RenderRepo,
+} from "./repositories/render-repo.js";
+export type { ApiKey, NewApiKey } from "./schema/api-keys.js";
+export type { AuditEvent, NewAuditEvent } from "./schema/audit-events.js";
+export { AUDIT_ACTIONS_NULLABLE_WORKSPACE } from "./schema/audit-events.js";
+export * as schema from "./schema/index.js";
+export type { NewRender, Render } from "./schema/renders.js";
+export type {
+	NewWorkspaceSettings,
+	WorkspaceSettings,
+} from "./schema/workspace-settings.js";

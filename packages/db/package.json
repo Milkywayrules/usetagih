@@ -15,10 +15,20 @@
 		"lint": "biome check .",
 		"typecheck": "tsc --noEmit",
 		"test": "bun test",
-		"build": "tsc --outDir dist"
+		"build": "tsc --outDir dist",
+		"generate:auth-schema": "bunx auth@1.6.23 generate --config ./src/auth/auth.config.ts --output ./src/schema/better-auth.ts --yes",
+		"generate": "drizzle-kit generate",
+		"migrate": "drizzle-kit migrate"
+	},
+	"dependencies": {
+		"@usetagih/config": "workspace:*",
+		"better-auth": "1.6.23",
+		"drizzle-orm": "0.45.2",
+		"postgres": "3.4.9"
 	},
 	"devDependencies": {
-		"@usetagih/config": "workspace:*",
+		"auth": "1.6.23",
+		"drizzle-kit": "0.31.10",
 		"typescript": "^5.8.0"
 	}
 }

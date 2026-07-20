@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.1: Drizzle database schema and migrations for core tables
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -29,34 +29,34 @@ so that API core can persist workspace-scoped metadata (SOLUTION-DESIGN §7, AD-
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Dependencies + version pins (AC: 1, 8)
-  - [ ] Add pinned deps to `packages/db/package.json` (Dev Notes §Pinned toolchain)
-  - [ ] Add `@usetagih/config` workspace dependency for `DATABASE_URL` parsing
-- [ ] Task 2 — Auth config seam + CLI-generated better-auth schema (AC: 2, 3)
-  - [ ] Create `packages/db/src/auth/auth.config.ts` — minimal `betterAuth()` config for CLI only (Story 3.3 imports/extends this file)
-  - [ ] Run `bun run --filter @usetagih/db generate:auth-schema` → commit output to `packages/db/src/schema/better-auth.ts`
-  - [ ] Verify organization plugin tables present; **no** teams plugin tables
-- [ ] Task 3 — Hand-written app schema modules (AC: 1–6)
-  - [ ] Create enums + table modules per Dev Notes §Package layout
-  - [ ] Wire Drizzle relations in `schema/relations.ts` (required for better-auth joins in 3.3)
-  - [ ] Export unified schema from `schema/index.ts`
-- [ ] Task 4 — Drizzle Kit config + migrations (AC: 1)
-  - [ ] Add `packages/db/drizzle.config.ts`
-  - [ ] Add scripts: `generate`, `migrate`, `generate:auth-schema`
-  - [ ] Run `bun run --filter @usetagih/db generate` then `migrate` against compose Postgres
-  - [ ] Commit SQL under `packages/db/migrations/`
-- [ ] Task 5 — DB client + render repository (AC: 7)
-  - [ ] Replace stub `src/index.ts` — export `createDb`, schema, types
-  - [ ] Implement `src/client.ts` using `postgres` driver + `drizzle()`
-  - [ ] Implement `src/repositories/render-repo.ts` with workspace-scoped queries
-- [ ] Task 6 — Isolation tests (AC: 7)
-  - [ ] Create `src/isolation.test.ts` (or `render-repo.test.ts`) — two-org fixture, leak assertions
-  - [ ] Skip suite gracefully when Postgres unreachable (document in test header)
-- [ ] Task 7 — Verification gate (AC: 8)
-  - [ ] `docker compose -f docker/compose.yml up -d postgres` (if not running)
-  - [ ] `bun run --filter @usetagih/db migrate`
-  - [ ] `bun test packages/db`
-  - [ ] `bunx turbo run lint typecheck test build --force`
+- [x] Task 1 — Dependencies + version pins (AC: 1, 8)
+  - [x] Add pinned deps to `packages/db/package.json` (Dev Notes §Pinned toolchain)
+  - [x] Add `@usetagih/config` workspace dependency for `DATABASE_URL` parsing
+- [x] Task 2 — Auth config seam + CLI-generated better-auth schema (AC: 2, 3)
+  - [x] Create `packages/db/src/auth/auth.config.ts` — minimal `betterAuth()` config for CLI only (Story 3.3 imports/extends this file)
+  - [x] Run `bun run --filter @usetagih/db generate:auth-schema` → commit output to `packages/db/src/schema/better-auth.ts`
+  - [x] Verify organization plugin tables present; **no** teams plugin tables
+- [x] Task 3 — Hand-written app schema modules (AC: 1–6)
+  - [x] Create enums + table modules per Dev Notes §Package layout
+  - [x] Wire Drizzle relations in `schema/relations.ts` (required for better-auth joins in 3.3)
+  - [x] Export unified schema from `schema/index.ts`
+- [x] Task 4 — Drizzle Kit config + migrations (AC: 1)
+  - [x] Add `packages/db/drizzle.config.ts`
+  - [x] Add scripts: `generate`, `migrate`, `generate:auth-schema`
+  - [x] Run `bun run --filter @usetagih/db generate` then `migrate` against compose Postgres
+  - [x] Commit SQL under `packages/db/migrations/`
+- [x] Task 5 — DB client + render repository (AC: 7)
+  - [x] Replace stub `src/index.ts` — export `createDb`, schema, types
+  - [x] Implement `src/client.ts` using `postgres` driver + `drizzle()`
+  - [x] Implement `src/repositories/render-repo.ts` with workspace-scoped queries
+- [x] Task 6 — Isolation tests (AC: 7)
+  - [x] Create `src/isolation.test.ts` (or `render-repo.test.ts`) — two-org fixture, leak assertions
+  - [x] Skip suite gracefully when Postgres unreachable (document in test header)
+- [x] Task 7 — Verification gate (AC: 8)
+  - [x] `docker compose -f docker/compose.yml up -d postgres` (if not running)
+  - [x] `bun run --filter @usetagih/db migrate`
+  - [x] `bun test packages/db`
+  - [x] `bunx turbo run lint typecheck test build --force`
 
 ## Dev Notes
 
@@ -458,10 +458,49 @@ bunx turbo run lint typecheck test build --force
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Composer 2.5 (implementation subagent)
 
 ### Debug Log References
 
+- `@better-auth/cli@1.6.23` is not published on npm; schema generation uses `auth@1.6.23` CLI (same version as `better-auth@1.6.23`).
+- Auth config sets `advanced.database.generateId: "uuid"` so app FK types align with ARCHITECTURE-SPINE uuid PKs.
+
 ### Completion Notes List
 
+- Replaced `@usetagih/db` stub with Drizzle schema, migrations, `createDb`, and workspace-scoped `RenderRepo`.
+- Generated better-auth tables via CLI (organization plugin, teams disabled); hand-wrote app tables per §7.1.
+- Initial migration `0000_white_trish_tilby.sql` creates 13 tables; no `workspaces` or webhook tables.
+- Cross-workspace isolation: 2 pass / 0 fail (`bun test packages/db`); turbo 36/36 tasks green with `--force`.
+
 ### File List
+
+- `packages/db/package.json`
+- `packages/db/tsconfig.json`
+- `packages/db/drizzle.config.ts`
+- `packages/db/migrations/0000_white_trish_tilby.sql`
+- `packages/db/migrations/meta/0000_snapshot.json`
+- `packages/db/migrations/meta/_journal.json`
+- `packages/db/src/index.ts`
+- `packages/db/src/client.ts`
+- `packages/db/src/auth/auth.config.ts`
+- `packages/db/src/auth/index.ts`
+- `packages/db/src/schema/better-auth.ts`
+- `packages/db/src/schema/enums.ts`
+- `packages/db/src/schema/workspace-settings.ts`
+- `packages/db/src/schema/api-keys.ts`
+- `packages/db/src/schema/renders.ts`
+- `packages/db/src/schema/idempotency-keys.ts`
+- `packages/db/src/schema/audit-events.ts`
+- `packages/db/src/schema/usage-counters.ts`
+- `packages/db/src/schema/relations.ts`
+- `packages/db/src/schema/index.ts`
+- `packages/db/src/repositories/render-repo.ts`
+- `packages/db/src/repositories/render-repo.test.ts`
+- `packages/db/src/index.test.ts` (deleted)
+- `bun.lock`
+- `_bmad-output/implementation-artifacts/3-1-drizzle-database-schema-and-migrations-for-core-tables.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+## Change Log
+
+- 2026-07-20: Epic 3 Story 3.1 — Drizzle core schema, migrations, render repo, isolation tests.
