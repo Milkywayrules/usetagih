@@ -17,10 +17,20 @@ export function createWorkspaceGuard() {
 				}
 
 				const organizations = await auth.api.listOrganizations({ headers });
-				if (
-					organizations.length === 0 ||
-					!session.session.activeOrganizationId
-				) {
+				const activeOrganizationId = session.session.activeOrganizationId;
+				if (organizations.length === 0 || !activeOrganizationId) {
+					return status(403, {
+						error: {
+							code: WORKSPACE_REQUIRED_CODE,
+							message: "Active workspace required",
+						},
+					});
+				}
+
+				const ownsActiveWorkspace = organizations.some(
+					(org) => org.id === activeOrganizationId,
+				);
+				if (!ownsActiveWorkspace) {
 					return status(403, {
 						error: {
 							code: WORKSPACE_REQUIRED_CODE,
@@ -32,7 +42,7 @@ export function createWorkspaceGuard() {
 				return {
 					user: session.user,
 					session: session.session,
-					workspaceId: session.session.activeOrganizationId,
+					workspaceId: activeOrganizationId,
 				};
 			},
 		},

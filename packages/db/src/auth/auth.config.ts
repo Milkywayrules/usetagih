@@ -42,7 +42,11 @@ export const authConfig = {
 		provider: "pg",
 		schema,
 	}),
-	emailAndPassword: { enabled: true },
+	emailAndPassword: {
+		enabled: true,
+		// no-op until Story 6.2 wires outbound email; route must not 5xx in dev/tests
+		sendResetPassword: async () => {},
+	},
 	advanced: {
 		database: {
 			generateId: "uuid",
@@ -117,6 +121,7 @@ export const authConfig = {
 				afterCreateOrganization: async ({ organization, user }) => {
 					const db = getDb();
 					const auditRepo = getAuditRepo();
+					// settings row first — audit failure must not leave org without tier (Story 3.12+)
 					await db.insert(workspaceSettings).values({
 						organizationId: organization.id,
 						tier: "trial",
@@ -126,6 +131,9 @@ export const authConfig = {
 						workspaceId: organization.id,
 						userId: user.id,
 						outcome: "success",
+						metadata: organization.slug
+							? { slug: organization.slug }
+							: undefined,
 					});
 				},
 			},

@@ -129,6 +129,8 @@ export function createSignUpWithWorkspaceRoute(deps: { auditRepo: AuditRepo }) {
 					workspaceId: org.response.id,
 				};
 			} catch (error) {
+				// Partial failure: signUpEmail may succeed while org bootstrap fails — user
+				// can recover via POST /api/auth/organization/create + set-active (Story 3.18).
 				if (isAPIError(error)) {
 					const message = error.message.toLowerCase();
 					if (

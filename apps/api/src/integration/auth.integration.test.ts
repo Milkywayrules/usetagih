@@ -143,6 +143,47 @@ describeIntegration("auth integration", () => {
 		expect(body.error.message).toBe("Render list lands in Story 3.12");
 	});
 
+	test("failed sign-in does not append login audit row", async () => {
+		const id = suffix();
+		const email = `failed-login-${id}@example.com`;
+		const password = "password123";
+
+		const signUpResponse = await signUpWithWorkspace(base, {
+			email,
+			password,
+			name: "Failed Login User",
+			workspaceName: `Failed WS ${id}`,
+			workspaceSlug: `failed-${id}`,
+		});
+		expect(signUpResponse.status).toBe(200);
+		const signUpBody = (await signUpResponse.json()) as {
+			user: { id: string };
+		};
+		const userId = signUpBody.user.id;
+
+		const beforeCount = (
+			await db
+				.select()
+				.from(schema.auditEvents)
+				.where(eq(schema.auditEvents.userId, userId))
+		).filter((row) => row.action === "login").length;
+
+		const loginResponse = await fetch(`${base}/api/auth/sign-in/email`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ email, password: "wrong-password" }),
+		});
+		expect(loginResponse.status).toBeGreaterThanOrEqual(400);
+
+		const afterCount = (
+			await db
+				.select()
+				.from(schema.auditEvents)
+				.where(eq(schema.auditEvents.userId, userId))
+		).filter((row) => row.action === "login").length;
+		expect(afterCount).toBe(beforeCount);
+	});
+
 	test("sign-in appends login audit row", async () => {
 		const id = suffix();
 		const email = `login-audit-${id}@example.com`;
@@ -181,6 +222,95 @@ describeIntegration("auth integration", () => {
 		expect(loginRow).toBeDefined();
 		expect(loginRow?.workspaceId).toBeNull();
 		expect(loginRow?.outcome).toBe("success");
+	});
+
+	test("tenant isolation: cannot set-active to another user's org", async () => {
+		const id = suffix();
+		const victimResponse = await signUpWithWorkspace(base, {
+			email: `victim-${id}@example.com`,
+			password: "password123",
+			name: "Victim User",
+			workspaceName: `Victim WS ${id}`,
+			workspaceSlug: `victim-${id}`,
+		});
+		expect(victimResponse.status).toBe(200);
+		const victimBody = (await victimResponse.json()) as { workspaceId: string };
+
+		const attackerResponse = await signUpWithWorkspace(base, {
+			email: `attacker-${id}@example.com`,
+			password: "password123",
+			name: "Attacker User",
+			workspaceName: `Attacker WS ${id}`,
+			workspaceSlug: `attacker-${id}`,
+		});
+		expect(attackerResponse.status).toBe(200);
+		const attackerCookie = extractCookies(attackerResponse);
+
+		const hijackResponse = await fetch(
+			`${base}/api/auth/organization/set-active`,
+			{
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					cookie: attackerCookie,
+				},
+				body: JSON.stringify({ organizationId: victimBody.workspaceId }),
+			},
+		);
+		expect(hijackResponse.status).toBeGreaterThanOrEqual(400);
+		expect(hijackResponse.status).toBeLessThan(500);
+
+		// better-auth clears activeOrganizationId when set-active membership check fails
+		const rendersResponse = await fetch(`${base}/v1/renders`, {
+			headers: { cookie: attackerCookie },
+		});
+		expect(rendersResponse.status).toBe(403);
+		const rendersBody = (await rendersResponse.json()) as {
+			error: { code: string };
+		};
+		expect(rendersBody.error.code).toBe("WORKSPACE_REQUIRED");
+	});
+
+	test("membershipLimit blocks second member via auth.api.addMember", async () => {
+		const id = suffix();
+		const ownerResponse = await signUpWithWorkspace(base, {
+			email: `limit-owner-${id}@example.com`,
+			password: "password123",
+			name: "Limit Owner",
+			workspaceName: `Limit WS ${id}`,
+			workspaceSlug: `limit-${id}`,
+		});
+		expect(ownerResponse.status).toBe(200);
+		const ownerBody = (await ownerResponse.json()) as {
+			workspaceId: string;
+			user: { id: string };
+		};
+		const ownerCookie = extractCookies(ownerResponse);
+
+		const secondUser = await auth.api.signUpEmail({
+			body: {
+				email: `limit-second-${id}@example.com`,
+				password: "password123",
+				name: "Limit Second",
+			},
+		});
+
+		await expect(
+			auth.api.addMember({
+				body: {
+					userId: secondUser.user.id,
+					role: "member",
+					organizationId: ownerBody.workspaceId,
+				},
+				headers: { cookie: ownerCookie },
+			}),
+		).rejects.toThrow();
+
+		const members = await db
+			.select()
+			.from(schema.member)
+			.where(eq(schema.member.organizationId, ownerBody.workspaceId));
+		expect(members).toHaveLength(1);
 	});
 
 	test("second-member rejection matrix", async () => {
@@ -271,6 +401,6 @@ describeIntegration("auth integration", () => {
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ email: "reset@example.com" }),
 		});
-		expect(response.status).toBeLessThan(500);
+		expect(response.status).toBe(200);
 	});
 });
