@@ -11,6 +11,12 @@ export type {
 	IdempotencyStore,
 } from "./idempotency-store.js";
 export type {
+	IngestedLogo,
+	LogoBlobStore,
+	LogoContentType,
+} from "./logo-blob-store.js";
+export type { LogoFetcher } from "./logo-fetcher.js";
+export type {
 	NewRenderRecord,
 	RenderRecord,
 	RenderRepo,

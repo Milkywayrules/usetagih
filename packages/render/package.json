@@ -25,6 +25,9 @@
 		"golden:update": "bun scripts/golden-check.ts --update",
 		"spike:gate": "bun scripts/spike-gate.ts"
 	},
+	"dependencies": {
+		"@usetagih/core": "workspace:*"
+	},
 	"devDependencies": {
 		"@usetagih/config": "workspace:*",
 		"typescript": "^5.8.0"

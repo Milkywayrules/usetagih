@@ -92,6 +92,9 @@
     "packages/render": {
       "name": "@usetagih/render",
       "version": "0.0.0",
+      "dependencies": {
+        "@usetagih/core": "workspace:*",
+      },
       "devDependencies": {
         "@usetagih/config": "workspace:*",
         "typescript": "^5.8.0",

@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.10: Logo ingestion SSRF-hardened pipeline
 
-Status: ready-for-dev
+Status: review
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -35,35 +35,35 @@ so that branding is safe and deterministic (AD-7, SOLUTION-DESIGN §4.4).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Core ports + domain types (AC: 9, 10)
-  - [ ] Add `packages/core/src/ports/logo-blob-store.ts` — `get`/`put` by `{ workspaceId, storageKey }`; domain type `IngestedLogo { bytes: Uint8Array; logoChecksum: string; contentType: "image/png"|"image/jpeg"|"image/svg+xml"; storageKey: string }`
-  - [ ] Add `packages/core/src/ports/logo-fetcher.ts` — `fetchLogo(url: string): Promise<{ bytes: Uint8Array; contentType: string }>` (interface only — adapter implements SSRF controls)
-  - [ ] Export from `packages/core/src/ports/index.ts`; verify dependency-graph guard still passes (core → schema only)
-- [ ] Task 2 — SSRF-hardened fetch implementation (AC: 1–6)
-  - [ ] Create `packages/render/src/logo-ingestion/fetch-logo.ts` — implements pinning, redirect cap, size limits, magic sniff, decompression limits
-  - [ ] Create `packages/render/src/logo-ingestion/private-ip.ts` — shared CIDR/blocklist helpers (IPv4 + IPv6)
-  - [ ] Create `packages/render/src/logo-ingestion/validate-content.ts` — magic-byte rules per format
-  - [ ] Unit tests `packages/render/src/logo-ingestion/fetch-logo.test.ts` with mock server
-- [ ] Task 3 — Ingestion orchestrator in render (AC: 7, 8)
-  - [ ] Create `packages/render/src/logo-ingestion/ingest-logo.ts` — compose fetch → sniff → sanitize SVG → checksum → return `IngestedLogo` shape
-  - [ ] Reuse `sanitizeSvgLogo`, `computeLogoChecksum` — **do not** duplicate sanitizer logic
-  - [ ] Tests for SVG rejection path and checksum of sanitized bytes
-- [ ] Task 4 — LogoBlobStore adapter (AC: 9, 10)
-  - [ ] Implement in-memory adapter for unit tests (`packages/render/src/logo-ingestion/memory-logo-blob-store.ts` or under `packages/db` if following artifact pattern)
-  - [ ] Implement MinIO/filesystem adapter stub aligned with `@usetagih/db` / compose MinIO (Story 0.3) — key pattern `logos/{workspaceId}/{checksum}.{ext}`
-  - [ ] Tests: put then get returns identical bytes; workspace isolation on keys
-- [ ] Task 5 — `resolveLogoUseCase` (AC: 10, 11, 12)
-  - [ ] Create `packages/core/src/use-cases/resolve-logo-use-case.ts` — merge branding, cache lookup by checksum/key, fetch-on-miss via injected deps `{ logoFetcher, logoBlobStore, ingestLogo }`
-  - [ ] Create `packages/render/src/logo-ingestion/prepare-ingested-logo-for-typst.ts` — bridge ingested bytes to temp file + `--input logo=` relative path (mirror `prepareLogoForTypst` but from `IngestedLogo`, not fixture JSON)
-  - [ ] Export use case from `packages/core/src/use-cases/index.ts`
-  - [ ] Tests in `packages/core/src/use-cases/resolve-logo-use-case.test.ts` with fake fetcher/store
-- [ ] Task 6 — Determinism + SSRF integration tests (AC: 13)
-  - [ ] Mock server scenarios: private IP host, redirect loop, 3MB body, fake PNG header with HTML body, XSS SVG
-  - [ ] Assert single-fetch caching on repeated `resolveLogoUseCase` calls
-- [ ] Task 7 — Verification gate (AC: 14)
-  - [ ] `bun test packages/core`
-  - [ ] `bun test packages/render`
-  - [ ] `bunx turbo run lint typecheck test build --force`
+- [x] Task 1 — Core ports + domain types (AC: 9, 10)
+  - [x] Add `packages/core/src/ports/logo-blob-store.ts` — `get`/`put` by `{ workspaceId, storageKey }`; domain type `IngestedLogo { bytes: Uint8Array; logoChecksum: string; contentType: "image/png"|"image/jpeg"|"image/svg+xml"; storageKey: string }`
+  - [x] Add `packages/core/src/ports/logo-fetcher.ts` — `fetchLogo(url: string): Promise<{ bytes: Uint8Array; contentType: string }>` (interface only — adapter implements SSRF controls)
+  - [x] Export from `packages/core/src/ports/index.ts`; verify dependency-graph guard still passes (core → schema only)
+- [x] Task 2 — SSRF-hardened fetch implementation (AC: 1–6)
+  - [x] Create `packages/render/src/logo-ingestion/fetch-logo.ts` — implements pinning, redirect cap, size limits, magic sniff, decompression limits
+  - [x] Create `packages/render/src/logo-ingestion/private-ip.ts` — shared CIDR/blocklist helpers (IPv4 + IPv6)
+  - [x] Create `packages/render/src/logo-ingestion/validate-content.ts` — magic-byte rules per format
+  - [x] Unit tests `packages/render/src/logo-ingestion/fetch-logo.test.ts` with mock server
+- [x] Task 3 — Ingestion orchestrator in render (AC: 7, 8)
+  - [x] Create `packages/render/src/logo-ingestion/ingest-logo.ts` — compose fetch → sniff → sanitize SVG → checksum → return `IngestedLogo` shape
+  - [x] Reuse `sanitizeSvgLogo`, `computeLogoChecksum` — **do not** duplicate sanitizer logic
+  - [x] Tests for SVG rejection path and checksum of sanitized bytes
+- [x] Task 4 — LogoBlobStore adapter (AC: 9, 10)
+  - [x] Implement in-memory adapter for unit tests (`packages/render/src/logo-ingestion/memory-logo-blob-store.ts` or under `packages/db` if following artifact pattern)
+  - [x] Implement MinIO/filesystem adapter stub aligned with `@usetagih/db` / compose MinIO (Story 0.3) — key pattern `logos/{workspaceId}/{checksum}.{ext}`
+  - [x] Tests: put then get returns identical bytes; workspace isolation on keys
+- [x] Task 5 — `resolveLogoUseCase` (AC: 10, 11, 12)
+  - [x] Create `packages/core/src/use-cases/resolve-logo-use-case.ts` — merge branding, cache lookup by checksum/key, fetch-on-miss via injected deps `{ logoFetcher, logoBlobStore, ingestLogo }`
+  - [x] Create `packages/render/src/logo-ingestion/prepare-ingested-logo-for-typst.ts` — bridge ingested bytes to temp file + `--input logo=` relative path (mirror `prepareLogoForTypst` but from `IngestedLogo`, not fixture JSON)
+  - [x] Export use case from `packages/core/src/use-cases/index.ts`
+  - [x] Tests in `packages/core/src/use-cases/resolve-logo-use-case.test.ts` with fake fetcher/store
+- [x] Task 6 — Determinism + SSRF integration tests (AC: 13)
+  - [x] Mock server scenarios: private IP host, redirect loop, 3MB body, fake PNG header with HTML body, XSS SVG
+  - [x] Assert single-fetch caching on repeated `resolveLogoUseCase` calls
+- [x] Task 7 — Verification gate (AC: 14)
+  - [x] `bun test packages/core`
+  - [x] `bun test packages/render`
+  - [x] `bunx turbo run lint typecheck test build --force`
 
 ## Dev Notes
 
@@ -277,13 +277,43 @@ Recent commits (`4e47c2b` baseline): validate routes + shared `document-type-pat
 
 ### Agent Model Used
 
-(create-story workflow)
-
-### Debug Log References
+composer-2.5-fast
 
 ### Completion Notes List
 
+- SSRF-hardened `fetchLogoSsrfSafe` with DNS pre-check, IP pinning via `node:https`, redirect cap, size/decompression limits, magic-byte sniff
+- `ingestLogoFromUrl` composes fetch → sanitize SVG → `computeLogoChecksum` → storage key `logos/{workspaceId}/{checksum}.{ext}`
+- `resolveLogoUseCase` merges branding (payload overrides workspace), URL cache skip re-fetch, maps failures to `VALIDATION_FAILED` `/branding/logoUrl`
+- In-memory + filesystem `LogoBlobStore` adapters; `prepareIngestedLogoForTypst` bridge for Story 3.12
+- `docker compose -f docker/compose.yml up -d postgres` + `bunx turbo run lint typecheck test build --force` → 36/36 exit 0
+
 ### File List
+
+- packages/core/src/ports/logo-blob-store.ts
+- packages/core/src/ports/logo-fetcher.ts
+- packages/core/src/ports/index.ts
+- packages/core/src/use-cases/resolve-logo-use-case.ts
+- packages/core/src/use-cases/resolve-logo-use-case.test.ts
+- packages/core/src/use-cases/index.ts
+- packages/core/src/index.ts
+- packages/render/src/logo-ingestion/fetch-logo.ts
+- packages/render/src/logo-ingestion/fetch-logo.test.ts
+- packages/render/src/logo-ingestion/private-ip.ts
+- packages/render/src/logo-ingestion/private-ip.test.ts
+- packages/render/src/logo-ingestion/validate-content.ts
+- packages/render/src/logo-ingestion/ingest-logo.ts
+- packages/render/src/logo-ingestion/ingest-logo.test.ts
+- packages/render/src/logo-ingestion/memory-logo-blob-store.ts
+- packages/render/src/logo-ingestion/memory-logo-blob-store.test.ts
+- packages/render/src/logo-ingestion/filesystem-logo-blob-store.ts
+- packages/render/src/logo-ingestion/prepare-ingested-logo-for-typst.ts
+- packages/render/src/logo-ingestion/prepare-ingested-logo-for-typst.test.ts
+- packages/render/src/logo-ingestion/index.ts
+- packages/render/src/index.ts
+- packages/render/package.json
+- bun.lock
+- _bmad-output/implementation-artifacts/3-10-logo-ingestion-ssrf-hardened-pipeline.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
 
 ## Story Validation Record
 
