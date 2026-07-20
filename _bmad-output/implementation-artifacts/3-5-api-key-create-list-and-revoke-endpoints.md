@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.5: API key create, list, and revoke endpoints
 
-Status: review
+Status: done
 
 ## Story
 

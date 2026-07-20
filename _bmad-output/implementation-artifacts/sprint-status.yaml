@@ -100,7 +100,7 @@ development_status:
   3-2-packages-core-ports-and-validate-use-case: done
   3-3-better-auth-registration-login-and-session-middleware: done
   3-4-post-v1-session-token-short-lived-audience-bound-csrf-protected-bearer: done
-  3-5-api-key-create-list-and-revoke-endpoints: review
+  3-5-api-key-create-list-and-revoke-endpoints: done
   3-6-auth-middleware-request-id-and-unified-error-envelope: backlog
   3-7-elysia-platform-baseline: backlog
   3-8-idempotency-middleware-for-render-endpoints: backlog
