@@ -158,6 +158,47 @@ describe.skipIf(!dbAvailable)("createIdempotencyStore", () => {
 		expect(lookupB).toEqual({ status: "miss" });
 	});
 
+	test("expired rows can be replaced on store", async () => {
+		const suffix = crypto.randomUUID().slice(0, 8);
+		const endpoint = "POST /v1/invoices/render";
+		const keyHash = `replace-expired-${suffix}`;
+		const requestHash = `req-replace-${suffix}`;
+		const staleBody = { renderId: "rnd_stale" };
+		const freshBody = { renderId: "rnd_fresh" };
+
+		await db.insert(idempotencyKeys).values({
+			workspaceId: orgAId,
+			endpoint,
+			keyHash,
+			requestHash,
+			responseBody: staleBody,
+			expiresAt: new Date(Date.now() - 60_000),
+		});
+
+		expect(
+			await store.lookup({ workspaceId: orgAId, endpoint, keyHash }),
+		).toEqual({ status: "miss" });
+
+		await store.store({
+			workspaceId: orgAId,
+			endpoint,
+			keyHash,
+			requestHash,
+			responseBody: freshBody,
+			expiresAt: new Date(Date.now() + 86_400_000),
+		});
+
+		const lookup = await store.lookup({
+			workspaceId: orgAId,
+			endpoint,
+			keyHash,
+		});
+		expect(lookup.status).toBe("hit");
+		if (lookup.status === "hit") {
+			expect(lookup.responseBody).toEqual(freshBody);
+		}
+	});
+
 	test("store ignores unique violation on concurrent insert race", async () => {
 		const suffix = crypto.randomUUID().slice(0, 8);
 		const endpoint = "POST /v1/invoices/render";

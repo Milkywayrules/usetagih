@@ -313,6 +313,7 @@ Composer 2.5 Fast
 
 - 2026-07-20: Story 3.8 — idempotency middleware, db adapter, render stub routes, tests; status → review
 - 2026-07-20: adversarial code review — post-store re-lookup for insert race; status → done
+- 2026-07-20: review follow-up — replace expired idempotency rows on store (AC 6/7)
 
 ## Code Review (2026-07-20)
 
@@ -330,8 +331,8 @@ Composer 2.5 Fast
 | 4 | PASS | Lookup hit skips handler; returns cached `response_body` with HTTP 201; `X-Request-Id` via global request-id `onAfterHandle` |
 | 5 | PASS | Same key + different `requestHash` → 409 `IDEMPOTENCY_CONFLICT` with full AD-11 envelope + `requestId` |
 | 6 | PASS | Successful 2xx responses stored via `IdempotencyStore.store` with `expires_at = now + 24h` |
-| 7 | PASS | `lookup` filters `expires_at > now()`; expired rows treated as miss (db test) |
-| 8 | PASS | `createIdempotencyStore` in `packages/db`; tests cover hit/miss, expiry, workspace isolation, insert race |
+| 7 | PASS | `lookup` filters `expires_at > now()`; expired rows treated as miss; `store` replaces expired rows on reuse |
+| 8 | PASS | `createIdempotencyStore` in `packages/db`; tests cover hit/miss, expiry replace, workspace isolation, insert race |
 | 9 | PASS | Retry with same key+body returns identical `renderId`/`shareUrl`; handler counter stays at 1 (unit + integration) |
 | 10 | PASS | Stub returns 201 with `rnd_` prefix, full body shape on all three document-type routes |
 | 11 | PASS | Unit tests (crypto, middleware) + postgres-gated integration (retry, conflict, missing header) |
@@ -342,7 +343,8 @@ Composer 2.5 Fast
 
 | ID | Sev | Bucket | Title | Resolution |
 | --- | --- | --- | --- | --- |
-| CR-1 | **medium** | **patch** | Concurrent first POST race could return duplicate `renderId` when store unique violation swallowed | Post-store re-lookup in `onAfterHandle` returns persisted winner body when `renderId` differs (`ed71b36`) |
+| CR-1 | **medium** | **patch** | Concurrent first POST race could return duplicate `renderId` when store unique violation swallowed | Post-store re-lookup in `onAfterHandle` returns persisted winner body when `renderId` differs (PR #14) |
+| CR-6 | **medium** | **patch** | Expired row blocked `store` insert via unique index — post-expiry success never cached | `store` updates row when `expires_at <= now()` on unique violation (PR #16) |
 | CR-2 | low | defer | Concurrent duplicate POST can still invoke inner handler twice before first store | Accepted per story decision table; response consistency preserved; Story 3.12 should add handler-level dedup or advisory lock |
 | CR-3 | low | dismiss | `@ts-nocheck` on Elysia macro route wiring | Accepted — same pattern as Stories 3.4/3.7; runtime-valid per integration tests |
 | CR-4 | info | dismiss | Integration tests cover `invoices/render` only | Pass — AC 11 requires at least one document type; unit wiring registers all three paths |
@@ -355,5 +357,5 @@ Composer 2.5 Fast
 | `docker compose -f docker/compose.yml up -d postgres` | **PASS** | Container healthy |
 | `bun run --filter @usetagih/db migrate` | **PASS** | Migrations applied |
 | `bun test apps/api` | **86 pass / 0 fail** | Includes idempotency unit + integration (3) |
-| `bun test packages/db` | **9 pass / 0 fail** | Idempotency store adapter tests included |
+| `bun test packages/db` | **16 pass / 0 fail** | Idempotency store adapter tests included |
 | `bunx turbo run lint typecheck test build --force` | **36/36 exit 0** | Full workspace gate |

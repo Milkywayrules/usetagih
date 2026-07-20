@@ -1,5 +1,5 @@
 import type { IdempotencyStore } from "@usetagih/core";
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, lte } from "drizzle-orm";
 import type { Db } from "../client.js";
 import { idempotencyKeys } from "../schema/idempotency-keys.js";
 
@@ -67,12 +67,28 @@ export function createIdempotencyStore(db: Db): IdempotencyStore {
 					responseBody,
 					expiresAt,
 				});
+				return;
 			} catch (error) {
-				if (isPostgresUniqueViolation(error)) {
-					return;
+				if (!isPostgresUniqueViolation(error)) {
+					throw error;
 				}
-				throw error;
 			}
+
+			await db
+				.update(idempotencyKeys)
+				.set({
+					requestHash,
+					responseBody,
+					expiresAt,
+				})
+				.where(
+					and(
+						eq(idempotencyKeys.workspaceId, workspaceId),
+						eq(idempotencyKeys.endpoint, endpoint),
+						eq(idempotencyKeys.keyHash, keyHash),
+						lte(idempotencyKeys.expiresAt, new Date()),
+					),
+				);
 		},
 	} satisfies IdempotencyStore;
 }
