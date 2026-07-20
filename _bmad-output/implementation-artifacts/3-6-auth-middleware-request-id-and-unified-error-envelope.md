@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.6: Auth middleware, request-id, and unified error envelope
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -32,44 +32,44 @@ so that integration is predictable (NFR-7, AD-11, NFR-5).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Schema: `NOT_IMPLEMENTED` code (AC: 7, 3)
-  - [ ] Add `NOT_IMPLEMENTED` to `packages/schema/src/errors/codes.ts` + `ERROR_CODES` array
-  - [ ] Map `NOT_IMPLEMENTED → 501` in `packages/schema/src/errors/http-status.ts`
-  - [ ] Update `codes.test.ts` / `envelope.test.ts` / OpenAPI structural tests if they enumerate codes (Epic 2 action item: contract changes atomic)
-  - [ ] Export constant from `packages/schema/src/index.ts` if other constants are exported
-- [ ] Task 2 — Request-id middleware (AC: 1, 2)
-  - [ ] Create `apps/api/src/middleware/request-id.ts` — derive/store `requestId` on context; set `X-Request-Id` on response via `onAfterHandle` or equivalent
-  - [ ] Wire as **first** plugin in `createApp()` (before health/auth/v1 group) so all routes inherit
-  - [ ] Unit tests: generates `req_` prefix; reuses valid inbound header; rejects malformed inbound
-- [ ] Task 3 — Central API error helper (AC: 3, 8)
-  - [ ] Create `apps/api/src/lib/api-error.ts` — `respondApiError({ code, message, requestId, details?, set })` calling `buildApiErrorEnvelope` + `getHttpStatusForErrorCode` + `set.status`
-  - [ ] Optional thin wrapper `respondApiErrorFromContext(ctx, …)` reading `requestId` from Elysia context store
-  - [ ] **Do not** re-export schema types — import from `@usetagih/schema` at call sites only through this helper
-- [ ] Task 4 — Global `/v1` error handling (AC: 4, 5, 6)
-  - [ ] Add Elysia `onError` (or scoped plugin on `/v1` group) mapping: `NOT_FOUND` → 404 envelope; Zod/validation → 422 + `zodIssuesToDetails`; unknown → `INTERNAL_ERROR` 500
-  - [ ] Ensure `error.message` for 500 is constant generic string (e.g. `"An internal error occurred"`) — log real error server-side only (console or placeholder until Story 3.7 evlog)
-  - [ ] Register catch-all unknown route handler on `/v1` group **after** all routes for explicit 404 envelope (if framework default bypasses `onError`)
-- [ ] Task 5 — Replace ad-hoc envelopes (AC: 8, 11)
-  - [ ] `apps/api/src/auth/mount.ts` — `auth` macro 401
-  - [ ] `apps/api/src/middleware/workspace-guard.ts` — 401/403
-  - [ ] `apps/api/src/middleware/auth-resolver.ts` — 401/403
-  - [ ] `apps/api/src/middleware/scope-guard.ts` — 401/403
-  - [ ] `apps/api/src/middleware/session-management-auth.ts` — 403
-  - [ ] `apps/api/src/routes/v1/api-keys.ts` — validation + NOT_FOUND + FORBIDDEN paths
-  - [ ] `apps/api/src/routes/auth/sign-up-with-workspace.ts` — error catch paths (map better-auth codes to schema codes where possible; never leak raw plugin codes in envelope)
-  - [ ] `apps/api/src/routes/v1/session.token.ts` — CSRF/auth errors
-  - [ ] Stub files: `renders.stub.ts`, `audit.stub.ts`, `webhooks.stub.ts` — 501 via helper + `NOT_IMPLEMENTED`
-- [ ] Task 6 — Tests (AC: 12)
-  - [ ] `apps/api/src/middleware/error-envelope.test.ts` — unit-level helper + validation mapping
-  - [ ] Extend `apps/api/src/integration/auth.integration.test.ts` — assert `error.requestId`, `error.details`, `X-Request-Id` header on 401
-  - [ ] Extend `apps/api/src/integration/api-keys.integration.test.ts` — 404 envelope fields
-  - [ ] Add cases: `GET /v1/does-not-exist` → 404 envelope; forced 500 path (test-only route or mock throw) → no stack in body
-  - [ ] Update stub assertions: `NOT_IMPLEMENTED` code + envelope shape; keep status 501
-  - [ ] Update `session.token.test.ts` scope-parity rows if body shape assertions added
-- [ ] Task 7 — Verification gate (AC: 13)
-  - [ ] `bun test apps/api`
-  - [ ] `bun test packages/schema` (after NOT_IMPLEMENTED)
-  - [ ] `bunx turbo run lint typecheck test build --force`
+- [x] Task 1 — Schema: `NOT_IMPLEMENTED` code (AC: 7, 3)
+  - [x] Add `NOT_IMPLEMENTED` to `packages/schema/src/errors/codes.ts` + `ERROR_CODES` array
+  - [x] Map `NOT_IMPLEMENTED → 501` in `packages/schema/src/errors/http-status.ts`
+  - [x] Update `codes.test.ts` / `envelope.test.ts` / OpenAPI structural tests if they enumerate codes (Epic 2 action item: contract changes atomic)
+  - [x] Export constant from `packages/schema/src/index.ts` if other constants are exported
+- [x] Task 2 — Request-id middleware (AC: 1, 2)
+  - [x] Create `apps/api/src/middleware/request-id.ts` — derive/store `requestId` on context; set `X-Request-Id` on response via `onAfterHandle` or equivalent
+  - [x] Wire as **first** plugin in `createApp()` (before health/auth/v1 group) so all routes inherit
+  - [x] Unit tests: generates `req_` prefix; reuses valid inbound header; rejects malformed inbound
+- [x] Task 3 — Central API error helper (AC: 3, 8)
+  - [x] Create `apps/api/src/lib/api-error.ts` — `respondApiError({ code, message, requestId, details?, set })` calling `buildApiErrorEnvelope` + `getHttpStatusForErrorCode` + `set.status`
+  - [x] Optional thin wrapper `respondApiErrorFromContext(ctx, …)` reading `requestId` from Elysia context store
+  - [x] **Do not** re-export schema types — import from `@usetagih/schema` at call sites only through this helper
+- [x] Task 4 — Global `/v1` error handling (AC: 4, 5, 6)
+  - [x] Add Elysia `onError` (or scoped plugin on `/v1` group) mapping: `NOT_FOUND` → 404 envelope; Zod/validation → 422 + `zodIssuesToDetails`; unknown → `INTERNAL_ERROR` 500
+  - [x] Ensure `error.message` for 500 is constant generic string (e.g. `"An internal error occurred"`) — log real error server-side only (console or placeholder until Story 3.7 evlog)
+  - [x] Register catch-all unknown route handler on `/v1` group **after** all routes for explicit 404 envelope (if framework default bypasses `onError`)
+- [x] Task 5 — Replace ad-hoc envelopes (AC: 8, 11)
+  - [x] `apps/api/src/auth/mount.ts` — `auth` macro 401
+  - [x] `apps/api/src/middleware/workspace-guard.ts` — 401/403
+  - [x] `apps/api/src/middleware/auth-resolver.ts` — 401/403
+  - [x] `apps/api/src/middleware/scope-guard.ts` — 401/403
+  - [x] `apps/api/src/middleware/session-management-auth.ts` — 403
+  - [x] `apps/api/src/routes/v1/api-keys.ts` — validation + NOT_FOUND + FORBIDDEN paths
+  - [x] `apps/api/src/routes/auth/sign-up-with-workspace.ts` — error catch paths (map better-auth codes to schema codes where possible; never leak raw plugin codes in envelope)
+  - [x] `apps/api/src/routes/v1/session.token.ts` — CSRF/auth errors
+  - [x] Stub files: `renders.stub.ts`, `audit.stub.ts`, `webhooks.stub.ts` — 501 via helper + `NOT_IMPLEMENTED`
+- [x] Task 6 — Tests (AC: 12)
+  - [x] `apps/api/src/middleware/error-envelope.test.ts` — unit-level helper + validation mapping
+  - [x] Extend `apps/api/src/integration/auth.integration.test.ts` — assert `error.requestId`, `error.details`, `X-Request-Id` header on 401
+  - [x] Extend `apps/api/src/integration/api-keys.integration.test.ts` — 404 envelope fields
+  - [x] Add cases: `GET /v1/does-not-exist` → 404 envelope; forced 500 path (test-only route or mock throw) → no stack in body
+  - [x] Update stub assertions: `NOT_IMPLEMENTED` code + envelope shape; keep status 501
+  - [x] Update `session.token.test.ts` scope-parity rows if body shape assertions added
+- [x] Task 7 — Verification gate (AC: 13)
+  - [x] `bun test apps/api`
+  - [x] `bun test packages/schema` (after NOT_IMPLEMENTED)
+  - [x] `bunx turbo run lint typecheck test build --force`
 
 ## Dev Notes
 
@@ -308,10 +308,51 @@ packages/schema/src/errors/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Composer
 
 ### Debug Log References
 
+- Elysia macro `resolve` does not inherit `derive` context; `getRequestId(request)` via WeakMap stabilizes id across macros and handlers
+- macro early-return via `status()` skips `onAfterHandle`; `set.headers` before `status()` sets `X-Request-Id`
+
 ### Completion Notes List
 
+- Added `NOT_IMPLEMENTED` schema code mapped to HTTP 501 for Epic 3 stub routes
+- Wired global request-id plugin first in `createApp()` with `req_` prefix and inbound header propagation
+- Centralized `/v1` errors through `respondApiError` / `statusApiError` and `createV1ErrorHandler` (404, 422 validation, 500 internal)
+- Migrated all listed ad-hoc error paths; validation failures on api-keys now return 422 with `details`
+- Integration tests assert envelope shape, header/body `requestId` parity, unknown route 404, and masked 500
+- `bunx turbo run lint typecheck test build --force`: 36/36 tasks green; api 130 tests, schema 64 tests
+
 ### File List
+
+- `packages/schema/src/errors/codes.ts`
+- `packages/schema/src/errors/codes.test.ts`
+- `packages/schema/src/errors/http-status.ts`
+- `packages/schema/src/index.ts`
+- `apps/api/src/lib/api-error.ts`
+- `apps/api/src/middleware/request-id.ts`
+- `apps/api/src/middleware/request-id.test.ts`
+- `apps/api/src/middleware/v1-error-handler.ts`
+- `apps/api/src/middleware/error-envelope.test.ts`
+- `apps/api/src/app.ts`
+- `apps/api/src/auth/mount.ts`
+- `apps/api/src/middleware/auth-resolver.ts`
+- `apps/api/src/middleware/workspace-guard.ts`
+- `apps/api/src/middleware/scope-guard.ts`
+- `apps/api/src/middleware/session-management-auth.ts`
+- `apps/api/src/routes/auth/sign-up-with-workspace.ts`
+- `apps/api/src/routes/v1/api-keys.ts`
+- `apps/api/src/routes/v1/session.token.ts`
+- `apps/api/src/routes/v1/renders.stub.ts`
+- `apps/api/src/routes/v1/audit.stub.ts`
+- `apps/api/src/routes/v1/webhooks.stub.ts`
+- `apps/api/src/integration/auth.integration.test.ts`
+- `apps/api/src/integration/api-keys.integration.test.ts`
+- `apps/api/src/routes/v1/session.token.test.ts`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `_bmad-output/implementation-artifacts/3-6-auth-middleware-request-id-and-unified-error-envelope.md`
+
+## Change Log
+
+- 2026-07-20: Story 3.6 — request-id middleware, AD-11 error envelope on `/v1`, `NOT_IMPLEMENTED` 501 stubs
