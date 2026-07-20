@@ -45,7 +45,7 @@
 # Epic 5 after Epic 1+3 (Story 5.0 first) | Epic 6 after Epic 3+5 | Epic 7 after Epic 3 | Epic 8 last
 
 generated: 2026-07-20
-last_updated: 2026-07-20T15:05:00+07:00
+last_updated: 2026-07-20T16:00:00+07:00
 project: usetagih
 project_key: NOKEY
 tracking_system: file-system
@@ -104,7 +104,7 @@ development_status:
   3-6-auth-middleware-request-id-and-unified-error-envelope: done
   3-7-elysia-platform-baseline: done
   3-8-idempotency-middleware-for-render-endpoints: done
-  3-9-get-v1-schemas-and-post-v1-documenttype-validate: backlog
+  3-9-get-v1-schemas-and-post-v1-documenttype-validate: ready-for-dev
   3-10-logo-ingestion-ssrf-hardened-pipeline: backlog
   3-11-post-v1-documenttype-preview-multi-page-svg-response: backlog
   3-12-sync-render-path-post-v1-documenttype-render-100-items-10s: backlog
