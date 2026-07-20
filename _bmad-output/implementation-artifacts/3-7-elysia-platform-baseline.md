@@ -364,9 +364,14 @@ composer-2.5-fast
 - `apps/api/src/integration/api-keys.integration.test.ts`
 - `apps/api/src/integration/auth.integration.test.ts`
 - `apps/api/src/integration/session-token.integration.test.ts`
+- `apps/api/src/middleware/error-envelope.test.ts`
 - `apps/api/src/middleware/security-headers.ts`
 - `apps/api/src/middleware/security-headers.test.ts`
+- `apps/api/src/lib/api-error.ts`
+- `apps/api/src/middleware/auth-resolver.ts`
+- `apps/api/src/middleware/scope-guard.ts`
 - `apps/api/src/middleware/v1-error-handler.ts`
+- `apps/api/src/middleware/workspace-guard.ts`
 - `apps/api/src/plugins/evlog.ts`
 - `apps/api/src/plugins/evlog.test.ts`
 - `apps/api/src/plugins/openapi-docs.ts`
@@ -384,3 +389,64 @@ composer-2.5-fast
 ## Change Log
 
 - 2026-07-20: story 3.7 implementation — openapi/scalar hybrid, env-gated otel, evlog request logging, custom security headers; story marked review
+- 2026-07-20: adversarial code review — fixed security headers on early `/v1` auth short-circuits; story marked done
+
+## Code Review (2026-07-20)
+
+**Reviewer:** adversarial code review (directive #5 focus)  
+**Branch:** `feat/story-3-7-elysia-platform-baseline` @ `9180cb0` (review fix on `661ea43`)  
+**Verdict:** **PASS** — all 23 ACs satisfied after one medium fix
+
+### Directive verification
+
+| Area | ACs | Result | Evidence |
+| --- | --- | --- | --- |
+| **5a** OpenAPI + Scalar | 1–5 | PASS | `USETAGIH_DOCS_ENABLED` env schema; `/v1/openapi.json` + `/docs`; 404 when disabled; `x-usetagih-spec-maturity: partial`; schema components merge |
+| **5b** OTel | 6–10 | PASS | `initOtel` no-op without endpoint; `service.name=usetagih-api`; requestId span attrs; SIGTERM/SIGINT shutdown flush; traces-only (no metrics exporter) |
+| **5c** evlog | 11–16 | PASS | `initLogger` at startup; field contract in integration JSON logs (`requestId`, `workspaceId`, `stage`); `useLogger().error()` replaces `console.error`; envelope unchanged |
+| **5d** envelope | 21 | PASS | `error-envelope.test.ts` green; no success-body wrapping |
+| **5e** security headers | 17–20 | PASS (after fix) | strict CSP on JSON routes; Scalar CSP relaxation on `/docs` only; no HSTS |
+
+### AC checklist (23/23)
+
+| AC | Result | Notes |
+| --- | --- | --- |
+| 1 | PASS | `/v1/openapi.json` + `/docs` unauthenticated when enabled |
+| 2 | PASS | 404 on both paths when disabled |
+| 3 | PASS | dev default true; staging explicit; prod default false; `envBoolean` preprocess |
+| 4 | PASS | schema components + Elysia route stubs; `x-usetagih-spec-maturity: partial` |
+| 5 | PASS | `openapi-docs.test.ts` disabled → 404 |
+| 6 | PASS | `initOtel` no-op without `OTEL_EXPORTER_OTLP_ENDPOINT` |
+| 7 | PASS | `createOtelRequestIdPlugin` sets `requestId` + `request.id`; sensitive attrs redacted |
+| 8 | PASS | `index.ts` SIGTERM/SIGINT → `otel.shutdown()` flush |
+| 9 | PASS | traces only — no metrics exporter wired |
+| 10 | PASS | `otel.test.ts` boot without endpoint |
+| 11 | PASS | evlog JSON wide events with contract fields |
+| 12 | PASS | `requestId` matches `X-Request-Id` / store |
+| 13 | PASS | `workspaceId` when auth context present |
+| 14 | PASS | `v1-error-handler` uses evlog; no stack in body |
+| 15 | PASS | evlog `2.22.0` pinned; `initLogger({ service: 'usetagih-api' })` |
+| 16 | PASS | env schema + `doppler.yaml` + SOLUTION-DESIGN §9 |
+| 17 | PASS | custom middleware — nosniff, DENY, referrer, CORP, strict CSP |
+| 18 | PASS | relaxed CSP on `/docs` only |
+| 19 | PASS | no HSTS header |
+| 20 | PASS | security-headers test on `/v1/renders` + `/docs` CSP |
+| 21 | PASS | envelope unchanged from Story 3.6 |
+| 22 | PASS | turbo 36/36 |
+| 23 | PASS | out-of-scope items not implemented |
+
+### Findings triage
+
+| ID | Sev | Bucket | Title | Resolution |
+| --- | --- | --- | --- | --- |
+| 1 | **medium** | **patch** | Security headers missing on early `/v1` auth 401/403 responses | Elysia macro `status()` short-circuits skip root `onAfterHandle`; fixed via `mapResponse` + `applySecurityHeadersToSet` in `statusApiError`/`respondApiError` with request path (`9180cb0`) |
+| 2 | low | defer | OTel enabled-path lacks unit test for span export + requestId attribute | AC 10 only requires no-op path; enabled behavior verified by wiring review |
+| 3 | low | dismiss | Intermittent `@usetagih/render` PDF flake on one turbo run | Re-run `bunx turbo run lint typecheck test build --force` → **36/36 pass**; unrelated to story 3.7 |
+
+### Verification run
+
+| Gate | Result | Notes |
+| --- | --- | --- |
+| `bun test apps/api` | **146 pass / 0 fail** | Postgres integration included (auth 11, api-keys 3, session-token 10) |
+| `bunx turbo run lint typecheck test build --force` | **36/36 exit 0** | Full workspace gate |
+| Review test additions | **PASS** | `/v1/renders` security-header assertion; evlog 500 error log assertion |
