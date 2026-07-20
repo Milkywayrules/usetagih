@@ -306,7 +306,7 @@ composer-2.5-fast
 
 | ID | Sev | Bucket | Title | Resolution |
 | --- | --- | --- | --- | --- |
-| CR-1 | low | defer | Typst compile failures propagate as 500 `INTERNAL_ERROR` | Validated payloads should compile; Story 3.12 render path can add structured render-stage error mapping |
+| CR-1 | low | fix | Typst compile failures propagate as 500 `INTERNAL_ERROR` | Fixed — `previewUseCase` catches render errors and maps to 422 `VALIDATION_FAILED` |
 | CR-2 | low | dismiss | `@ts-nocheck` on preview route module | Same Elysia macro pattern as Stories 3.8/3.9 |
 | CR-3 | low | dismiss | Preview stores ingested logo bytes in memory blob store | Ephemeral cache only — no render row or R2 artifact per AC 3 |
 | CR-4 | low | fix | Unit tests hit real DB for workspace_settings without postgres | Fixed via injectable `workspaceSettingsRepo` stub in `preview-by-document-type.test.ts` (PR #26) |
