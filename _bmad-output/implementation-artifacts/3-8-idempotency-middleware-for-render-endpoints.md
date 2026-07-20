@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.8: Idempotency middleware for render endpoints
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -293,7 +293,7 @@ Composer 2.5 Fast
 - Implemented SHA-256 idempotency crypto helpers, Drizzle `IdempotencyStore` adapter, and render idempotency middleware wired to POST `/v1/{invoices|quotations|receipts}/render` stub routes.
 - Middleware enforces `Idempotency-Key` validation, 24h TTL caching, 409 conflict on body mismatch, and handler short-circuit on retry.
 - Added unit tests (crypto, middleware), postgres-gated db adapter tests, and integration tests (retry + conflict + missing header).
-- `bunx turbo run lint typecheck test build --force` passes (api: 85 tests, db: 9 tests).
+- `bunx turbo run lint typecheck test build --force` passes (36/36; api: 85+ tests, db: 9+ tests).
 
 ### File List
 
@@ -312,3 +312,50 @@ Composer 2.5 Fast
 ### Change Log
 
 - 2026-07-20: Story 3.8 — idempotency middleware, db adapter, render stub routes, tests; status → review
+- 2026-07-20: adversarial code review — all 13 ACs pass; no code fixes required; status → done
+
+## Code Review (2026-07-20)
+
+**Reviewer:** adversarial code review (Story 3.8 idempotency)  
+**Merged:** `main` @ `feb4f7b` (PR #13)  
+**Verdict:** **PASS** — all 13 ACs satisfied; no blocking fixes
+
+### AC checklist (13/13)
+
+| AC | Result | Notes |
+| --- | --- | --- |
+| 1 | PASS | `validateIdempotencyKeyHeader` enforces printable ASCII 1–255; missing/invalid → 400 `INVALID_REQUEST` with AD-11 envelope |
+| 2 | PASS | `hashIdempotencyKey` → SHA-256 lowercase hex; raw key never stored or logged |
+| 3 | PASS | `hashRequestBody` hashes raw UTF-8 bytes via `request.clone().text()`; empty body → empty-string hash |
+| 4 | PASS | Lookup hit skips handler; returns cached `response_body` with HTTP 201; `X-Request-Id` via global request-id `onAfterHandle` |
+| 5 | PASS | Same key + different `requestHash` → 409 `IDEMPOTENCY_CONFLICT` with full AD-11 envelope + `requestId` |
+| 6 | PASS | Successful 2xx responses stored via `IdempotencyStore.store` with `expires_at = now + 24h` |
+| 7 | PASS | `lookup` filters `expires_at > now()`; expired rows treated as miss (db test) |
+| 8 | PASS | `createIdempotencyStore` in `packages/db`; tests cover hit/miss, expiry, workspace isolation, insert race |
+| 9 | PASS | Retry with same key+body returns identical `renderId`/`shareUrl`; handler counter stays at 1 (unit + integration) |
+| 10 | PASS | Stub returns 201 with `rnd_` prefix, full body shape on all three document-type routes |
+| 11 | PASS | Unit tests (crypto, middleware) + postgres-gated integration (retry, conflict, missing header) |
+| 12 | PASS | `bunx turbo run lint typecheck test build --force` → 36/36 exit 0 |
+| 13 | PASS | No Typst, R2, quota, validation use-case, or preview routes added |
+
+### Findings triage
+
+| ID | Sev | Bucket | Title | Resolution |
+| --- | --- | --- | --- | --- |
+| CR-1 | info | dismiss | SHA-256 key/body hashing + printable ASCII validation | Pass — `idempotency-crypto.ts` + unit tests |
+| CR-2 | info | dismiss | Drizzle adapter expiry filter + workspace isolation + unique-violation swallow on store race | Pass — `idempotency-store.ts` + postgres tests |
+| CR-3 | info | dismiss | Middleware hit short-circuit, conflict 409, post-store re-read on insert race | Pass — `idempotency.ts` + unit/integration tests |
+| CR-4 | low | defer | Concurrent duplicate POST can invoke inner handler twice before first store completes | Accepted per story decision table (DB unique + post-store lookup); response consistency preserved; Story 3.12 real render should add handler-level dedup or advisory lock |
+| CR-5 | low | dismiss | `@ts-nocheck` on Elysia macro route wiring | Accepted — same pattern as Stories 3.4/3.7; runtime-valid per integration tests |
+| CR-6 | info | dismiss | Integration tests cover `invoices/render` only | Pass — AC 11 requires at least one document type; unit wiring registers all three paths |
+| CR-7 | info | dismiss | HTTP status not persisted in `response_body`; cache hit hardcodes 201 | Pass for sync stub — AC 4 notes 201 for sync path; Story 3.12 can extend snapshot if async statuses needed |
+
+### Verification run
+
+| Gate | Result | Notes |
+| --- | --- | --- |
+| `docker compose -f docker/compose.yml up -d postgres` | **PASS** | Container healthy |
+| `bun run --filter @usetagih/db migrate` | **PASS** | Migrations applied |
+| `bun test apps/api` | **85 pass / 0 fail** | Integration idempotency suite ran (3 tests) |
+| `bun test packages/db` | **9 pass / 0 fail** | Idempotency store adapter tests included |
+| `bunx turbo run lint typecheck test build --force` | **36/36 exit 0** | Full workspace gate |
