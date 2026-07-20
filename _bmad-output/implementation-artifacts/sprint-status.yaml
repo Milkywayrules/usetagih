@@ -99,7 +99,7 @@ development_status:
   3-1-drizzle-database-schema-and-migrations-for-core-tables: done
   3-2-packages-core-ports-and-validate-use-case: done
   3-3-better-auth-registration-login-and-session-middleware: done
-  3-4-post-v1-session-token-short-lived-audience-bound-csrf-protected-bearer: in-progress
+  3-4-post-v1-session-token-short-lived-audience-bound-csrf-protected-bearer: review
   3-5-api-key-create-list-and-revoke-endpoints: backlog
   3-6-auth-middleware-request-id-and-unified-error-envelope: backlog
   3-7-idempotency-middleware-for-render-endpoints: backlog
