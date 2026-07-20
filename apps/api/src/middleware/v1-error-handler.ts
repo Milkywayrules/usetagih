@@ -7,6 +7,7 @@ import {
 	zodPathToJsonPointer,
 } from "@usetagih/schema";
 import { Elysia } from "elysia";
+import { useLogger } from "evlog/elysia";
 import { respondApiError } from "../lib/api-error.js";
 
 type ElysiaValidationIssue = {
@@ -109,7 +110,14 @@ export function createV1ErrorHandler() {
 				});
 			}
 
-			console.error(error);
+			try {
+				const log = useLogger();
+				const err = error instanceof Error ? error : new Error(String(error));
+				log.set({ requestId });
+				log.error(err);
+			} catch {
+				// evlog context unavailable outside request scope
+			}
 			return respondApiError({
 				set,
 				code: INTERNAL_ERROR_CODE,

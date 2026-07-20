@@ -2,7 +2,14 @@
  * Integration tests for better-auth registration, login, and session middleware.
  * Skipped when compose Postgres is unreachable (probeDb false).
  */
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+	afterAll,
+	beforeAll,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { auth, createDb, probeDb, schema } from "@usetagih/db";
 import { ApiErrorEnvelopeSchema } from "@usetagih/schema";
 import { eq } from "drizzle-orm";
@@ -10,9 +17,13 @@ import { Elysia } from "elysia";
 import { createApp } from "../app.js";
 import { createRequestIdPlugin } from "../middleware/request-id.js";
 import { createV1ErrorHandler } from "../middleware/v1-error-handler.js";
+import { initTestLogger } from "../test-helpers/evlog.js";
 
 const postgresUp = await probeDb();
+if (postgresUp) setDefaultTimeout(15_000);
 const describeIntegration = postgresUp ? describe : describe.skip;
+
+initTestLogger();
 
 function suffix() {
 	return crypto.randomUUID().slice(0, 8);

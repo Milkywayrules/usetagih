@@ -14,6 +14,9 @@ import { createDb, probeDb, schema } from "@usetagih/db";
 import { API_SCOPES, ApiErrorEnvelopeSchema } from "@usetagih/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { createApp } from "../app.js";
+import { initTestLogger } from "../test-helpers/evlog.js";
+
+initTestLogger();
 
 const postgresUp = await probeDb();
 if (postgresUp) setDefaultTimeout(15_000);
