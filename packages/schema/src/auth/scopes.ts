@@ -21,6 +21,7 @@ export const ROUTE_SCOPE_REQUIREMENTS = {
 	"GET /v1/renders": ["renders:read"],
 	"GET /v1/renders/{renderId}": ["renders:read"],
 	"GET /v1/renders/{renderId}/download": ["renders:read"],
+	"DELETE /v1/renders/{renderId}/share": ["renders:write"],
 	"POST /v1/renders": ["renders:write"],
 	"POST /v1/invoices/validate": ["renders:write"],
 	"POST /v1/quotations/validate": ["renders:write"],

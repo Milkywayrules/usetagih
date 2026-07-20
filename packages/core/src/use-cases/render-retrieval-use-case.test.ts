@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import type { RenderRecord, RenderRepo } from "../ports/index.js";
+import { buildShareUrl } from "../share-token.js";
 import { downloadRenderUseCase } from "./download-render-use-case.js";
 import { getRenderUseCase } from "./get-render-use-case.js";
 import { listRendersUseCase } from "./list-renders-use-case.js";
@@ -47,6 +48,12 @@ function createRenderRepoMock(record: RenderRecord | null): RenderRepo {
 			}
 			return record;
 		},
+		async getById(renderId) {
+			return renderId === RENDER_UUID ? record : null;
+		},
+		async revokeShare() {
+			return null;
+		},
 		async listByWorkspace() {
 			return record ? [record] : [];
 		},
@@ -77,7 +84,7 @@ describe("getRenderUseCase", () => {
 		expect(result.render.renderId).toBe(API_RENDER_ID);
 		expect(result.render.idempotencyFingerprint).toBe("idem-hash-abc");
 		expect(result.render.shareUrl).toBe(
-			"https://app.example.com/share/share-token",
+			buildShareUrl(WEB_PUBLIC_URL, "share-token"),
 		);
 	});
 

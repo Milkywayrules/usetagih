@@ -1,7 +1,14 @@
 import { expect, test } from "bun:test";
 import type { DocumentPayload } from "@usetagih/schema";
 import type { ArtifactStore, RenderRepo } from "../ports/index.js";
+import {
+	buildShareUrl,
+	computeShareExpiresAt,
+	createShareToken,
+} from "../share-token.js";
 import { renderUseCase, SYNC_MAX_LINE_ITEMS } from "./render-use-case.js";
+
+const SHARE_SECRET = "dev-only-share-signing-secret-min-32-chars";
 
 const VALID_INVOICE: DocumentPayload = {
 	schemaVersion: "2026-07-20",
@@ -57,6 +64,12 @@ function createDeps(
 			async getByIdAndWorkspace() {
 				return null;
 			},
+			async getById() {
+				return null;
+			},
+			async revokeShare() {
+				return null;
+			},
 			async listByWorkspace() {
 				return [];
 			},
@@ -101,8 +114,9 @@ function createDeps(
 				})),
 			renderRepo,
 			artifactStore,
+			shareSigningSecret: SHARE_SECRET,
 			generateRenderId: () => "00000000-0000-4000-8000-000000000099",
-			generateShareToken: () => "share-token-123",
+			generateShareNonce: () => "fixed-nonce",
 			now: () => new Date("2026-07-20T00:00:00.000Z"),
 		},
 	};
@@ -191,8 +205,17 @@ test("renderUseCase persists completed render with snapshots", async () => {
 	expect(result.ok).toBe(true);
 	if (result.ok) {
 		expect(result.renderId).toBe("rnd_00000000-0000-4000-8000-000000000099");
+		const expectedToken = createShareToken({
+			renderId: "00000000-0000-4000-8000-000000000099",
+			expiresAt: computeShareExpiresAt(
+				new Date("2026-07-20T00:00:00.000Z"),
+				90,
+			),
+			secret: SHARE_SECRET,
+			nonce: "fixed-nonce",
+		});
 		expect(result.shareUrl).toBe(
-			"https://app.example.com/share/share-token-123",
+			buildShareUrl("https://app.example.com/", expectedToken),
 		);
 		expect(result.status).toBe("completed");
 		expect(result.stages.totalMs).toBeGreaterThanOrEqual(0);

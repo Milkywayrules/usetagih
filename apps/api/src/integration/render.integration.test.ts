@@ -189,6 +189,12 @@ describeIntegration("render integration mocked timing", () => {
 				async getByIdAndWorkspace() {
 					return null;
 				},
+				async getById() {
+					return null;
+				},
+				async revokeShare() {
+					return null;
+				},
 				async listByWorkspace() {
 					return [];
 				},
@@ -205,6 +211,7 @@ describeIntegration("render integration mocked timing", () => {
 				},
 				async delete() {},
 			},
+			shareSigningSecret: "dev-only-share-signing-secret-min-32-chars",
 		};
 
 		return {

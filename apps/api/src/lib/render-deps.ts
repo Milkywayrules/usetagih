@@ -59,10 +59,13 @@ export function createRenderRuntimeDeps(options?: {
 	logoBlobStore?: LogoBlobStoreInstance;
 	artifactStore?: ArtifactStore;
 	renderPdfFromPayload?: RenderUseCaseDeps["renderPdfFromPayload"];
+	shareSigningSecret?: string;
 }): RenderRuntimeDeps {
 	const logoBlobStore = options?.logoBlobStore ?? createMemoryLogoBlobStore();
 	const artifactStore = options?.artifactStore ?? createMemoryArtifactStore();
 	const renderPdf = options?.renderPdfFromPayload ?? renderPdfFromPayload;
+	const shareSigningSecret =
+		options?.shareSigningSecret ?? "dev-only-share-signing-secret-min-32-chars";
 
 	return {
 		logoBlobStore,
@@ -76,6 +79,7 @@ export function createRenderRuntimeDeps(options?: {
 			renderPdfFromPayload: renderPdf,
 			renderRepo,
 			artifactStore,
+			shareSigningSecret,
 		}),
 	};
 }

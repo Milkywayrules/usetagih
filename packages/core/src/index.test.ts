@@ -7,7 +7,9 @@ test("public exports include ports and validateUseCase", () => {
 		insert: async () => {
 			throw new Error("stub");
 		},
+		getById: async () => null,
 		getByIdAndWorkspace: async () => null,
+		revokeShare: async () => null,
 		listByWorkspace: async () => [],
 		listByWorkspacePaginated: async () => ({ items: [], total: 0 }),
 	};

@@ -30,7 +30,13 @@ const stubRenderRepo: RenderRepo = {
 	async insert() {
 		throw new Error("unexpected render insert in scope parity tests");
 	},
+	async getById() {
+		return null;
+	},
 	async getByIdAndWorkspace() {
+		return null;
+	},
+	async revokeShare() {
 		return null;
 	},
 	async listByWorkspace() {

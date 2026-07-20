@@ -8,6 +8,7 @@ import type {
 	RenderRecord,
 	RenderRepo,
 } from "@usetagih/core";
+import { buildShareUrl } from "@usetagih/core";
 import { ApiErrorEnvelopeSchema } from "@usetagih/schema";
 import { createApp } from "../../app.js";
 import {
@@ -86,6 +87,24 @@ function createRenderRepoFixture(): RenderRepo {
 						record.id === renderId && record.workspaceId === workspaceId,
 				) ?? null
 			);
+		},
+		async getById(renderId) {
+			return records.find((record) => record.id === renderId) ?? null;
+		},
+		async revokeShare(renderId, workspaceId) {
+			const index = records.findIndex(
+				(record) =>
+					record.id === renderId && record.workspaceId === workspaceId,
+			);
+			if (index < 0) {
+				return null;
+			}
+			records[index] = {
+				...records[index],
+				shareToken: null,
+				shareExpiresAt: null,
+			};
+			return records[index];
 		},
 		async listByWorkspace(workspaceId, limit = 50) {
 			return records
@@ -188,7 +207,7 @@ describe("GET /v1/renders routes", () => {
 		expect(body.renders[0].renderId).toBe(API_RENDER_ID);
 		expect(body.renders[0].idempotencyFingerprint).toBe("idem-hash");
 		expect(body.renders[0].shareUrl).toBe(
-			`${WEB_PUBLIC_URL}/share/share-token-test`,
+			buildShareUrl(WEB_PUBLIC_URL, "share-token-test"),
 		);
 	});
 
@@ -234,6 +253,35 @@ describe("GET /v1/renders routes", () => {
 		expect(
 			auditEvents.some((event) => event.action === "render.download"),
 		).toBe(true);
+	});
+
+	test("DELETE /v1/renders/{renderId}/share revokes share link", async () => {
+		const writeSecret = await bearerWithScope("renders:write");
+		const revokeResponse = await app.handle(
+			new Request(`http://localhost/v1/renders/${API_RENDER_ID}/share`, {
+				method: "DELETE",
+				headers: { Authorization: `Bearer ${writeSecret}` },
+			}),
+		);
+		expect(revokeResponse.status).toBe(200);
+		const revokeBody = (await revokeResponse.json()) as {
+			renderId: string;
+			revoked: boolean;
+		};
+		expect(revokeBody.renderId).toBe(API_RENDER_ID);
+		expect(revokeBody.revoked).toBe(true);
+
+		const readSecret = await bearerWithScope("renders:read");
+		const metadataResponse = await app.handle(
+			new Request(`http://localhost/v1/renders/${API_RENDER_ID}`, {
+				headers: { Authorization: `Bearer ${readSecret}` },
+			}),
+		);
+		expect(metadataResponse.status).toBe(200);
+		const metadata = (await metadataResponse.json()) as {
+			shareUrl: string | null;
+		};
+		expect(metadata.shareUrl).toBeNull();
 	});
 
 	test("insufficient scope → 403", async () => {

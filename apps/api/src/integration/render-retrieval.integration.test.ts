@@ -176,6 +176,40 @@ describeIntegration("render retrieval integration", () => {
 			expect(pdfBytes[0]).toBe(0x25);
 			expect(pdfBytes[1]).toBe(0x50);
 
+			const shareToken = decodeURIComponent(
+				new URL(metadata.shareUrl).pathname.split("/share/")[1] ?? "",
+			);
+			const shareResponse = await fetch(
+				`${base}/v1/share/${encodeURIComponent(shareToken)}`,
+			);
+			expect(shareResponse.status).toBe(200);
+			const shareBody = (await shareResponse.json()) as {
+				renderId: string;
+				downloadUrl: string;
+			};
+			expect(shareBody.renderId).toBe(rendered.renderId);
+			expect(shareBody.downloadUrl).toContain("/download");
+
+			const publicDownload = await fetch(`${base}${shareBody.downloadUrl}`);
+			expect(publicDownload.status).toBe(200);
+			expect(publicDownload.headers.get("Content-Type")).toBe(
+				"application/pdf",
+			);
+
+			const revokeResponse = await fetch(
+				`${base}/v1/renders/${rendered.renderId}/share`,
+				{
+					method: "DELETE",
+					headers: { Authorization: `Bearer ${apiKey}` },
+				},
+			);
+			expect(revokeResponse.status).toBe(200);
+
+			const revokedShare = await fetch(
+				`${base}/v1/share/${encodeURIComponent(shareToken)}`,
+			);
+			expect(revokedShare.status).toBe(403);
+
 			const auditRows = await db
 				.select()
 				.from(schema.auditEvents)

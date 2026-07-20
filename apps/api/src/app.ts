@@ -42,6 +42,7 @@ import { createRendersRoutes } from "./routes/v1/renders.js";
 import { createSchemasRoutes } from "./routes/v1/schemas.js";
 import { createSessionCsrfRoute } from "./routes/v1/session.csrf.js";
 import { createSessionTokenRoute } from "./routes/v1/session.token.js";
+import { createShareRoutes } from "./routes/v1/share.js";
 import { createValidateByDocumentTypeRoutes } from "./routes/v1/validate-by-document-type.js";
 import { createWebhooksStubRoutes } from "./routes/v1/webhooks.stub.js";
 import { createOtelRequestIdPlugin } from "./telemetry/otel.js";
@@ -142,6 +143,13 @@ export function createApp(deps: AppDeps = {}) {
 									.limit(1);
 								return memberRow?.userId ?? null;
 							}),
+					}),
+				)
+				.use(
+					createShareRoutes({
+						renderRepo,
+						artifactStore: renderRuntime.artifactStore,
+						shareSigningSecret: env.USETAGIH_SHARE_SIGNING_SECRET,
 					}),
 				)
 				.use(createAuditStubRoutes())

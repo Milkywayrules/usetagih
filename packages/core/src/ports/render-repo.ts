@@ -17,7 +17,12 @@ export type RenderListPage = {
 
 export interface RenderRepo {
 	insert(input: NewRenderRecord): Promise<RenderRecord>;
+	getById(renderId: string): Promise<RenderRecord | null>;
 	getByIdAndWorkspace(
+		renderId: string,
+		workspaceId: string,
+	): Promise<RenderRecord | null>;
+	revokeShare(
 		renderId: string,
 		workspaceId: string,
 	): Promise<RenderRecord | null>;
