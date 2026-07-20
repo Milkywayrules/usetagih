@@ -5,6 +5,7 @@ import {
 	SESSION_TOKEN_SCOPES,
 } from "@usetagih/schema";
 import { createApp } from "../../app.js";
+import { hashApiKeySecret } from "../../auth/api-key-crypto.js";
 import {
 	signSessionBearerToken,
 	signSessionBearerTokenRaw,
@@ -135,6 +136,45 @@ describe("session token scope parity matrix", () => {
 		expect(response.status).toBe(403);
 		const body = await response.json();
 		expect(body.error.code).toBe("FORBIDDEN");
+	});
+
+	test("API key prefix collision resolves second candidate when first is revoked", async () => {
+		const workspaceId = crypto.randomUUID();
+		const sharedPrefix = "utk_live_collid1";
+		const revokedSecret = `${sharedPrefix}RevokedKeySuffix0000000001`;
+		const activeSecret = `${sharedPrefix}ActiveKeySuffix00000000001`;
+
+		expect(revokedSecret.length).toBeGreaterThanOrEqual(40);
+		expect(activeSecret.length).toBeGreaterThanOrEqual(40);
+		expect(revokedSecret.slice(0, 16)).toBe(sharedPrefix);
+		expect(activeSecret.slice(0, 16)).toBe(sharedPrefix);
+
+		const revokedHash = await hashApiKeySecret(revokedSecret);
+		const revoked = await apiKeyRepo.create({
+			workspaceId,
+			name: "Revoked collision",
+			prefix: sharedPrefix,
+			keyHash: revokedHash,
+			scopes: [...API_SCOPES],
+		});
+		await apiKeyRepo.revoke(workspaceId, revoked.id);
+
+		const activeHash = await hashApiKeySecret(activeSecret);
+		await apiKeyRepo.create({
+			workspaceId,
+			name: "Active collision",
+			prefix: sharedPrefix,
+			keyHash: activeHash,
+			scopes: [...API_SCOPES],
+		});
+
+		const response = await app.handle(
+			new Request("http://localhost/v1/renders", {
+				headers: { Authorization: `Bearer ${activeSecret}` },
+			}),
+		);
+
+		expect(response.status).toBe(501);
 	});
 
 	test("wrong algorithm token → 401", async () => {

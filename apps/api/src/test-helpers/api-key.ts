@@ -50,8 +50,9 @@ export function createInMemoryApiKeyRepo(): ApiKeyRepo & {
 
 		async findByPrefix(prefix: string) {
 			const ids = byPrefix.get(prefix) ?? [];
-			const row = ids.map((id) => byId.get(id)).find(Boolean);
-			return row ?? null;
+			return ids
+				.map((id) => byId.get(id))
+				.filter((row): row is StoredApiKey => row != null);
 		},
 
 		async findById(workspaceId: string, id: string) {

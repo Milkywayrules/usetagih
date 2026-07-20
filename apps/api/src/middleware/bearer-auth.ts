@@ -47,28 +47,33 @@ async function verifyApiKeyBearer(
 	}
 
 	const prefix = token.slice(0, 16);
-	const row = await apiKeyRepo.findByPrefix(prefix);
-	if (!row) {
+	const candidates = await apiKeyRepo.findByPrefix(prefix);
+	if (candidates.length === 0) {
 		return null;
 	}
 
-	if (row.revokedAt) {
-		return null;
+	const now = new Date();
+	for (const row of candidates) {
+		if (row.revokedAt) {
+			continue;
+		}
+
+		if (row.expiresAt && row.expiresAt <= now) {
+			continue;
+		}
+
+		const valid = await verifyApiKeySecret(token, row.keyHash);
+		if (!valid) {
+			continue;
+		}
+
+		return {
+			authType: "api_key",
+			workspaceId: row.workspaceId,
+			scopes: row.scopes,
+			apiKeyId: row.id,
+		};
 	}
 
-	if (row.expiresAt && row.expiresAt <= new Date()) {
-		return null;
-	}
-
-	const valid = await verifyApiKeySecret(token, row.keyHash);
-	if (!valid) {
-		return null;
-	}
-
-	return {
-		authType: "api_key",
-		workspaceId: row.workspaceId,
-		scopes: row.scopes,
-		apiKeyId: row.id,
-	};
+	return null;
 }

@@ -115,7 +115,7 @@ describe.skipIf(!dbAvailable)("ApiKeyRepo", () => {
 		expect(listA.every((k) => k.workspaceId === orgAId)).toBe(true);
 	});
 
-	test("findByPrefix returns row with keyHash", async () => {
+	test("findByPrefix returns all rows with keyHash", async () => {
 		const prefix = "utk_live_findme12";
 		await apiKeyRepo.create({
 			workspaceId: orgAId,
@@ -124,10 +124,21 @@ describe.skipIf(!dbAvailable)("ApiKeyRepo", () => {
 			keyHash: "hash-find",
 			scopes: ["renders:read"],
 		});
+		await apiKeyRepo.create({
+			workspaceId: orgAId,
+			name: "Find me too",
+			prefix,
+			keyHash: "hash-find-2",
+			scopes: ["audit:read"],
+		});
 
 		const found = await apiKeyRepo.findByPrefix(prefix);
-		expect(found?.prefix).toBe(prefix);
-		expect(found?.keyHash).toBe("hash-find");
+		expect(found).toHaveLength(2);
+		expect(found.every((row) => row.prefix === prefix)).toBe(true);
+		expect(found.map((row) => row.keyHash).sort()).toEqual([
+			"hash-find",
+			"hash-find-2",
+		]);
 	});
 
 	test("findById and revoke enforce workspace isolation", async () => {

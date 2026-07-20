@@ -64,12 +64,7 @@ export function createApiKeyRepo(db: Db): ApiKeyRepo {
 				.where(eq(apiKeys.prefix, prefix))
 				.orderBy(apiKeys.createdAt);
 
-			const row = rows[0];
-			if (!row) {
-				return null;
-			}
-
-			return { ...mapRow(row), keyHash: row.keyHash };
+			return rows.map((row) => ({ ...mapRow(row), keyHash: row.keyHash }));
 		},
 
 		async findById(workspaceId: string, id: string) {

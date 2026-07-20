@@ -23,9 +23,7 @@ export type ApiKeyCreateInput = {
 export interface ApiKeyRepo {
 	create(input: ApiKeyCreateInput): Promise<ApiKeyRecord>;
 	listByWorkspace(workspaceId: string): Promise<ApiKeyRecord[]>;
-	findByPrefix(
-		prefix: string,
-	): Promise<(ApiKeyRecord & { keyHash: string }) | null>;
+	findByPrefix(prefix: string): Promise<(ApiKeyRecord & { keyHash: string })[]>;
 	findById(workspaceId: string, id: string): Promise<ApiKeyRecord | null>;
 	revoke(workspaceId: string, id: string): Promise<ApiKeyRecord | null>;
 }
