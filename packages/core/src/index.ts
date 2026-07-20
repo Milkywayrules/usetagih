@@ -20,6 +20,12 @@ export type {
 export {
 	mapValidateFailureToDetails,
 	mergeBranding,
+	type PreviewUseCaseDeps,
+	type PreviewUseCaseFailure,
+	type PreviewUseCaseInput,
+	type PreviewUseCaseResult,
+	type PreviewUseCaseSuccess,
+	previewUseCase,
 	type ResolveLogoDeps,
 	type ResolveLogoFailure,
 	type ResolveLogoInput,

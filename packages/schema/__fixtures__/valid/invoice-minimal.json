@@ -6,8 +6,26 @@
 	"issuedAt": "2026-07-20",
 	"dueAt": "2026-08-20",
 	"currency": "USD",
-	"seller": { "name": "Seller Co" },
-	"buyer": { "name": "Buyer Co" },
+	"seller": {
+		"name": "Seller Co",
+		"address": {
+			"line1": "1 Seller St",
+			"city": "Portland",
+			"region": "OR",
+			"postalCode": "97201",
+			"country": "US"
+		}
+	},
+	"buyer": {
+		"name": "Buyer Co",
+		"address": {
+			"line1": "2 Buyer Ave",
+			"city": "Seattle",
+			"region": "WA",
+			"postalCode": "98101",
+			"country": "US"
+		}
+	},
 	"lineItems": [
 		{
 			"description": "Minimal line",

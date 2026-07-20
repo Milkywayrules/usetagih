@@ -19,6 +19,7 @@
 		"@usetagih/config": "workspace:*",
 		"@usetagih/core": "workspace:*",
 		"@usetagih/db": "workspace:*",
+		"@usetagih/render": "workspace:*",
 		"@usetagih/schema": "workspace:*",
 		"better-auth": "1.6.23",
 		"elysia": "1.4.29",

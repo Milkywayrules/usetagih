@@ -50,9 +50,11 @@ export function buildTypstInputArgs(
 
 	const logoPrep = prepareLogoForTypst(payloadPath, templateDir);
 	const logoArgs =
-		logoPrep.logoInputArg !== undefined
-			? ["--input", logoPrep.logoInputArg]
-			: [];
+		inputs.logo !== undefined
+			? []
+			: logoPrep.logoInputArg !== undefined
+				? ["--input", logoPrep.logoInputArg]
+				: [];
 
 	return ["--input", `json=${payloadInput}`, ...inputArgs, ...logoArgs];
 }

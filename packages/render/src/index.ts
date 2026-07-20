@@ -7,6 +7,7 @@ export {
 	fetchLogoSsrfSafe,
 	type IngestLogoResult,
 	ingestLogoFromUrl,
+	type MemoryLogoBlobStore,
 	prepareIngestedLogoForTypst,
 } from "./logo-ingestion/index.js";
 export {
@@ -16,7 +17,22 @@ export {
 	renderPreview,
 	renderPreviewFromManifest,
 } from "./preview";
+export {
+	type RenderPreviewFromPayloadInput,
+	type RenderPreviewFromPayloadResult,
+	renderPreviewFromPayload,
+} from "./preview-from-payload.js";
+export { buildPreviewHtml } from "./preview-html.js";
 export { sanitizeTypstOutputSvg } from "./svg-output-sanitize";
+export {
+	documentTemplateExists,
+	resolveDocumentTemplatePath,
+	TemplateNotFoundError,
+} from "./template-path.js";
+export {
+	mapWorkspaceTierToTypstTier,
+	type TypstTierInput,
+} from "./tier-map.js";
 export {
 	type CompileTypstOptions,
 	compileTypst,
