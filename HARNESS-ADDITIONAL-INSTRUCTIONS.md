@@ -38,3 +38,7 @@ Directives #1–8 stay authoritative; tiers say **when** each applies during BMa
 | **T2** | Pre-production gate | #2 pricing tiers + mock payment; #7 full enforcement; orchestrator + right-hand dual signoff; create `AGENTS_STOP_FILE` |
 
 **Stop/ship gate:** Epics 0–8 MVP stories complete (Epic 9 excluded) **and** orchestrator + right-hand production confidence. This gate ends the harness loop (STOP), not deferral of T0/T1.
+
+**King authorization (board YES_WITH_NOTES, 2026-07-20):** START the harness loop immediately — run BMad Epics 0–8 to 100% story completion (Epic 9 still excluded per gate above).
+Dual signoff (orchestrator + right-hand) is required for **usable beta** or **first production deploy** before STOP; then create `AGENTS_STOP_FILE`.
+T0/T1/T2 in this file remain in force; this authorization sets **scope and start**, not a waiver of tier discipline.
