@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.4: POST /v1/session/token — short-lived audience-bound CSRF-protected Bearer
 
-Status: ready-for-dev
+Status: in-progress
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -18,13 +18,13 @@ so that browser calls public API without exposing long-lived secrets (AD-2, AD-7
 ## Acceptance Criteria
 
 1. **Given** authenticated better-auth session and valid CSRF token (double-submit cookie), **when** `POST /v1/session/token` is called, **then** response is HTTP **200** with JSON `{ accessToken, tokenType: "Bearer", expiresIn, scopes, workspaceId }` where `accessToken` is a signed JWT, `expiresIn` ≤ **900** seconds (15 min), `scopes` is the full canonical scope set, and `workspaceId` equals `session.activeOrganizationId`.
-2. **Given** issued JWT, **when** decoded, **then** claims include `sub` (userId), `wid` (workspaceId), `scp` (scopes array), `aud` = `USETAGIH_WEB_PUBLIC_URL`, `iss` = `USETAGIH_API_PUBLIC_URL`, `exp`/`iat`, `jti` (uuid), `typ: "session_bearer"`; TTL from `iat` to `exp` is ≤ **900** seconds.
+2. **Given** issued JWT, **when** decoded, **then** claims include `sub` (userId), `wid` (workspaceId), `scp` (scopes array), `aud` = `USETAGIH_API_PUBLIC_URL` (API recipient), `azp` = `USETAGIH_WEB_PUBLIC_URL` (authorized web client), `iss` = `USETAGIH_API_PUBLIC_URL`, `exp`/`iat`, `jti` (uuid), `typ: "session_bearer"`; TTL from `iat` to `exp` is ≤ **900** seconds.
 3. **Given** canonical scope enum in `@usetagih/schema`, **when** inspected, **then** values are exactly: `renders:read`, `renders:write`, `webhooks:manage`, `audit:read`; session token exchange grants **all four** scopes (web app full access within active workspace).
 4. **Given** `Authorization: Bearer <session_jwt>` on `/v1/*`, **when** bearer auth middleware runs, **then** request context receives `{ authType: "session_bearer", userId, workspaceId, scopes }`; workspace on token must match route resource workspace (stub routes prove chain; cross-workspace returns **404** per NFR-5 — defer full envelope to Story 3.6).
 5. **Given** bearer token missing required scope for a route, **when** scope guard runs, **then** HTTP **403** with code `FORBIDDEN` and message indicating required scope (full `requestId` envelope deferred to Story 3.6).
 6. **Given** missing, mismatched, or absent CSRF double-submit on `POST /v1/session/token`, **when** called with valid session cookie, **then** HTTP **403** with code `FORBIDDEN`.
 7. **Given** expired or absent session cookie on `POST /v1/session/token`, **when** called, **then** HTTP **401** with code `UNAUTHORIZED`.
-8. **Given** expired, malformed, wrong-`aud`, or wrong-signature JWT on `/v1/*`, **when** bearer middleware runs, **then** HTTP **401** with code `UNAUTHORIZED`.
+8. **Given** expired, malformed, wrong-`aud`/`azp`/`iss`/`typ`, wrong algorithm, missing required claims, future `iat`, malformed `scp`, or wrong-signature JWT on `/v1/*`, **when** bearer middleware runs, **then** HTTP **401** with code `UNAUTHORIZED`.
 9. **Given** scope-parity matrix in `apps/api/src/routes/v1/session.token.test.ts`, **when** `bun test apps/api` runs, **then** each matrix row asserts session-bearer grant/deny matches required scope for stub routes; API-key column marked `// Story 3.5 extends` with skipped/placeholder tests.
 10. **Given** `@usetagih/config/env` extended with `USETAGIH_WEB_PUBLIC_URL`, **when** `apps/api` boots in `dev`, **then** env parses; dev default `http://localhost:3000`; staging/prod required.
 11. **Given** compose Postgres running, **when** `bun test apps/api` integration suite runs, **then** tests boot real Elysia app, drive sign-up → CSRF cookie → token exchange → bearer-authenticated stub routes via `fetch`.
@@ -106,7 +106,16 @@ Implement `POST /v1/session/token` on the **public REST boundary** (AD-2): authe
 
 ### Token mechanism decision (encode exactly — do not use better-auth jwt/bearer plugins)
 
-**Choice:** Custom JWT signed with **`jose@6.2.3`** (HS256, `BETTER_AUTH_SECRET` as symmetric key).
+**Choice:** Custom JWT signed with **`jose@6.2.3`** (HS256). Symmetric signing key is **derived via HKDF-SHA256** from `BETTER_AUTH_SECRET` — **never sign with the raw secret**.
+
+| HKDF parameter | Value |
+| --- | --- |
+| Hash | SHA-256 |
+| Salt | empty (fixed) |
+| Info | `usetagih:session_bearer:v1` |
+| Output length | 32 bytes (256-bit HS256 key) |
+
+**Key rotation:** No `kid` header. Rotating `BETTER_AUTH_SECRET` immediately invalidates all outstanding session bearer tokens — acceptable at ≤15 min TTL (no revocation list at MVP).
 
 **Why not better-auth plugins:** Inspected `better-auth@1.6.23` — ships `jwt` and `bearer` plugins under `better-auth/plugins`, but:
 
@@ -114,26 +123,32 @@ Implement `POST /v1/session/token` on the **public REST boundary** (AD-2): authe
 | --- | --- |
 | `bearer` | Issues long-lived session bearer tied to better-auth session store — not ≤15 min audience-bound scoped tokens |
 | `jwt` | Exposes `/api/auth/token` on auth mount — violates AD-2 public REST boundary (`/v1/session/token`) |
-| Both | No custom claims for `workspaceId`, `scp[]`, `aud=USETAGIH_WEB_PUBLIC_URL` in our contract |
+| Both | No custom claims for `workspaceId`, `scp[]`, `aud`/`azp` split in our contract |
 
 Architecture ratifies `POST /v1/session/token` on `/v1/*` with custom claims. Use `jose` (already transitive dep of better-auth 1.6.23 at `6.2.3` in lockfile) as **direct** dep in `apps/api`.
 
+**Board ratification (2–1):** dissent on better-auth-plugin reuse recorded (minority preferred `jwt` plugin) but overruled by majority — custom `/v1/session/token` + HKDF-derived keys remain binding.
+
 **Board note:** `jose@6.2.3` not listed in ARCHITECTURE-SPINE stack table — direct pin required; aligns with better-auth's bundled version.
 
-### CSRF strategy (encode exactly — double-submit cookie)
+### CSRF strategy (encode exactly — session-bound signed double-submit)
 
-**Choice:** **Double-submit cookie** (first option in epics/architecture AC).
+**Choice:** **Session-bound signed double-submit cookie** (board-hardened variant of epics/architecture AC).
 
 | Element | Value |
 | --- | --- |
-| Cookie name | `usetagih.csrf` |
-| Cookie flags | `SameSite=Strict`; `Secure=true` in staging/prod; **`HttpOnly=false`** (JS reads value for header) |
+| Cookie name | `__Host-usetagih.csrf` when `Secure` (production/staging HTTPS); plain `usetagih.csrf` in non-HTTPS dev only |
+| Cookie flags | `SameSite=Strict`; `Secure=true` in staging/prod; **`HttpOnly=false`** (JS reads value for header); `Path=/` (required for `__Host-` prefix) |
 | Header name | `X-CSRF-Token` |
-| Validation | `POST /v1/session/token`: `header === cookie` (constant-time compare); missing either → **403 FORBIDDEN** |
+| Token shape | `{nonce}.{hmacHex}` where `hmacHex = HMAC-SHA256(csrfKey, sessionId + ":" + nonce)` |
+| CSRF key | HKDF-SHA256 from `BETTER_AUTH_SECRET`, info `usetagih:csrf:v1`, salt empty, 32 bytes |
+| Validation | `POST /v1/session/token`: header value === cookie value (constant-time) **and** HMAC verifies against **current** session id — token from another session → **403 FORBIDDEN** |
 | Issuance | Set/refreshed on: successful `sign-up-with-workspace`, successful sign-in (`hooks.after`), `GET /v1/session/csrf` |
 | Exempt | `GET` requests; `/api/auth/*`; `/health` |
 
-**Do not** use SameSite+header-only (custom header without cookie compare) — double-submit chosen for explicit CSRF binding.
+**Sibling-subdomain cookie injection:** `__Host-` prefix + `SameSite=Strict` mitigates cross-subdomain cookie injection in production; not directly unit-testable without multi-host harness — documented as defense-in-depth.
+
+**Do not** use naive header===cookie compare without session-bound HMAC — board amendment requires session binding.
 
 ### Scope enum (encode exactly — home: `packages/schema`)
 
@@ -173,7 +188,7 @@ Story 3.5 imports `API_SCOPES`, `ApiScopeSchema` unchanged for `api_keys.scopes[
 
 ### JWT claims shape (encode exactly)
 
-**Signing:** `SignJWT` from `jose`, algorithm **HS256**, secret = `TextEncoder.encode(env.BETTER_AUTH_SECRET)`.
+**Signing:** `SignJWT` from `jose`, algorithm **HS256**, key = HKDF(`BETTER_AUTH_SECRET`, info=`usetagih:session_bearer:v1`).
 
 **Payload:**
 
@@ -182,7 +197,8 @@ type SessionBearerClaims = {
   sub: string;       // userId
   wid: string;       // workspaceId (activeOrganizationId)
   scp: ApiScope[];   // granted scopes
-  aud: string;       // USETAGIH_WEB_PUBLIC_URL
+  aud: string;       // USETAGIH_API_PUBLIC_URL — token recipient (API)
+  azp: string;       // USETAGIH_WEB_PUBLIC_URL — authorized web client
   iss: string;       // USETAGIH_API_PUBLIC_URL
   exp: number;       // unix seconds, iat + SESSION_TOKEN_TTL_SECONDS
   iat: number;
@@ -200,13 +216,19 @@ export const SESSION_TOKEN_TYP = "session_bearer" as const;
 
 **Verification checks (all must pass):**
 
-1. Signature valid (HS256 + `BETTER_AUTH_SECRET`)
-2. `typ === "session_bearer"`
-3. `aud === env.USETAGIH_WEB_PUBLIC_URL`
-4. `iss === env.USETAGIH_API_PUBLIC_URL`
-5. `exp > now` (clock skew tolerance: 30s)
-6. `wid` is non-empty uuid
-7. `scp` every element ∈ `API_SCOPES`
+1. Signature valid (HS256 + HKDF-derived key); **`algorithms: ["HS256"]` pinned** — reject `none`/wrong alg
+2. `typ === "session_bearer"` (required claim)
+3. `aud === env.USETAGIH_API_PUBLIC_URL` (API is recipient)
+4. `azp === env.USETAGIH_WEB_PUBLIC_URL` (web client binding)
+5. `iss === env.USETAGIH_API_PUBLIC_URL`
+6. `sub`, `wid`, `jti` present and non-empty; `wid` is uuid
+7. `iat` present, not in future (≤30s clock skew tolerance)
+8. `exp > now` (clock skew tolerance: 30s)
+9. `scp` is array; every element ∈ `API_SCOPES` — reject malformed/missing
+
+**Tenant authorization:** `wid` claim is **transport** (carries active workspace for bearer context) — **not** sole tenant protection. Repository/query boundaries enforce workspace filtering per Story 3.3 workspace guard pattern; cross-workspace resource access → **404** (NFR-5).
+
+**Post-logout residual validity (explicit risk acceptance):** Revoked/logged-out sessions leave already-issued bearer tokens valid until `exp` (≤15 min). No server-side revocation list, no refresh tokens at MVP. Integration test asserts bearer issued **before** logout still verifies until expiry.
 
 ### Token response shape (encode exactly)
 
@@ -247,17 +269,17 @@ USETAGIH_WEB_PUBLIC_URL: z.string().url(),
 trustedOrigins: [env.USETAGIH_API_PUBLIC_URL, env.USETAGIH_WEB_PUBLIC_URL],
 ```
 
-Requires `parseEnv` in `@usetagih/config` to include `USETAGIH_WEB_PUBLIC_URL` — `packages/db/src/auth/auth.config.ts` already calls `parseEnv`; extending `EnvStub` is sufficient (no separate db env file).
+**CORS (board amendment):** Browser calls from `USETAGIH_WEB_PUBLIC_URL` to API must succeed. Extend `createBetterAuthPlugin` **and** `/v1` group CORS: `origin: env.USETAGIH_WEB_PUBLIC_URL`, `credentials: true`, `allowedHeaders` includes `X-CSRF-Token` (existing config incorrectly used API URL as origin).
 
 ### Middleware behavior table (encode exactly)
 
 | Step | Middleware | Condition | HTTP | Code |
 | --- | --- | --- | --- | --- |
 | 1 | (none) | `POST /v1/session/token` no session | 401 | `UNAUTHORIZED` |
-| 2 | csrf | `POST /v1/session/token` missing/mismatch CSRF | 403 | `FORBIDDEN` |
+| 2 | csrf | `POST /v1/session/token` missing/mismatch CSRF or session-bound HMAC fail | 403 | `FORBIDDEN` |
 | 3 | workspace | session, zero orgs or no active org | 403 | `WORKSPACE_REQUIRED` |
 | 4 | session-token route | valid session + CSRF + workspace | 200 | — |
-| 5 | bearer-auth | `/v1/*` Bearer present, JWT invalid/expired/wrong aud/iss/typ | 401 | `UNAUTHORIZED` |
+| 5 | bearer-auth | `/v1/*` Bearer present, JWT invalid/expired/wrong aud/azp/iss/typ/alg/claims | 401 | `UNAUTHORIZED` |
 | 6 | bearer-auth | JWT valid | set `authContext` | — |
 | 7 | scope-guard | route requires scope not in `authContext.scopes` | 403 | `FORBIDDEN` (message: `Insufficient scope: requires <scope>`) |
 | 8 | workspace-match | token `wid` ≠ route `:workspaceId` param (when present) | 404 | `NOT_FOUND` |
@@ -326,7 +348,16 @@ Required cases:
 4. `Bearer token on GET /v1/renders → 501 (auth passes)`
 5. `Expired JWT → 401`
 6. `JWT with wrong aud → 401`
-7. `AuthCookieJar pattern from 3.3 for multi-step cookie forwarding`
+7. `JWT with wrong azp → 401`
+8. `CSRF token from different session → 403`
+9. `Wrong algorithm token → 401`
+10. `Missing required claims → 401`
+11. `Future iat → 401`
+12. `Malformed scp → 401`
+13. `Bearer issued before logout still verifies until exp` (residual validity risk acceptance)
+14. `AuthCookieJar pattern from 3.3 for multi-step cookie forwarding`
+
+**Negative test matrix (minimum):** session-bound CSRF rejection; sibling-subdomain cookie injection (document-only if not testable); wrong algorithm; missing claims; future `iat`; malformed `scp`; post-logout residual token behavior.
 
 ### Pinned toolchain (exact)
 
@@ -435,3 +466,7 @@ bunx turbo run lint typecheck test build --force
 ### Completion Notes List
 
 ### File List
+
+## Change Log
+
+- 2026-07-20 — Board ratification 2–1: HKDF key derivation, session-bound CSRF HMAC, aud/azp semantics correction, verification hardening, CORS web-origin fix, post-logout residual validity risk acceptance, expanded negative test matrix. Dissent on better-auth-plugin reuse recorded but overruled by majority.
