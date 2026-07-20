@@ -1,3 +1,4 @@
+import type { ApiKeyRepo } from "@usetagih/core";
 import { auth } from "@usetagih/db";
 import {
 	SESSION_TOKEN_SCOPES,
@@ -8,7 +9,10 @@ import type { ApiEnv } from "../env.js";
 import type { AuthContext } from "./auth-context.js";
 import { resolveBearerAuth } from "./bearer-auth.js";
 
-export function createAuthResolver(options: { env: ApiEnv }) {
+export function createAuthResolver(options: {
+	env: ApiEnv;
+	apiKeyRepo: ApiKeyRepo;
+}) {
 	return new Elysia({ name: "auth-resolver" }).macro({
 		authenticated: {
 			async resolve({ request: { headers }, status }) {
@@ -17,6 +21,7 @@ export function createAuthResolver(options: { env: ApiEnv }) {
 					const authContext = await resolveBearerAuth(
 						authorization,
 						options.env,
+						options.apiKeyRepo,
 					);
 					if (!authContext) {
 						return status(401, {
