@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.14: Signed share URLs, public resolver, and revoke
 
-Status: in-progress
+Status: done
 
 ## Story
 
@@ -29,14 +29,31 @@ So that PDFs distribute without API keys (FR-19, AD-6).
 - [x] Task 3 — API: public `GET /v1/share/{token}`, `GET /v1/share/{token}/download`, `DELETE /v1/renders/{renderId}/share`
 - [x] Task 4 — Env: `USETAGIH_SHARE_SIGNING_SECRET` validation
 - [x] Task 5 — Unit + integration tests
-- [ ] Task 6 — Verification gate: docker postgres + turbo 36/36
-- [ ] Task 7 — PR, merge, adversarial review
+- [x] Task 6 — Verification gate: docker postgres + turbo 36/36
+- [x] Task 7 — PR, merge, adversarial review
 
 ## Dev Agent Record
 
 ### Agent Model Used
 
 composer-2.5-fast (implementation subagent)
+
+### Completion Notes
+
+- HMAC share tokens (`payload.signature`) stored in `share_token`; `shareTtlDays` honored from payload (default 90).
+- Public routes unauthenticated; expired/revoked return 403 FORBIDDEN.
+- Merged via PR #32 (`50eb652`).
+
+### Adversarial code review (2026-07-20)
+
+**Reviewer:** adversarial code review (Story 3.14 signed share URLs)  
+**Verdict:** no medium+ findings — status → done
+
+| ID | Severity | Disposition | Finding | Notes |
+| --- | --- | --- | --- | --- |
+| CR-1 | low | defer | `downloadUrl` is relative path; web must prepend API base | Matches SCR-SHARE-PUBLIC pattern; SDK can wrap in Story 6.12 |
+| CR-2 | low | dismiss | No audit row on share revoke | Full audit capture deferred to Story 3.15 |
+| CR-3 | low | dismiss | Revoke test in renders.test.ts mutates shared fixture state | Single test file order; acceptable for unit suite |
 
 ### File List
 
