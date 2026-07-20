@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.11: POST /v1/{documentType}/preview — multi-page SVG response
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -273,6 +273,50 @@ composer-2.5-fast
 
 - 2026-07-20: story 3.11 created — ready for dev
 - 2026-07-20: story 3.11 implementation — preview endpoint (status → review)
+- 2026-07-20: adversarial code review — no medium+ findings; status → done
+
+## Code Review (2026-07-20)
+
+**Reviewer:** adversarial code review (Story 3.11 preview endpoint)  
+**Implementation:** PR #26 @ `4726706`  
+**Verdict:** **PASS** — all 16 ACs satisfied; no medium+ code fixes required
+
+### AC checklist (16/16)
+
+| AC | Result | Notes |
+| --- | --- | --- |
+| 1 | PASS | POST preview → 200 flat `{ valid: true, pageCount, pages, html }` per §4.2 |
+| 2 | PASS | `renderPreviewFromPayload` uses same `.typ` + `--input json=` + `tier=` + optional `logo=`; pagination fixture parity test |
+| 3 | PASS | No `renders` row, R2 artifact, share URL, or idempotency consumption |
+| 4 | PASS | `renderPreview()` applies `sanitizeTypstOutputSvg()` on Typst output |
+| 5 | PASS | `buildPreviewHtml()` wraps pages as `<div class="page" data-page="{index}">` ascending |
+| 6 | PASS | `mapWorkspaceTierToTypstTier`: trial→free, paid tiers→pro |
+| 7 | PASS | `resolveLogoUseCase` + `prepareIngestedLogoForTypst` composed via `preview-deps` |
+| 8 | PASS | Validate failures map to 422/400 before Typst; shared validate step |
+| 9 | PASS | Logo ingestion failure → 422 `VALIDATION_FAILED` `/branding/logoUrl` |
+| 10 | PASS | Missing template → 400 `INVALID_REQUEST` `/template` for quotation/receipt |
+| 11 | PASS | `preview-from-payload.test.ts` pagination fixture `pageCount === 3` (typst-gated) |
+| 12 | PASS | `ROUTE_SCOPE_REQUIREMENTS` + session.token parity matrix extended |
+| 13 | PASS | Unit tests: auth/scope, 422, 400 mismatch, mocked success |
+| 14 | PASS | Postgres + typst integration test sign-up → API key → preview 200 |
+| 15 | PASS | `docker compose postgres` + turbo `--force` → 36/36 exit 0 |
+| 16 | PASS | No render persist, idempotency, audit, quota, or SDK changes |
+
+### Findings triage
+
+| ID | Sev | Bucket | Title | Resolution |
+| --- | --- | --- | --- | --- |
+| CR-1 | low | defer | Typst compile failures propagate as 500 `INTERNAL_ERROR` | Validated payloads should compile; Story 3.12 render path can add structured render-stage error mapping |
+| CR-2 | low | dismiss | `@ts-nocheck` on preview route module | Same Elysia macro pattern as Stories 3.8/3.9 |
+| CR-3 | low | dismiss | Preview stores ingested logo bytes in memory blob store | Ephemeral cache only — no render row or R2 artifact per AC 3 |
+| CR-4 | low | fix | Unit tests hit real DB for workspace_settings without postgres | Fixed via injectable `workspaceSettingsRepo` stub in `preview-by-document-type.test.ts` (PR #26) |
+
+### Verification run
+
+| Gate | Result | Notes |
+| --- | --- | --- |
+| `docker compose -f docker/compose.yml up -d postgres` | **PASS** | Container healthy |
+| `bunx turbo run lint typecheck test build --force` | **36/36 exit 0** | CI unit job pass after workspace settings stub |
 
 ## Story Validation Record
 

@@ -110,11 +110,21 @@ export async function previewUseCase(
 		};
 	}
 
-	const rendered = deps.renderPreviewFromPayload({
-		payload,
-		workspaceTier: input.workspaceTier,
-		logo: logoResult.logo,
-	});
+	const rendered = (() => {
+		try {
+			return deps.renderPreviewFromPayload({
+				payload,
+				workspaceTier: input.workspaceTier,
+				logo: logoResult.logo,
+			});
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : "preview render failed";
+			throw Object.assign(new Error(message), {
+				previewRenderFailure: true as const,
+			});
+		}
+	})();
 
 	return {
 		ok: true,
