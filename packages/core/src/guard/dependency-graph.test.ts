@@ -5,16 +5,39 @@ import { fileURLToPath } from "node:url";
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
-const FORBIDDEN_IMPORT_PATTERNS = [
-	/@usetagih\/db/,
-	/@usetagih\/render/,
-	/drizzle-orm/,
-	/\bpostgres\b/,
-	/better-auth/,
-	/@aws-sdk\//,
-	/@smithy\//,
-	/\belysia\b/i,
+const FORBIDDEN_SPECIFIERS = [
+	"@usetagih/db",
+	"@usetagih/render",
+	"drizzle-orm",
+	"postgres",
+	"better-auth",
+	"@aws-sdk/",
+	"@smithy/",
+	"elysia",
 ] as const;
+
+function escapeRegExp(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function forbiddenImportPatterns(specifier: string): RegExp[] {
+	const escaped = escapeRegExp(specifier);
+	const modulePattern =
+		specifier.endsWith("/") || specifier.includes("/")
+			? escaped
+			: `(?:${escaped}|${escaped}/[^"']+)`;
+
+	return [
+		new RegExp(`from\\s+["']${modulePattern}["']`),
+		new RegExp(`import\\s*\\(\\s*["']${modulePattern}["']`),
+		new RegExp(`require\\s*\\(\\s*["']${modulePattern}["']`),
+		new RegExp(`import\\s+type\\s+[^;\\n]*from\\s+["']${modulePattern}["']`),
+	];
+}
+
+const FORBIDDEN_IMPORT_PATTERNS = FORBIDDEN_SPECIFIERS.flatMap(
+	forbiddenImportPatterns,
+);
 
 function collectTsFiles(dir: string): string[] {
 	const entries = readdirSync(dir);

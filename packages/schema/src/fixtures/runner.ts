@@ -3,11 +3,8 @@ import { join, relative } from "node:path";
 import type { z } from "zod";
 import type { DocumentType } from "../document/document-type";
 import { checkDocumentTypeMismatch } from "../document/document-type-mismatch";
-import type { ErrorCode } from "../errors/codes";
-import {
-	type DOCUMENT_TYPE_MISMATCH_CODE,
-	VALIDATION_FAILED_CODE,
-} from "../errors/codes";
+import type { DOCUMENT_TYPE_MISMATCH_CODE, ErrorCode } from "../errors/codes";
+import { zodIssueToDetail } from "../errors/detail";
 import type { ValidateDocumentPayloadResult } from "../validation/validate-document-payload";
 import { validateDocumentPayload } from "../validation/validate-document-payload";
 
@@ -132,36 +129,14 @@ export function discoverFixturePairs(fixturesRoot: string): FixturePair[] {
 	return pairs.sort((left, right) => left.name.localeCompare(right.name));
 }
 
-export function zodPathToJsonPointer(path: PropertyKey[]): string {
-	if (path.length === 0) {
-		return "";
-	}
-
-	return path
-		.map((segment) =>
-			typeof segment === "number" ? `/${segment}` : `/${String(segment)}`,
-		)
-		.join("");
-}
+export { zodPathToJsonPointer } from "../errors/detail";
 
 export function zodErrorToPrimaryJsonPointer(error: z.ZodError): {
 	path: string;
-	code: typeof VALIDATION_FAILED_CODE;
+	code: ReturnType<typeof zodIssueToDetail>["code"];
 } {
-	const issue = error.issues[0];
-	let path = zodPathToJsonPointer(issue.path);
-
-	if (issue.code === "unrecognized_keys") {
-		const [unrecognizedKey] = issue.keys;
-		if (typeof unrecognizedKey === "string") {
-			path = path ? `${path}/${unrecognizedKey}` : `/${unrecognizedKey}`;
-		}
-	}
-
-	return {
-		path,
-		code: VALIDATION_FAILED_CODE,
-	};
+	const primary = zodIssueToDetail(error.issues[0]);
+	return { path: primary.path, code: primary.code };
 }
 
 export function extractPrimaryFinding(

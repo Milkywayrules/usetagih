@@ -97,7 +97,7 @@ development_status:
   # Gated by Epic 2. Gates Epics 4–7.
   epic-3: in-progress
   3-1-drizzle-database-schema-and-migrations-for-core-tables: done
-  3-2-packages-core-ports-and-validate-use-case: review
+  3-2-packages-core-ports-and-validate-use-case: done
   3-3-better-auth-registration-login-and-session-middleware: backlog
   3-4-post-v1-session-token-short-lived-audience-bound-csrf-protected-bearer: backlog
   3-5-api-key-create-list-and-revoke-endpoints: backlog

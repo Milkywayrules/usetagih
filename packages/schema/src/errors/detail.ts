@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { BusinessRuleFinding } from "../validation/finding";
-import { ERROR_CODES } from "./codes";
+import { ERROR_CODES, VALIDATION_FAILED_CODE } from "./codes";
 
 export const ApiErrorDetailSchema = z
 	.object({
@@ -24,4 +24,37 @@ export function businessFindingToDetail(
 		...(finding.expected !== undefined ? { expected: finding.expected } : {}),
 		...(finding.received !== undefined ? { received: finding.received } : {}),
 	};
+}
+
+export function zodPathToJsonPointer(path: PropertyKey[]): string {
+	if (path.length === 0) {
+		return "";
+	}
+
+	return path
+		.map((segment) =>
+			typeof segment === "number" ? `/${segment}` : `/${String(segment)}`,
+		)
+		.join("");
+}
+
+export function zodIssueToDetail(issue: z.core.$ZodIssue): ApiErrorDetail {
+	let path = zodPathToJsonPointer(issue.path);
+
+	if (issue.code === "unrecognized_keys" && issue.keys) {
+		const [unrecognizedKey] = issue.keys;
+		if (typeof unrecognizedKey === "string") {
+			path = path ? `${path}/${unrecognizedKey}` : `/${unrecognizedKey}`;
+		}
+	}
+
+	return {
+		path,
+		code: VALIDATION_FAILED_CODE,
+		message: issue.message,
+	};
+}
+
+export function zodIssuesToDetails(error: z.ZodError): ApiErrorDetail[] {
+	return error.issues.map(zodIssueToDetail);
 }

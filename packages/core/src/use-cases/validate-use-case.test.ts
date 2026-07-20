@@ -1,8 +1,12 @@
 import { expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { DocumentType } from "@usetagih/schema";
-import { discoverFixturePairs } from "../../../schema/src/fixtures/runner.js";
+import {
+	DocumentPayloadSchema,
+	type DocumentType,
+	discoverFixturePairs,
+	normalizePayloadSchemaVersion,
+} from "@usetagih/schema";
 import { validateUseCase } from "./validate-use-case.js";
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -31,7 +35,13 @@ test("validateUseCase matches declared pass/fail outcomes for all sidecar pairs"
 			});
 			expect(result.valid).toBe(true);
 			if (result.valid) {
-				expect(result.normalizedPreview.schemaVersion).toBeDefined();
+				const versionResult = normalizePayloadSchemaVersion(payload);
+				expect(versionResult.ok).toBe(true);
+				if (versionResult.ok) {
+					expect(result.normalizedPreview).toEqual(
+						DocumentPayloadSchema.parse(versionResult.normalized),
+					);
+				}
 			}
 			continue;
 		}

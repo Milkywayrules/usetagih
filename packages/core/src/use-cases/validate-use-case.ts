@@ -5,14 +5,8 @@ import {
 	checkDocumentTypeMismatch,
 	type ErrorCode,
 	validateDocumentPayload,
+	zodIssuesToDetails,
 } from "@usetagih/schema";
-
-type ZodIssueLike = {
-	path: PropertyKey[];
-	code: string;
-	message: string;
-	keys?: string[];
-};
 
 export type ValidateUseCaseInput = {
 	pathDocumentType: DocumentType;
@@ -34,35 +28,6 @@ export type ValidateUseCaseResult =
 	| ValidateUseCaseSuccess
 	| ValidateUseCaseFailure;
 
-function zodPathToJsonPointer(path: PropertyKey[]): string {
-	if (path.length === 0) {
-		return "";
-	}
-
-	return path
-		.map((segment) =>
-			typeof segment === "number" ? `/${segment}` : `/${String(segment)}`,
-		)
-		.join("");
-}
-
-function zodIssueToDetail(issue: ZodIssueLike): ApiErrorDetail {
-	let path = zodPathToJsonPointer(issue.path);
-
-	if (issue.code === "unrecognized_keys" && issue.keys) {
-		const [unrecognizedKey] = issue.keys;
-		if (typeof unrecognizedKey === "string") {
-			path = path ? `${path}/${unrecognizedKey}` : `/${unrecognizedKey}`;
-		}
-	}
-
-	return {
-		path,
-		code: "VALIDATION_FAILED",
-		message: issue.message,
-	};
-}
-
 export function mapValidateFailureToDetails(
 	result: Exclude<ReturnType<typeof validateDocumentPayload>, { ok: true }>,
 ): ApiErrorDetail[] {
@@ -77,7 +42,7 @@ export function mapValidateFailureToDetails(
 	}
 
 	if (result.stage === "structural") {
-		return result.error.issues.map(zodIssueToDetail);
+		return zodIssuesToDetails(result.error);
 	}
 
 	return result.findings.map(businessFindingToDetail);

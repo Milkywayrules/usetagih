@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.2: packages/core ports and validate use-case
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -502,6 +502,7 @@ Composer 2.5 Fast (headless subagent)
 ## Change Log
 
 - 2026-07-20: Story 3.2 — core hexagonal ports, validate use-case, db RenderRepo alignment
+- 2026-07-20: code review approved — zod mapping centralized in schema, test typecheck restored, dependency guard strengthened, story marked done
 
 ## Story Validation Record
 

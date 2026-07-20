@@ -68,6 +68,9 @@ export {
 	type ApiErrorDetail,
 	ApiErrorDetailSchema,
 	businessFindingToDetail,
+	zodIssuesToDetails,
+	zodIssueToDetail,
+	zodPathToJsonPointer,
 } from "./errors/detail";
 export {
 	type ApiErrorEnvelope,
@@ -76,6 +79,11 @@ export {
 	buildApiErrorEnvelope,
 } from "./errors/envelope";
 export { getHttpStatusForErrorCode } from "./errors/http-status";
+export {
+	discoverFixturePairs,
+	type FixtureExpectedOutcome,
+	type FixturePair,
+} from "./fixtures/runner";
 export {
 	LINE_TOTAL_MISMATCH_CODE,
 	TAX_TOTAL_MISMATCH_CODE,

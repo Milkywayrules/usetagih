@@ -38,5 +38,5 @@ export function createRenderRepo(db: Db): RenderRepo {
 				.orderBy(desc(renders.createdAt))
 				.limit(limit);
 		},
-	};
+	} satisfies RenderRepo;
 }
