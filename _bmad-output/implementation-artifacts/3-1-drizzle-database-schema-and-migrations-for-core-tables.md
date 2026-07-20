@@ -5,7 +5,7 @@ created: 2026-07-20
 
 # Story 3.1: Drizzle database schema and migrations for core tables
 
-Status: review
+Status: done
 
 <!-- Ultimate context engine analysis completed - comprehensive developer guide created -->
 
@@ -504,3 +504,4 @@ Composer 2.5 (implementation subagent)
 ## Change Log
 
 - 2026-07-20: Epic 3 Story 3.1 — Drizzle core schema, migrations, render repo, isolation tests.
+- 2026-07-20: Code review — strengthened isolation probes, documented auth CLI provenance and org-plugin contract.
