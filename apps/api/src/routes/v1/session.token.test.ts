@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { parseEnv } from "@usetagih/config/env";
+import type { RenderRepo } from "@usetagih/core";
 import {
 	API_SCOPES,
 	ApiErrorEnvelopeSchema,
@@ -25,12 +26,33 @@ setDefaultTimeout(15_000);
 
 const env = parseEnv("dev", { USETAGIH_DOCS_ENABLED: "false" });
 
+const stubRenderRepo: RenderRepo = {
+	async insert() {
+		throw new Error("unexpected render insert in scope parity tests");
+	},
+	async getByIdAndWorkspace() {
+		return null;
+	},
+	async listByWorkspace() {
+		return [];
+	},
+	async listByWorkspacePaginated() {
+		return { items: [], total: 0 };
+	},
+};
+
 describe("session token scope parity matrix", () => {
 	let app: ReturnType<typeof createApp>;
 	const apiKeyRepo = createInMemoryApiKeyRepo();
 
 	beforeAll(() => {
-		app = createApp({ env, apiKeyRepo, otelEnabled: false });
+		app = createApp({
+			env,
+			apiKeyRepo,
+			otelEnabled: false,
+			renderRepo: stubRenderRepo,
+			resolveAuditUserId: async () => "00000000-0000-4000-8000-000000000001",
+		});
 	});
 
 	const stubMatrix = [
